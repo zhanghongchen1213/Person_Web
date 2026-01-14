@@ -1,0 +1,433 @@
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { useLocation, useParams } from "wouter";
+import { useState, useEffect } from "react";
+import { Loader2, Save, Eye, ArrowLeft, Trash2, Folder } from "lucide-react";
+import { toast } from "sonner";
+import { Streamdown } from "streamdown";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+export default function WriteArticle() {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  const params = useParams<{ id?: string }>();
+  const articleId = params.id ? parseInt(params.id) : undefined;
+  const isEditing = !!articleId;
+
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [summary, setSummary] = useState("");
+  const [content, setContent] = useState("");
+  const [coverImage, setCoverImage] = useState("");
+  const [categoryId, setCategoryId] = useState<number | undefined>();
+  const [status, setStatus] = useState<"draft" | "published">("draft");
+  const [showPreview, setShowPreview] = useState(false);
+
+  const { data: categories } = trpc.category.list.useQuery();
+  const { data: existingArticle, isLoading: articleLoading } = trpc.article.byId.useQuery(
+    { id: articleId! },
+    { enabled: isEditing }
+  );
+
+  const utils = trpc.useUtils();
+
+  const createMutation = trpc.article.create.useMutation({
+    onSuccess: (data) => {
+      toast.success("文章创建成功");
+      utils.article.list.invalidate();
+      utils.article.adminList.invalidate();
+      setLocation(`/article/${slug}`);
+    },
+    onError: (error) => {
+      toast.error(error.message || "创建失败");
+    },
+  });
+
+  const updateMutation = trpc.article.update.useMutation({
+    onSuccess: () => {
+      toast.success("文章更新成功");
+      utils.article.list.invalidate();
+      utils.article.adminList.invalidate();
+      utils.article.byId.invalidate({ id: articleId });
+      setLocation(`/article/${slug}`);
+    },
+    onError: (error) => {
+      toast.error(error.message || "更新失败");
+    },
+  });
+
+  const deleteMutation = trpc.article.delete.useMutation({
+    onSuccess: () => {
+      toast.success("文章已删除");
+      utils.article.list.invalidate();
+      utils.article.adminList.invalidate();
+      setLocation("/articles");
+    },
+    onError: (error) => {
+      toast.error(error.message || "删除失败");
+    },
+  });
+
+  // Load existing article data
+  useEffect(() => {
+    if (existingArticle) {
+      setTitle(existingArticle.title);
+      setSlug(existingArticle.slug);
+      setSummary(existingArticle.summary || "");
+      setContent(existingArticle.content);
+      setCoverImage(existingArticle.coverImage || "");
+      setCategoryId(existingArticle.categoryId || undefined);
+      setStatus(existingArticle.status === "published" ? "published" : "draft");
+    }
+  }, [existingArticle]);
+
+  // Auto-generate slug from title
+  useEffect(() => {
+    if (!isEditing && title) {
+      const generatedSlug = title
+        .toLowerCase()
+        .replace(/[^\w\u4e00-\u9fa5]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      setSlug(generatedSlug);
+    }
+  }, [title, isEditing]);
+
+  const handleSubmit = (publishStatus: "draft" | "published") => {
+    if (!title.trim()) {
+      toast.error("请输入文章标题");
+      return;
+    }
+    if (!slug.trim()) {
+      toast.error("请输入文章 Slug");
+      return;
+    }
+    if (!content.trim()) {
+      toast.error("请输入文章内容");
+      return;
+    }
+
+    if (!categoryId) {
+      toast.error("请选择技术分类");
+      return;
+    }
+
+    const data = {
+      title: title.trim(),
+      slug: slug.trim(),
+      summary: summary.trim() || undefined,
+      content: content.trim(),
+      coverImage: coverImage.trim() || undefined,
+      categoryId: categoryId,
+      status: publishStatus,
+    };
+
+    if (isEditing) {
+      updateMutation.mutate({ id: articleId!, ...data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleDelete = () => {
+    if (articleId) {
+      deleteMutation.mutate({ id: articleId });
+    }
+  };
+
+  // Auth check
+  if (authLoading || (isEditing && articleLoading)) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <Navbar />
+        <main className="flex-1 pt-16 md:pt-20 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || user?.role !== "admin") {
+    return (
+      <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <Navbar />
+        <main className="flex-1 pt-16 md:pt-20">
+          <div className="container py-20 text-center">
+            <h1 className="text-4xl md:text-5xl mb-4">无权限</h1>
+            <p className="text-muted-foreground text-lg mb-8">
+              只有管理员可以创建和编辑文章
+            </p>
+            <button onClick={() => setLocation("/")} className="brutalist-btn">
+              返回首页
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <Navbar />
+
+      <main className="flex-1 pt-16 md:pt-20">
+        {/* Header */}
+        <div className="border-b-2 border-border">
+          <div className="container py-6">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setLocation("/articles")}
+                className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider hover:underline underline-offset-4"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                返回
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="inline-flex items-center gap-2 px-4 py-2 border-2 border-border font-bold uppercase text-sm hover:bg-muted transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  {showPreview ? "编辑" : "预览"}
+                </button>
+                <button
+                  onClick={() => handleSubmit("draft")}
+                  disabled={isSaving}
+                  className="inline-flex items-center gap-2 px-4 py-2 border-2 border-border font-bold uppercase text-sm hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  保存草稿
+                </button>
+                <button
+                  onClick={() => handleSubmit("published")}
+                  disabled={isSaving}
+                  className="brutalist-btn text-sm disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  发布
+                </button>
+                {isEditing && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button className="inline-flex items-center gap-2 px-4 py-2 border-2 border-destructive text-destructive font-bold uppercase text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                        删除
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="border-2 border-border">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>确认删除</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          此操作无法撤销，文章将被永久删除。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="border-2 border-border">取消</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDelete}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          删除
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="container py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Editor */}
+            <div className="lg:col-span-2 space-y-6">
+              {showPreview ? (
+                <div className="border-2 border-border p-6 min-h-[600px]">
+                  <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-6">
+                    {title || "无标题"}
+                  </h1>
+                  {summary && (
+                    <p className="text-muted-foreground text-lg mb-8">{summary}</p>
+                  )}
+                  <div className="prose-brutalist">
+                    <Streamdown>{content || "无内容"}</Streamdown>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Title */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                      标题 *
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="输入文章标题"
+                      className="brutalist-input text-2xl font-bold"
+                    />
+                  </div>
+
+                  {/* Slug */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                      Slug *
+                    </label>
+                    <input
+                      type="text"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      placeholder="article-url-slug"
+                      className="brutalist-input"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      URL 路径: /article/{slug || "your-slug"}
+                    </p>
+                  </div>
+
+                  {/* Summary */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                      摘要
+                    </label>
+                    <textarea
+                      value={summary}
+                      onChange={(e) => setSummary(e.target.value)}
+                      placeholder="文章摘要（可选）"
+                      rows={3}
+                      className="brutalist-input resize-none"
+                    />
+                  </div>
+
+                  {/* Content */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                      内容 * (Markdown)
+                    </label>
+                    <textarea
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="使用 Markdown 格式编写文章内容..."
+                      rows={20}
+                      className="brutalist-input resize-none font-mono text-sm"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Cover Image */}
+              <div className="border-2 border-border p-4">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                  封面图片
+                </label>
+                <input
+                  type="text"
+                  value={coverImage}
+                  onChange={(e) => setCoverImage(e.target.value)}
+                  placeholder="图片 URL"
+                  className="brutalist-input text-sm"
+                />
+                {coverImage && (
+                  <div className="mt-4 aspect-video overflow-hidden border border-border">
+                    <img
+                      src={coverImage}
+                      alt="Cover preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Category - Enhanced Button Group */}
+              <div className="border-4 border-border p-6 bg-accent/5">
+                <label className="block text-sm font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <Folder className="w-5 h-5" />
+                  技术分类
+                  <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {categories?.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCategoryId(cat.id)}
+                      className={`p-4 border-2 transition-all text-left ${
+                        categoryId === cat.id
+                          ? "border-primary bg-primary text-primary-foreground font-black scale-105"
+                          : "border-border hover:border-primary/50 hover:bg-muted"
+                      }`}
+                    >
+                      <div className="font-bold">{cat.name}</div>
+                      {cat.description && (
+                        <p className="text-xs opacity-80 mt-1">{cat.description}</p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {!categoryId && (
+                  <p className="text-xs text-red-500 mt-3 font-medium">
+                    请为文章选择一个技术分类
+                  </p>
+                )}
+              </div>
+
+              {/* Status */}
+              <div className="border-2 border-border p-4">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                  状态
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="status"
+                      checked={status === "draft"}
+                      onChange={() => setStatus("draft")}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium">草稿</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="status"
+                      checked={status === "published"}
+                      onChange={() => setStatus("published")}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium">已发布</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

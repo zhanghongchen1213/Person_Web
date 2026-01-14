@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1768218408248,
+      "tag": "0000_pretty_stepford_cuckoos",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1768218525340,
+      "tag": "0001_nasty_radioactive_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1768218795843,
+      "tag": "0002_nice_doctor_doom",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1768220003088,
+      "tag": "0003_omniscient_scourge",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1768220025241,
+      "tag": "0004_cold_quentin_quire",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__puppeteer__browser_init",
+      "Bash(powershell:*)",
+      "Bash(node --version:*)",
+      "Bash(mysql --version:*)",
+      "Bash(if [ -f .env ])",
+      "Bash(then echo \"exists\")",
+      "Bash(else echo \"not found\")",
+      "Bash(fi)"
+    ]
+  }
+}

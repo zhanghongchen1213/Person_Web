@@ -1,0 +1,327 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Brutalist Typography - Pure Black & White */
+:root {
+  --radius: 0px;
+  --primary: oklch(0 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --chart-1: oklch(0.2 0 0);
+  --chart-2: oklch(0.35 0 0);
+  --chart-3: oklch(0.5 0 0);
+  --chart-4: oklch(0.65 0 0);
+  --chart-5: oklch(0.8 0 0);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.4 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0 0 0);
+  --input: oklch(0.95 0 0);
+  --ring: oklch(0 0 0);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0 0 0);
+  --sidebar-ring: oklch(0 0 0);
+}
+
+.dark {
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(1 0 0);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.05 0 0);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0.05 0 0);
+  --popover-foreground: oklch(1 0 0);
+  --secondary: oklch(0.15 0 0);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.15 0 0);
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(0.15 0 0);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(1 0 0);
+  --chart-1: oklch(0.8 0 0);
+  --chart-2: oklch(0.65 0 0);
+  --chart-3: oklch(0.5 0 0);
+  --chart-4: oklch(0.35 0 0);
+  --chart-5: oklch(0.2 0 0);
+  --sidebar: oklch(0.05 0 0);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.15 0 0);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0);
+  --sidebar-ring: oklch(1 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+  
+  /* Brutalist Typography Scale */
+  h1 {
+    @apply text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-none uppercase;
+  }
+  
+  h2 {
+    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-none uppercase;
+  }
+  
+  h3 {
+    @apply text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-tight;
+  }
+  
+  h4 {
+    @apply text-lg sm:text-xl md:text-2xl font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 4rem;
+      padding-right: 4rem;
+      max-width: 1400px;
+    }
+  }
+  
+  /* Brutalist Card */
+  .brutalist-card {
+    @apply border-2 border-border bg-card p-6 transition-all duration-200;
+  }
+  
+  .brutalist-card:hover {
+    box-shadow: 8px 8px 0px 0px var(--border);
+    transform: translate(-4px, -4px);
+  }
+  
+  /* Brutalist Button */
+  .brutalist-btn {
+    @apply inline-flex items-center justify-center px-6 py-3 border-2 border-border bg-primary text-primary-foreground font-bold uppercase tracking-wider transition-all duration-200;
+  }
+  
+  .brutalist-btn:hover {
+    @apply bg-background text-foreground;
+    box-shadow: 4px 4px 0px 0px var(--border);
+    transform: translate(-2px, -2px);
+  }
+  
+  /* Brutalist Input */
+  .brutalist-input {
+    @apply w-full px-4 py-3 border-2 border-border bg-transparent font-medium placeholder:text-muted-foreground focus:outline-none;
+  }
+  
+  .brutalist-input:focus {
+    box-shadow: 4px 4px 0px 0px var(--border);
+  }
+  
+  /* Geometric Lines */
+  .geo-line-h {
+    @apply w-full h-0.5 bg-border;
+  }
+  
+  .geo-line-v {
+    @apply w-0.5 h-full bg-border;
+  }
+  
+  /* Brutalist Bracket Decoration */
+  .brutalist-bracket::before {
+    content: '[';
+    @apply mr-2 font-black;
+  }
+  
+  .brutalist-bracket::after {
+    content: ']';
+    @apply ml-2 font-black;
+  }
+  
+  /* Brutalist Underline */
+  .brutalist-underline {
+    @apply relative inline-block;
+  }
+  
+  .brutalist-underline::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-1 md:h-2 bg-foreground;
+  }
+  
+  /* Large Stats Number */
+  .stat-number {
+    @apply text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter leading-none;
+  }
+  
+  /* Prose Brutalist for Markdown */
+  .prose-brutalist {
+    @apply text-base sm:text-lg leading-relaxed;
+  }
+  
+  .prose-brutalist h1 {
+    @apply text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mt-12 mb-6 uppercase;
+  }
+  
+  .prose-brutalist h2 {
+    @apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mt-10 mb-4;
+  }
+  
+  .prose-brutalist h3 {
+    @apply text-xl sm:text-2xl font-bold mt-8 mb-3;
+  }
+  
+  .prose-brutalist p {
+    @apply mb-6;
+  }
+  
+  .prose-brutalist a {
+    @apply underline underline-offset-4 decoration-2 hover:bg-foreground hover:text-background transition-colors;
+  }
+  
+  .prose-brutalist code {
+    @apply bg-muted px-2 py-1 font-mono text-sm;
+  }
+  
+  .prose-brutalist pre {
+    @apply bg-muted p-4 overflow-x-auto border-2 border-border my-6;
+  }
+  
+  .prose-brutalist blockquote {
+    @apply border-l-4 border-border pl-6 italic my-6;
+  }
+  
+  .prose-brutalist ul, .prose-brutalist ol {
+    @apply pl-6 mb-6;
+  }
+  
+  .prose-brutalist li {
+    @apply mb-2;
+  }
+  
+  .prose-brutalist img {
+    @apply border-2 border-border my-6;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-foreground;
+}
