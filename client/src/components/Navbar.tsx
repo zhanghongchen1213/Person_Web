@@ -117,11 +117,7 @@ export default function Navbar({ onSearch }: NavbarProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : (
-              <a href={getLoginUrl()} className="brutalist-btn text-xs">
-                登录
-              </a>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile Menu Button */}

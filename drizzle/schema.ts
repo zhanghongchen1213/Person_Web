@@ -1,6 +1,12 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
+ * Content type enum for distinguishing between blog posts and documentation
+ */
+export const contentTypeEnum = ["blog", "doc"] as const;
+export type ContentType = (typeof contentTypeEnum)[number];
+
+/**
  * Core user table backing auth flow.
  */
 export const users = mysqlTable("users", {
@@ -31,6 +37,7 @@ export const categories = mysqlTable("categories", {
   description: text("description"),
   icon: varchar("icon", { length: 50 }), // 图标名称，用于前端展示
   sortOrder: int("sortOrder").default(0).notNull(), // 排序顺序
+  type: mysqlEnum("type", contentTypeEnum).default("blog").notNull(), // 分类类型：博客或文档
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -51,6 +58,8 @@ export const articles = mysqlTable("articles", {
   authorId: int("authorId").notNull(),
   categoryId: int("categoryId"), // 分类（建议填写）
   status: mysqlEnum("status", ["draft", "published", "archived"]).default("draft").notNull(),
+  type: mysqlEnum("type", contentTypeEnum).default("blog").notNull(), // 内容类型：博客或文档
+  order: int("order").default(0).notNull(), // 排序权重，用于文档排序
   publishedAt: timestamp("publishedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

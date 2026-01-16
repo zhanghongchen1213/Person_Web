@@ -34,6 +34,7 @@ export const appRouter = router({
         limit: z.number().min(1).max(50).default(10),
         page: z.number().min(1).default(1),
         status: z.enum(["draft", "published", "archived"]).optional(),
+        type: z.enum(["blog", "doc"]).optional(),
         categorySlug: z.string().optional(),
         search: z.string().optional(),
       }).optional())
@@ -42,6 +43,7 @@ export const appRouter = router({
           limit: input?.limit ?? 10,
           page: input?.page ?? 1,
           status: input?.status ?? "published",
+          type: input?.type,
           categorySlug: input?.categorySlug,
           search: input?.search,
         });
@@ -101,12 +103,14 @@ export const appRouter = router({
         limit: z.number().min(1).max(50).default(10),
         page: z.number().min(1).default(1),
         status: z.enum(["draft", "published", "archived"]).optional(),
+        type: z.enum(["blog", "doc"]).optional(),
       }).optional())
       .query(async ({ input, ctx }) => {
         return await db.getArticles({
           limit: input?.limit ?? 10,
           page: input?.page ?? 1,
           status: input?.status,
+          type: input?.type,
           authorId: ctx.user.id,
         });
       }),
@@ -121,6 +125,8 @@ export const appRouter = router({
         coverImage: z.string().optional(),
         categoryId: z.number().optional(), // 分类（建议填写）
         status: z.enum(["draft", "published", "archived"]).default("draft"),
+        type: z.enum(["blog", "doc"]).default("blog"),
+        order: z.number().default(0),
       }))
       .mutation(async ({ input, ctx }) => {
         const articleId = await db.createArticle({
@@ -141,6 +147,8 @@ export const appRouter = router({
         coverImage: z.string().optional(),
         categoryId: z.number().optional(),
         status: z.enum(["draft", "published", "archived"]).optional(),
+        type: z.enum(["blog", "doc"]).optional(),
+        order: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
@@ -160,9 +168,13 @@ export const appRouter = router({
   // Category routes
   category: router({
     // List categories (public)
-    list: publicProcedure.query(async () => {
-      return await db.getCategories();
-    }),
+    list: publicProcedure
+      .input(z.object({
+        type: z.enum(["blog", "doc"]).optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await db.getCategories({ type: input?.type });
+      }),
 
     // Get category by slug (public)
     bySlug: publicProcedure
@@ -183,6 +195,7 @@ export const appRouter = router({
         description: z.string().optional(),
         icon: z.string().optional(),
         sortOrder: z.number().optional(),
+        type: z.enum(["blog", "doc"]).default("blog"),
       }))
       .mutation(async ({ input }) => {
         const id = await db.createCategory(input);
@@ -198,6 +211,7 @@ export const appRouter = router({
         description: z.string().optional(),
         icon: z.string().optional(),
         sortOrder: z.number().optional(),
+        type: z.enum(["blog", "doc"]).optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
@@ -218,6 +232,41 @@ export const appRouter = router({
       await db.initDefaultCategories();
       return { success: true };
     }),
+
+    // Get category with articles (public) - enhanced query with N+1 optimization
+    withArticles: publicProcedure
+      .input(z.object({
+        slug: z.string(),
+        limit: z.number().min(1).max(50).default(10),
+        page: z.number().min(1).default(1),
+        status: z.enum(["draft", "published", "archived"]).default("published"),
+      }))
+      .query(async ({ input }) => {
+        const result = await db.getCategoryWithArticles(input.slug, {
+          limit: input.limit,
+          page: input.page,
+          status: input.status,
+        });
+        if (!result) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
+        }
+        return result;
+      }),
+  }),
+
+  // Documentation routes
+  doc: router({
+    /**
+     * Get document tree for navigation sidebar.
+     * Returns categories of type 'doc' with their articles sorted by order.
+     */
+    tree: publicProcedure
+      .input(z.object({
+        categorySlug: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await db.getDocTree(input?.categorySlug);
+      }),
   }),
 });
 

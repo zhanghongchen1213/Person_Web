@@ -4,9 +4,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useParams } from "wouter";
 import { useState, useEffect } from "react";
-import { Loader2, Save, Eye, ArrowLeft, Trash2, Folder } from "lucide-react";
+import { Loader2, Save, ArrowLeft, Trash2, Folder, FileText, BookOpen } from "lucide-react";
 import { toast } from "sonner";
-import { Streamdown } from "streamdown";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function WriteArticle() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -33,7 +40,8 @@ export default function WriteArticle() {
   const [coverImage, setCoverImage] = useState("");
   const [categoryId, setCategoryId] = useState<number | undefined>();
   const [status, setStatus] = useState<"draft" | "published">("draft");
-  const [showPreview, setShowPreview] = useState(false);
+  const [articleType, setArticleType] = useState<"blog" | "doc">("blog");
+  const [order, setOrder] = useState<number>(0);
 
   const { data: categories } = trpc.category.list.useQuery();
   const { data: existingArticle, isLoading: articleLoading } = trpc.article.byId.useQuery(
@@ -90,6 +98,8 @@ export default function WriteArticle() {
       setCoverImage(existingArticle.coverImage || "");
       setCategoryId(existingArticle.categoryId || undefined);
       setStatus(existingArticle.status === "published" ? "published" : "draft");
+      setArticleType(existingArticle.type || "blog");
+      setOrder(existingArticle.order || 0);
     }
   }, [existingArticle]);
 
@@ -131,6 +141,8 @@ export default function WriteArticle() {
       coverImage: coverImage.trim() || undefined,
       categoryId: categoryId,
       status: publishStatus,
+      type: articleType,
+      order: order,
     };
 
     if (isEditing) {
@@ -199,13 +211,6 @@ export default function WriteArticle() {
               </button>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="inline-flex items-center gap-2 px-4 py-2 border-2 border-border font-bold uppercase text-sm hover:bg-muted transition-colors"
-                >
-                  <Eye className="w-4 h-4" />
-                  {showPreview ? "编辑" : "预览"}
-                </button>
-                <button
                   onClick={() => handleSubmit("draft")}
                   disabled={isSaving}
                   className="inline-flex items-center gap-2 px-4 py-2 border-2 border-border font-bold uppercase text-sm hover:bg-muted transition-colors disabled:opacity-50"
@@ -257,80 +262,63 @@ export default function WriteArticle() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Editor */}
             <div className="lg:col-span-2 space-y-6">
-              {showPreview ? (
-                <div className="border-2 border-border p-6 min-h-[600px]">
-                  <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-6">
-                    {title || "无标题"}
-                  </h1>
-                  {summary && (
-                    <p className="text-muted-foreground text-lg mb-8">{summary}</p>
-                  )}
-                  <div className="prose-brutalist">
-                    <Streamdown>{content || "无内容"}</Streamdown>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {/* Title */}
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                      标题 *
-                    </label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="输入文章标题"
-                      className="brutalist-input text-2xl font-bold"
-                    />
-                  </div>
+              {/* Title */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                  标题 *
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="输入文章标题"
+                  className="brutalist-input text-2xl font-bold"
+                />
+              </div>
 
-                  {/* Slug */}
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                      Slug *
-                    </label>
-                    <input
-                      type="text"
-                      value={slug}
-                      onChange={(e) => setSlug(e.target.value)}
-                      placeholder="article-url-slug"
-                      className="brutalist-input"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      URL 路径: /article/{slug || "your-slug"}
-                    </p>
-                  </div>
+              {/* Slug */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                  Slug *
+                </label>
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="article-url-slug"
+                  className="brutalist-input"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  URL 路径: /article/{slug || "your-slug"}
+                </p>
+              </div>
 
-                  {/* Summary */}
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                      摘要
-                    </label>
-                    <textarea
-                      value={summary}
-                      onChange={(e) => setSummary(e.target.value)}
-                      placeholder="文章摘要（可选）"
-                      rows={3}
-                      className="brutalist-input resize-none"
-                    />
-                  </div>
+              {/* Summary */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                  摘要
+                </label>
+                <textarea
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="文章摘要（可选）"
+                  rows={3}
+                  className="brutalist-input resize-none"
+                />
+              </div>
 
-                  {/* Content */}
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                      内容 * (Markdown)
-                    </label>
-                    <textarea
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="使用 Markdown 格式编写文章内容..."
-                      rows={20}
-                      className="brutalist-input resize-none font-mono text-sm"
-                    />
-                  </div>
-                </>
-              )}
+              {/* Content - Split View Markdown Editor */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                  内容 * (Markdown)
+                </label>
+                <MarkdownEditor
+                  value={content}
+                  onChange={setContent}
+                  placeholder="使用 Markdown 格式编写文章内容..."
+                  minHeight="500px"
+                />
+              </div>
             </div>
 
             {/* Sidebar */}
@@ -360,6 +348,62 @@ export default function WriteArticle() {
                   </div>
                 )}
               </div>
+
+              {/* Article Type */}
+              <div className="border-2 border-border p-4">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                  内容类型
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setArticleType("blog")}
+                    className={`flex-1 p-3 border-2 transition-all flex items-center justify-center gap-2 ${
+                      articleType === "blog"
+                        ? "border-primary bg-primary text-primary-foreground font-bold"
+                        : "border-border hover:border-primary/50 hover:bg-muted"
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    博客
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setArticleType("doc")}
+                    className={`flex-1 p-3 border-2 transition-all flex items-center justify-center gap-2 ${
+                      articleType === "doc"
+                        ? "border-primary bg-primary text-primary-foreground font-bold"
+                        : "border-border hover:border-primary/50 hover:bg-muted"
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    文档
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {articleType === "blog" ? "博客文章按时间排序显示" : "文档按排序权重显示在文档中心"}
+                </p>
+              </div>
+
+              {/* Order (for documentation) */}
+              {articleType === "doc" && (
+                <div className="border-2 border-border p-4">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-2">
+                    排序权重
+                  </label>
+                  <input
+                    type="number"
+                    value={order}
+                    onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
+                    placeholder="0"
+                    min={0}
+                    className="brutalist-input text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    数值越小排序越靠前，默认为 0
+                  </p>
+                </div>
+              )}
 
               {/* Category - Enhanced Button Group */}
               <div className="border-4 border-border p-6 bg-accent/5">

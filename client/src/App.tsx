@@ -10,6 +10,7 @@ import ArticleDetail from "./pages/ArticleDetail";
 import Archive from "./pages/Archive";
 import About from "./pages/About";
 import WriteArticle from "./pages/WriteArticle";
+import DocReader from "./pages/DocReader";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/articles" component={Articles} />
       <Route path="/article/:slug" component={ArticleDetail} />
+      <Route path="/docs/:category/:slug" component={DocReader} />
       <Route path="/archive" component={Archive} />
       <Route path="/about" component={About} />
       <Route path="/write" component={WriteArticle} />

@@ -325,3 +325,73 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-foreground;
 }
+
+/* Code Syntax Highlighting (for rehype-highlight) */
+.hljs {
+  @apply bg-muted text-foreground;
+}
+
+.hljs-comment,
+.hljs-quote {
+  @apply text-muted-foreground italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-addition {
+  @apply font-semibold;
+}
+
+.hljs-number,
+.hljs-string,
+.hljs-meta .hljs-meta-string,
+.hljs-literal,
+.hljs-doctag,
+.hljs-regexp {
+  @apply text-foreground/80;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class {
+  @apply font-bold;
+}
+
+.hljs-attribute,
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-class .hljs-title,
+.hljs-type {
+  @apply text-foreground;
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-subst,
+.hljs-meta,
+.hljs-meta .hljs-keyword,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-link {
+  @apply text-foreground/70;
+}
+
+.hljs-built_in,
+.hljs-deletion {
+  @apply text-foreground/90;
+}
+
+.hljs-formula {
+  @apply bg-muted;
+}
+
+.hljs-emphasis {
+  @apply italic;
+}
+
+.hljs-strong {
+  @apply font-bold;
+}
