@@ -106,18 +106,17 @@ function processClipboardData(
     }
   }
 
-  // Handle plain text with code detection
+  // Handle plain text - always preserve it as-is for Markdown content
   const text = clipboardData.getData("text/plain");
   if (text) {
+    // Check if it looks like code and should be wrapped in code blocks
     const processed = processPlainTextPaste(text);
-    if (processed !== text) {
-      const before = currentValue.slice(0, selectionStart);
-      const after = currentValue.slice(selectionEnd);
-      return {
-        newValue: before + processed + after,
-        newCursorPos: selectionStart + processed.length,
-      };
-    }
+    const before = currentValue.slice(0, selectionStart);
+    const after = currentValue.slice(selectionEnd);
+    return {
+      newValue: before + processed + after,
+      newCursorPos: selectionStart + processed.length,
+    };
   }
 
   return null;
@@ -214,13 +213,34 @@ function convertHtmlToMarkdown(html: string): string | null {
  * Process plain text paste to detect and format code blocks
  */
 function processPlainTextPaste(text: string): string {
-  // Detect if the text looks like code
+  // First, check if the text is already Markdown formatted
+  const markdownIndicators = [
+    /^#{1,6}\s+/m,           // Headings: # ## ###
+    /^\s*[-*+]\s+/m,         // Unordered lists: - * +
+    /^\s*\d+\.\s+/m,         // Ordered lists: 1. 2.
+    /\*\*.*?\*\*/,           // Bold: **text**
+    /\*.*?\*/,               // Italic: *text*
+    /`.*?`/,                 // Inline code: `code`
+    /```/,                   // Code blocks: ```
+    /^\s*>\s+/m,             // Blockquotes: >
+    /\[.*?\]\(.*?\)/,        // Links: [text](url)
+    /!\[.*?\]\(.*?\)/,       // Images: ![alt](url)
+  ];
+
+  const isMarkdown = markdownIndicators.some((pattern) => pattern.test(text));
+
+  // If it's already Markdown, return as-is
+  if (isMarkdown) {
+    return text;
+  }
+
+  // Otherwise, detect if the text looks like code
   const codeIndicators = [
     /^(import|export|const|let|var|function|class|interface|type)\s/m,
     /^(def|class|import|from|if|for|while)\s/m,
     /^(#include|int|void|char|float|double)\s/m,
     /[{};]\s*$/m,
-    /^\s*(\/\/|#|\/\*)/m,
+    /^\s*(\/\/|\/\*)/m,      // Code comments (removed # to avoid conflict with Markdown headings)
   ];
 
   const looksLikeCode = codeIndicators.some((pattern) => pattern.test(text));
@@ -294,23 +314,33 @@ export function MarkdownEditor({
    */
   const handlePaste = React.useCallback(
     (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      // Always prevent default to ensure we control the paste behavior
+      e.preventDefault();
+
       const textarea = e.currentTarget;
-      const result = processClipboardData(
-        e.clipboardData,
-        value,
-        textarea.selectionStart,
-        textarea.selectionEnd
-      );
+      const text = e.clipboardData.getData("text/plain");
 
-      if (result) {
-        e.preventDefault();
-        onChange(result.newValue);
+      if (!text) return;
 
-        requestAnimationFrame(() => {
-          textarea.focus();
-          textarea.setSelectionRange(result.newCursorPos, result.newCursorPos);
-        });
-      }
+      // Get current selection
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+
+      // Process the text (detect code vs markdown)
+      const processed = processPlainTextPaste(text);
+
+      // Insert at cursor position
+      const before = value.slice(0, start);
+      const after = value.slice(end);
+      const newValue = before + processed + after;
+      const newCursorPos = start + processed.length;
+
+      onChange(newValue);
+
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      });
     },
     [value, onChange]
   );

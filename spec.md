@@ -68,22 +68,138 @@
     -   *风险*: 数据量大时性能差。
     -   *缓解*: 当前数据量级 (<1000篇) 下可接受。
 
-## 6. 执行计划里程碑 (Implementation Milestones)
+## 6. Docker 容器化部署规范 (Docker Deployment Specification)
 
-### Phase 1: 核心重构与规则适配
--   [ ] 更新 `rules/` 目录下的所有规则文件。
--   [ ] 执行数据库 Schema 迁移 (添加 `order`, `type` 字段)。
+### 6.1 部署目标
+-   **目标域名**: `zhcmqtt.top`
+-   **目标服务器**: 华为云 Ubuntu 22.04 (2C2G)
+-   **容器化方案**: Docker + Docker Compose
+-   **反向代理**: Nginx (宿主机或容器)
 
-### Phase 2: 文档引擎开发
--   [ ] 前端：实现文档模式的三栏布局 (Sidebar, TOC)。
--   [ ] 后台：升级编辑器，支持 Markdown 粘贴与预览。
--   [ ] 后端：实现文档排序与检索逻辑。
+### 6.2 容器架构设计
 
-### Phase 3: 性能优化与部署
+```
+                    [Internet]
+                        |
+                        v
+              +------------------+
+              |     Nginx        |  <- 宿主机 Nginx (SSL 终止, 反向代理)
+              |   (Port 80/443)  |
+              +------------------+
+                        |
+                        v
+        +-------------------------------+
+        |      Docker Network           |
+        |  +-------------------------+  |
+        |  |   App Container         |  |
+        |  |   (Node.js:3000)        |  |
+        |  +-------------------------+  |
+        |              |                |
+        |              v                |
+        |  +-------------------------+  |
+        |  |   MySQL Container       |  |
+        |  |   (MySQL:3306)          |  |
+        |  +-------------------------+  |
+        +-------------------------------+
+```
+
+### 6.3 Dockerfile 规范
+
+**多阶段构建策略:**
+1.  **Stage 1 (builder)**: 安装依赖并构建项目
+2.  **Stage 2 (runner)**: 仅包含运行时必需文件
+
+**基础镜像选择:**
+-   构建阶段: `node:22-alpine`
+-   运行阶段: `node:22-alpine` (体积小，适合 2G 内存限制)
+
+**关键配置:**
+-   使用 `pnpm` 作为包管理器
+-   设置 `NODE_ENV=production`
+-   暴露端口 `3000`
+-   健康检查: `curl -f http://localhost:3000/api/trpc/system.health`
+
+### 6.4 docker-compose.yml 规范
+
+**服务定义:**
+
+| 服务名 | 镜像 | 端口映射 | 依赖 | 资源限制 |
+|--------|------|----------|------|----------|
+| `app` | 自建镜像 | 3000:3000 | mysql | mem: 512MB |
+| `mysql` | mysql:8.0 | 3306:3306 | - | mem: 768MB |
+
+**网络配置:**
+-   创建自定义 bridge 网络 `person_web_network`
+-   服务间通过服务名通信 (如 `mysql:3306`)
+
+**数据持久化:**
+-   MySQL 数据: `mysql_data:/var/lib/mysql`
+-   上传文件: `./uploads:/app/uploads`
+
+**环境变量管理:**
+-   使用 `.env.production` 文件
+-   敏感信息不提交到 Git
+
+### 6.5 Nginx 配置规范
+
+**功能需求:**
+1.  **域名绑定**: `zhcmqtt.top` 和 `www.zhcmqtt.top`
+2.  **SSL/HTTPS**: 使用 Let's Encrypt 免费证书
+3.  **HTTP 自动跳转 HTTPS**
+4.  **反向代理**: 将请求转发到 Docker 容器 (localhost:3000)
+5.  **静态资源缓存**: JS/CSS/Images 强缓存 (1年)
+6.  **Gzip 压缩**: 开启文本类型压缩
+
+**安全 Headers:**
+```nginx
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+```
+
+### 6.6 环境变量清单
+
+| 变量名 | 用途 | 示例值 | 必填 |
+|--------|------|--------|------|
+| `DATABASE_URL` | MySQL 连接字符串 | `mysql://user:pass@mysql:3306/db` | Yes |
+| `NODE_ENV` | 运行环境 | `production` | Yes |
+| `JWT_SECRET` | JWT 签名密钥 | `your-secret-key` | Yes |
+| `OWNER_OPEN_ID` | 管理员 OpenID | `admin-openid` | Yes |
+| `PORT` | 应用端口 | `3000` | No |
+
+### 6.7 部署流程概述
+
+1.  **本地构建**: `docker build -t person-web:latest .`
+2.  **镜像推送**: 推送到私有仓库或直接传输到服务器
+3.  **服务器准备**: 安装 Docker, Docker Compose, Nginx
+4.  **SSL 证书**: 使用 Certbot 申请 Let's Encrypt 证书
+5.  **启动服务**: `docker-compose up -d`
+6.  **数据库迁移**: 首次启动后执行 Drizzle 迁移
+7.  **Nginx 配置**: 配置反向代理并重载
+
+## 7. 执行计划里程碑 (Implementation Milestones)
+
+### Phase 1: 核心重构与规则适配 [已完成]
+-   [x] 更新 `rules/` 目录下的所有规则文件。
+-   [x] 执行数据库 Schema 迁移 (添加 `order`, `type` 字段)。
+
+### Phase 2: 文档引擎开发 [已完成]
+-   [x] 前端：实现文档模式的三栏布局 (Sidebar, TOC)。
+-   [x] 后台：升级编辑器，支持 Markdown 粘贴与预览。
+-   [x] 后端：实现文档排序与检索逻辑。
+
+### Phase 3: Docker 容器化与部署
+-   [ ] 编写 Dockerfile (多阶段构建)。
+-   [ ] 编写 docker-compose.yml (App + MySQL)。
+-   [ ] 编写 Nginx 配置文件 (SSL, 反向代理)。
+-   [ ] 编写部署脚本和文档。
+
+### Phase 4: 性能优化与上线
 -   [ ] 后端：实现 tRPC 接口的 LRU 缓存装饰器。
--   [ ] 部署：配置 Nginx (SSL, Gzip) 与 PM2 守护进程。
--   [ ] 验证：在华为云服务器上进行压力测试。
+-   [ ] 部署：在华为云服务器上部署并配置 SSL。
+-   [ ] 验证：运行 Lighthouse 和压力测试。
 
 ### 审计机制 (Audit Mechanism)
--   **触发时机**: Phase 3 结束，上线前。
+-   **触发时机**: Phase 4 结束，上线前。
 -   **检查项**: 运行 Lighthouse CI 评分 > 90；运行 `autocannon` 确保 20 并发下无错误。

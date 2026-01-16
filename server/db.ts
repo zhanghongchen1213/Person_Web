@@ -1,5 +1,6 @@
 import { eq, desc, like, or, and, sql, ne, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import { InsertUser, users, articles, categories, Article, Category, ContentType } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -8,7 +9,13 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      // Create mysql2 connection pool with proper charset configuration
+      const pool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        charset: 'utf8mb4',
+        connectionLimit: 10,
+      });
+      _db = drizzle(pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;

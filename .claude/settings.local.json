@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__puppeteer__browser_init",
+      "mcp__puppeteer__navigate",
+      "mcp__puppeteer__browser_close",
+      "mcp__puppeteer__find_selector",
+      "mcp__puppeteer__type",
+      "mcp__puppeteer__click",
+      "mcp__puppeteer__wait"
+    ]
+  }
+}

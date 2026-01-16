@@ -128,7 +128,128 @@ return <div>{data.articles.map(a => <Card title={a.title} />)}</div>;
 
 ---
 
-## 6. 常见问题 (Troubleshooting)
+## 6. 深入解析：数据库、部署与域名 (Deep Dive)
+
+### 6.1 为什么要有数据库？(Why Database?)
+
+**Q: 我的代码里有变量存数据，为什么还要数据库？**
+
+**A: 变量是 RAM，数据库是 Flash/EEPROM。**
+
+- **变量 (RAM)**: 当你运行程序时，变量存储在内存中。一旦你重启服务器（或者程序崩溃、断电），内存里的数据就**丢了**。这就像单片机的 SRAM，掉电不保存。
+- **数据库 (Flash)**: 数据库（MySQL）把数据写在硬盘上。即使服务器爆炸了，只要硬盘还在，数据就在。它负责**持久化存储**文章、用户信息等关键数据。
+- **本项目中的数据库**: 我们使用的是 **MySQL**。它就像一个巨大的 Excel 表格集合，用来存放所有“掉电不能丢”的数据。
+
+### 6.2 详细部署指南 (Deployment Handbook)
+
+您之前的理解有一点小误区，这里为您彻底理清：
+
+**误区纠正**：
+
+1.  **不需要在云服务器上安装 Node.js**。这是 Docker 的最大优势。Docker 容器内部已经包含了 Node.js 环境。服务器只需要安装 **Docker** 即可。
+2.  **您的项目不是“一个 Docker”**，而是您的**源代码**被 Docker **打包**成了一个镜像（Image）。就像您写的 C 代码被编译成了 `.hex` 文件。
+3.  **编译在哪做？** Docker 会读取 `Dockerfile`，在构建镜像的过程中自动完成 `npm build`（编译）。
+
+**完整操作步骤 (Step-by-Step)**：
+
+#### 第一步：服务器环境准备 (Host Setup)
+
+假设您购买了一台新的 Ubuntu 服务器：
+
+1.  **只安装 Docker**:
+    ```bash
+    # 更新软件源
+    sudo apt update
+    # 安装 Docker
+    sudo apt install docker.io docker-compose -y
+    # 启动 Docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    ```
+
+#### 第二步：上传代码与启动 (Upload & Boot)
+
+1.  将您的项目代码上传到服务器（例如放在 `/root/Person_Web` 目录）。
+2.  进入目录，一条命令启动所有服务：
+    ```bash
+    # 这条命令会自动：
+    # 1. 下载 MySQL 镜像
+    # 2. 根据 Dockerfile 编译您的前端和后端代码
+    # 3. 启动数据库和网页服务
+    sudo docker-compose up -d --build
+    ```
+3.  **验证**: 此时访问 `http://服务器IP:3000`，应该已经能看到页面了。
+
+#### 第三步：配置域名与 Nginx (Gateway Setup)
+
+现在我们要让 `zhcmqtt.top` 指向您的 3000 端口。
+
+1.  **安装 Nginx**:
+
+    ```bash
+    sudo apt install nginx -y
+    ```
+
+2.  **配置转发规则**:
+    编辑 Nginx 配置文件：`sudo nano /etc/nginx/sites-available/default`
+    清空原有内容，填入以下内容（已在项目根目录为您准备了 `nginx.conf` 参考）：
+
+    ```nginx
+    server {
+        listen 80;
+        server_name zhcmqtt.top;  # 您的域名
+
+        location / {
+            # 将所有请求转发给本地运行的 Docker 容器 (3000端口)
+            proxy_pass http://127.0.0.1:3000;
+
+            # 必须带上的“信头”，否则后端不知道真实用户IP
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+    ```
+
+3.  **生效配置**:
+    ```bash
+    sudo nginx -t   # 检查配置有没有写错
+    sudo systemctl reload nginx # 重启 Nginx
+    ```
+
+#### 第四步：搞定！
+
+现在，用户在浏览器输入 `http://zhcmqtt.top`：
+
+1.  DNS 将域名解析到您的服务器 IP。
+2.  请求到达服务器 **80 端口**。
+3.  **Nginx** 收到请求，发现是找 `zhcmqtt.top` 的。
+4.  Nginx 将请求通过“内部专线”转发给 **3000 端口**。
+5.  **Docker 容器** 里的 Node.js 收到请求，处理并返回网页。
+
+### 6.3 域名访问是如何实现的？(Domain Binding)
+
+你输入 `zhcmqtt.top` 就能看到页面，这背后发生了什么？这是一个**地址译码**的过程：
+
+1.  **DNS 解析 (查电话本)**:
+    - 浏览器问 DNS 服务器：“`zhcmqtt.top` 的 IP 是多少？”
+    - DNS 回答：“是 `1.2.3.4` (你的服务器公网 IP)”。
+    - **类比**: 你知道我要找“张三”，查表找到了他的“门牌号”。
+
+2.  **连接服务器 (敲门)**:
+    - 浏览器向 IP `1.2.3.4` 的 **80 端口** (HTTP 默认端口) 发起请求。
+    - **类比**: 你找到了房子，敲了正门。
+
+3.  **反向代理 Nginx (前台接待)**:
+    - 你的服务器上通常运行着一个软件叫 **Nginx** (或者 Caddy/Apache)。它守在 80 端口。
+    - 它看你找 `zhcmqtt.top`，就会把请求**转发**给内部的 **3000 端口** (你的 Node.js 项目端口)。
+    - **类比**: 前台（Nginx）听到你要找“项目部”，就把你带到了“3000号房间”（Node.js 进程）。如果没有 Nginx，你就得让用户输入 `zhcmqtt.top:3000` 才能访问。
+
+---
+
+## 7. 常见问题 (Troubleshooting)
 
 - **Q: 为什么我改了代码没反应？**
   - A: 检查终端是否有报错。前端代码支持热更新 (HMR)，后端代码改动后服务器会自动重启。
