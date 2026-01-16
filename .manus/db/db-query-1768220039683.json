@@ -1,9 +1,0 @@
-{
-  "query": "\nALTER TABLE categories ADD COLUMN icon VARCHAR(50);\nALTER TABLE categories ADD COLUMN sortOrder INT DEFAULT 0 NOT NULL;\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Sh8jifJKTWnD61.root --database mQwTVyapgHuxJhqfDusuGM --execute \nALTER TABLE categories ADD COLUMN icon VARCHAR(50);\nALTER TABLE categories ADD COLUMN sortOrder INT DEFAULT 0 NOT NULL;\n",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 2569
-}
