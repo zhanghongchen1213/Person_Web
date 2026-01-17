@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { Loader2, Save, ArrowLeft, Trash2, Folder, FileText, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { CategoryCombobox } from "@/components/CategoryCombobox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,13 +19,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export default function WriteArticle() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -43,7 +37,6 @@ export default function WriteArticle() {
   const [articleType, setArticleType] = useState<"blog" | "doc">("blog");
   const [order, setOrder] = useState<number>(0);
 
-  const { data: categories } = trpc.category.list.useQuery();
   const { data: existingArticle, isLoading: articleLoading } = trpc.article.byId.useQuery(
     { id: articleId! },
     { enabled: isEditing }
@@ -405,34 +398,24 @@ export default function WriteArticle() {
                 </div>
               )}
 
-              {/* Category - Enhanced Button Group */}
+              {/* Category - Combobox with create support */}
               <div className="border-4 border-border p-6 bg-accent/5">
                 <label className="block text-sm font-black uppercase tracking-widest mb-4 flex items-center gap-2">
                   <Folder className="w-5 h-5" />
                   技术分类
                   <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {categories?.map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setCategoryId(cat.id)}
-                      className={`p-4 border-2 transition-all text-left ${
-                        categoryId === cat.id
-                          ? "border-primary bg-primary text-primary-foreground font-black scale-105"
-                          : "border-border hover:border-primary/50 hover:bg-muted"
-                      }`}
-                    >
-                      <div className="font-bold">{cat.name}</div>
-                      {cat.description && (
-                        <p className="text-xs opacity-80 mt-1">{cat.description}</p>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                <CategoryCombobox
+                  value={categoryId}
+                  onValueChange={setCategoryId}
+                  type={articleType}
+                  placeholder="选择或输入新分类..."
+                />
+                <p className="text-xs text-muted-foreground mt-3">
+                  可以从列表中选择现有分类，或直接输入新分类名称创建
+                </p>
                 {!categoryId && (
-                  <p className="text-xs text-red-500 mt-3 font-medium">
+                  <p className="text-xs text-red-500 mt-2 font-medium">
                     请为文章选择一个技术分类
                   </p>
                 )}

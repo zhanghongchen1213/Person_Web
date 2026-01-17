@@ -304,7 +304,50 @@ export async function deleteArticle(id: number): Promise<void> {
   await db.delete(articles).where(eq(articles.id, id));
 }
 
+export async function updateArticlePublishedAt(id: number, publishedAt: Date): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(articles).set({ publishedAt }).where(eq(articles.id, id));
+}
+
 // Category functions
+
+/**
+ * Generate a URL-friendly slug from a category name
+ * Converts Chinese and special characters to a safe format
+ */
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[\s]+/g, '-')           // Replace spaces with hyphens
+    .replace(/[^\w\u4e00-\u9fa5-]/g, '') // Keep only alphanumeric, Chinese characters, and hyphens
+    .replace(/--+/g, '-')             // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, '');         // Remove leading/trailing hyphens
+}
+
+/**
+ * Generate a unique slug by appending a number if needed
+ */
+async function generateUniqueSlug(baseName: string): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  let slug = generateSlug(baseName);
+  let counter = 1;
+
+  // Check if slug exists, if so, append counter
+  while (true) {
+    const existing = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
+    if (existing.length === 0) break;
+    slug = `${generateSlug(baseName)}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+}
+
 export async function getCategories(options?: { type?: ContentType }): Promise<Category[]> {
   const db = await getDb();
   if (!db) return [];
@@ -324,6 +367,50 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
 
   const result = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
   return result.length > 0 ? result[0] : null;
+}
+
+/**
+ * Find or create a category by name
+ * If a category with the given name exists, return it
+ * Otherwise, create a new category with auto-generated slug
+ */
+export async function findOrCreateCategory(data: {
+  name: string;
+  type: ContentType;
+}): Promise<Category> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // First, try to find existing category by name (case-insensitive)
+  const existing = await db.select().from(categories)
+    .where(and(
+      sql`LOWER(${categories.name}) = LOWER(${data.name})`,
+      eq(categories.type, data.type)
+    ))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return existing[0];
+  }
+
+  // Category doesn't exist, create new one
+  const slug = await generateUniqueSlug(data.name);
+  const result = await db.insert(categories).values({
+    name: data.name,
+    slug,
+    type: data.type,
+    sortOrder: 0,
+  });
+
+  const newId = Number(result[0].insertId);
+
+  // Fetch and return the newly created category
+  const newCategory = await db.select().from(categories).where(eq(categories.id, newId)).limit(1);
+  if (newCategory.length === 0) {
+    throw new Error("Failed to create category");
+  }
+
+  return newCategory[0];
 }
 
 export async function createCategory(data: {
@@ -562,13 +649,11 @@ export async function initDefaultCategories(): Promise<void> {
   if (!db) return;
 
   const defaultCategories = [
-    { name: "嵌入式", slug: "embedded", description: "嵌入式系统开发相关", icon: "Cpu", sortOrder: 1 },
-    { name: "ROS", slug: "ros", description: "机器人操作系统相关", icon: "Bot", sortOrder: 2 },
-    { name: "深度学习", slug: "deep-learning", description: "深度学习与人工智能", icon: "Brain", sortOrder: 3 },
-    { name: "DIY", slug: "diy", description: "DIY项目与创客", icon: "Wrench", sortOrder: 4 },
-    { name: "编程语言", slug: "programming", description: "编程语言学习笔记", icon: "Code", sortOrder: 5 },
-    { name: "工具与环境", slug: "tools", description: "开发工具与环境配置", icon: "Settings", sortOrder: 6 },
-    { name: "其他", slug: "other", description: "其他技术文章", icon: "FileText", sortOrder: 99 },
+    { name: "全栈开发", slug: "fullstack", description: "", icon: "Code", sortOrder: 1 },
+    { name: "嵌入式开发", slug: "embedded", description: "", icon: "Cpu", sortOrder: 2 },
+    { name: "ROS开发", slug: "ros", description: "", icon: "Bot", sortOrder: 3 },
+    { name: "深度学习", slug: "deep-learning", description: "", icon: "Brain", sortOrder: 4 },
+    { name: "DIY", slug: "diy", description: "", icon: "Wrench", sortOrder: 5 },
   ];
 
   for (const cat of defaultCategories) {

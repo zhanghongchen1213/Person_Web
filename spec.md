@@ -60,7 +60,68 @@
 -   **表 `categories`**:
     -   新增 `type` (enum: 'blog', 'doc'): 区分博客分类与文档集。
 
-## 5. 技术债务与风险 (Debt & Risks)
+## 5. 技术分类管理 (Category Management)
+
+### 5.1 简化分类策略
+技术分类采用扁平化设计，不使用复杂的层级结构：
+
+**预设分类 (大主题)**:
+- 全栈开发 (fullstack)
+- 嵌入式开发 (embedded)
+- ROS开发 (ros)
+- 深度学习 (deep-learning)
+- DIY (diy)
+
+**分类特性**:
+- 管理员在 Write 页面可直接手写输入新分类名称
+- 分类自动创建：输入不存在的分类名时，系统自动创建
+- 不需要分类简介字段（description 字段保留但非必填）
+- 分类仅作为文章的标签使用，无层级关系
+
+### 5.2 分类数据模型
+复用现有 `categories` 表，简化使用方式：
+- `name`: 分类名称（必填，如"全栈开发"）
+- `slug`: URL 友好标识（自动生成）
+- `description`: 简介（可选，不强制）
+- `type`: 分类类型（blog/doc）
+
+## 6. 文章管理页面 (Article Management Page)
+
+### 6.1 功能概述
+创建独立的文章管理页面 (`/admin/articles`)，供管理员集中管理所有已发布和草稿文章。
+
+### 6.2 功能需求
+
+**文章列表展示**:
+- 显示管理员发布的全部文章（包括草稿、已发布、已归档）
+- 列表字段：标题、分类、状态、发布日期、创建日期
+- 支持按状态筛选（全部/草稿/已发布/已归档）
+- 支持按分类筛选
+- 支持分页显示
+
+**文章操作**:
+1. **删除文章**: 点击删除按钮，弹出确认对话框后删除
+2. **编辑文章**: 点击编辑按钮，跳转到 `/write/:id` 编辑页面
+3. **修改发布日期**: 支持手动修改文章的 `publishedAt` 字段
+
+### 6.3 API 接口需求
+
+**新增接口**:
+- `article.updatePublishedAt`: 单独更新文章发布日期
+  - 输入: `{ id: number, publishedAt: Date }`
+  - 权限: admin
+
+**复用接口**:
+- `article.adminList`: 获取管理员的所有文章
+- `article.delete`: 删除文章
+- `article.update`: 更新文章
+
+### 6.4 页面路由
+- 路径: `/admin/articles`
+- 权限: 仅管理员可访问
+- 导航: 在 Navbar 中为管理员添加入口
+
+## 7. 技术债务与风险 (Debt & Risks)
 -   **[Temporary] 图片存储**: 目前直接存放在本地磁盘 (`/uploads`)。
     -   *风险*: 占用服务器磁盘，备份迁移困难。
     -   *缓解*: 编写定期清理脚本；规划在 Phase 3 迁移到对象存储 (OBS)。
@@ -68,15 +129,15 @@
     -   *风险*: 数据量大时性能差。
     -   *缓解*: 当前数据量级 (<1000篇) 下可接受。
 
-## 6. Docker 容器化部署规范 (Docker Deployment Specification)
+## 8. Docker 容器化部署规范 (Docker Deployment Specification)
 
-### 6.1 部署目标
+### 8.1 部署目标
 -   **目标域名**: `zhcmqtt.top`
 -   **目标服务器**: 华为云 Ubuntu 22.04 (2C2G)
 -   **容器化方案**: Docker + Docker Compose
 -   **反向代理**: Nginx (宿主机或容器)
 
-### 6.2 容器架构设计
+### 8.2 容器架构设计
 
 ```
                     [Internet]
@@ -103,7 +164,7 @@
         +-------------------------------+
 ```
 
-### 6.3 Dockerfile 规范
+### 8.3 Dockerfile 规范
 
 **多阶段构建策略:**
 1.  **Stage 1 (builder)**: 安装依赖并构建项目
@@ -119,7 +180,7 @@
 -   暴露端口 `3000`
 -   健康检查: `curl -f http://localhost:3000/api/trpc/system.health`
 
-### 6.4 docker-compose.yml 规范
+### 8.4 docker-compose.yml 规范
 
 **服务定义:**
 
@@ -140,7 +201,7 @@
 -   使用 `.env.production` 文件
 -   敏感信息不提交到 Git
 
-### 6.5 Nginx 配置规范
+### 8.5 Nginx 配置规范
 
 **功能需求:**
 1.  **域名绑定**: `zhcmqtt.top` 和 `www.zhcmqtt.top`
@@ -158,7 +219,7 @@ add_header X-XSS-Protection "1; mode=block" always;
 add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 ```
 
-### 6.6 环境变量清单
+### 8.6 环境变量清单
 
 | 变量名 | 用途 | 示例值 | 必填 |
 |--------|------|--------|------|
@@ -168,7 +229,7 @@ add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" alway
 | `OWNER_OPEN_ID` | 管理员 OpenID | `admin-openid` | Yes |
 | `PORT` | 应用端口 | `3000` | No |
 
-### 6.7 部署流程概述
+### 8.7 部署流程概述
 
 1.  **本地构建**: `docker build -t person-web:latest .`
 2.  **镜像推送**: 推送到私有仓库或直接传输到服务器
@@ -178,7 +239,7 @@ add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" alway
 6.  **数据库迁移**: 首次启动后执行 Drizzle 迁移
 7.  **Nginx 配置**: 配置反向代理并重载
 
-## 7. 执行计划里程碑 (Implementation Milestones)
+## 9. 执行计划里程碑 (Implementation Milestones)
 
 ### Phase 1: 核心重构与规则适配 [已完成]
 -   [x] 更新 `rules/` 目录下的所有规则文件。
@@ -188,6 +249,12 @@ add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" alway
 -   [x] 前端：实现文档模式的三栏布局 (Sidebar, TOC)。
 -   [x] 后台：升级编辑器，支持 Markdown 粘贴与预览。
 -   [x] 后端：实现文档排序与检索逻辑。
+
+### Phase 2.5: 管理功能增强 [新增]
+-   [ ] 简化技术分类：Write 页面支持手写输入分类名称。
+-   [ ] 分类自动创建：输入新分类时自动创建。
+-   [ ] 文章管理页面：创建 `/admin/articles` 管理页面。
+-   [ ] 文章操作：支持删除、编辑、修改发布日期。
 
 ### Phase 3: Docker 容器化与部署
 -   [ ] 编写 Dockerfile (多阶段构建)。
