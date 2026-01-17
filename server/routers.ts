@@ -163,6 +163,32 @@ export const appRouter = router({
         await db.deleteArticle(input.id);
         return { success: true };
       }),
+
+    // Update article published date (admin)
+    updatePublishedAt: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        publishedAt: z.date(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Verify article exists and belongs to current admin
+        const article = await db.getArticleById(input.id);
+        if (!article) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Article not found" });
+        }
+
+        // Only admin can update any article
+        // If we want to restrict to author only, uncomment below:
+        // if (article.authorId !== ctx.user.id) {
+        //   throw new TRPCError({ code: "FORBIDDEN", message: "You can only update your own articles" });
+        // }
+
+        await db.updateArticlePublishedAt(input.id, input.publishedAt);
+
+        // Return updated article
+        const updatedArticle = await db.getArticleById(input.id);
+        return updatedArticle;
+      }),
   }),
 
   // Category routes
@@ -232,6 +258,22 @@ export const appRouter = router({
       await db.initDefaultCategories();
       return { success: true };
     }),
+
+    /**
+     * Find or create a category by name.
+     * If the category already exists, returns the existing one.
+     * If not, creates a new category with auto-generated slug.
+     * Used for the Write page Combobox to support creating new categories on the fly.
+     */
+    findOrCreate: adminProcedure
+      .input(z.object({
+        name: z.string().min(1).max(100),
+        type: z.enum(["blog", "doc"]).default("blog"),
+      }))
+      .mutation(async ({ input }) => {
+        const category = await db.findOrCreateCategory({ name: input.name, type: input.type });
+        return category;
+      }),
 
     // Get category with articles (public) - enhanced query with N+1 optimization
     withArticles: publicProcedure
