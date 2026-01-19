@@ -36,9 +36,14 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // Register Mock OAuth routes for local development
-  if (process.env.NODE_ENV === "development") {
+  // Register Mock OAuth routes for local development and Docker testing
+  // Enable when OAUTH_SERVER_URL points to localhost (indicating local testing)
+  const oauthServerUrl = process.env.OAUTH_SERVER_URL || "";
+  const isLocalOAuth = oauthServerUrl.includes("localhost") || oauthServerUrl.includes("127.0.0.1");
+
+  if (process.env.NODE_ENV === "development" || isLocalOAuth) {
     registerMockOAuthRoutes(app);
+    console.log("[MockOAuth] Mock OAuth routes registered for local testing");
   }
 
   // OAuth callback under /api/oauth/callback

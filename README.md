@@ -22,12 +22,12 @@
 
 ### 1.1 硬件配置
 
-| 项目 | 最低要求 | 推荐配置 |
-|------|---------|---------|
-| CPU | 2 核心 | 2 核心 |
-| 内存 | 2GB | 2GB 或更高 |
-| 磁盘 | 20GB | 40GB 或更高 |
-| 网络 | 1Mbps | 5Mbps 或更高 |
+| 项目 | 最低要求 | 推荐配置     |
+| ---- | -------- | ------------ |
+| CPU  | 2 核心   | 2 核心       |
+| 内存 | 2GB      | 2GB 或更高   |
+| 磁盘 | 20GB     | 40GB 或更高  |
+| 网络 | 1Mbps    | 5Mbps 或更高 |
 
 ### 1.2 操作系统
 
@@ -36,12 +36,12 @@
 
 ### 1.3 软件依赖
 
-| 软件 | 版本要求 | 说明 |
-|------|---------|------|
-| Docker | >= 20.10 | 容器运行时 |
-| Docker Compose | >= 2.0 | 容器编排工具 |
-| Nginx | >= 1.18 | 反向代理服务器 |
-| Git | >= 2.25 | 版本控制（可选） |
+| 软件           | 版本要求 | 说明             |
+| -------------- | -------- | ---------------- |
+| Docker         | >= 20.10 | 容器运行时       |
+| Docker Compose | >= 2.0   | 容器编排工具     |
+| Nginx          | >= 1.18  | 反向代理服务器   |
+| Git            | >= 2.25  | 版本控制（可选） |
 
 ### 1.4 网络要求
 
@@ -445,6 +445,7 @@ pwgen -s 32 1
 ```
 
 **安全提示**:
+
 - ⚠️ **绝对不要**将 `.env.production` 文件提交到 Git 仓库
 - ⚠️ **必须修改** `JWT_SECRET` 为强密码
 - ⚠️ **必须修改** `MYSQL_ROOT_PASSWORD` 为强密码
@@ -1242,23 +1243,23 @@ Person_Web/
 
 ### 10.2 常用命令速查表
 
-| 操作 | 命令 |
-|------|------|
-| 启动所有服务 | `docker compose up -d` |
-| 停止所有服务 | `docker compose down` |
-| 重启应用 | `docker compose restart app` |
-| 查看容器状态 | `docker compose ps` |
-| 查看应用日志 | `docker compose logs -f app` |
-| 进入应用容器 | `docker exec -it person_web_app sh` |
-| 进入数据库容器 | `docker exec -it person_web_mysql mysql -uroot -p` |
-| 执行数据库迁移 | `bash deploy/scripts/migrate.sh` |
-| 一键部署 | `bash deploy/scripts/deploy.sh` |
-| 重载 Nginx | `sudo systemctl reload nginx` |
-| 测试 Nginx 配置 | `sudo nginx -t` |
-| 查看 Nginx 日志 | `sudo tail -f /var/log/nginx/error.log` |
-| 续期 SSL 证书 | `sudo certbot renew` |
-| 清理 Docker 资源 | `docker system prune -a` |
-| 查看容器资源使用 | `docker stats` |
+| 操作             | 命令                                               |
+| ---------------- | -------------------------------------------------- |
+| 启动所有服务     | `docker compose up -d`                             |
+| 停止所有服务     | `docker compose down`                              |
+| 重启应用         | `docker compose restart app`                       |
+| 查看容器状态     | `docker compose ps`                                |
+| 查看应用日志     | `docker compose logs -f app`                       |
+| 进入应用容器     | `docker exec -it person_web_app sh`                |
+| 进入数据库容器   | `docker exec -it person_web_mysql mysql -uroot -p` |
+| 执行数据库迁移   | `bash deploy/scripts/migrate.sh`                   |
+| 一键部署         | `bash deploy/scripts/deploy.sh`                    |
+| 重载 Nginx       | `sudo systemctl reload nginx`                      |
+| 测试 Nginx 配置  | `sudo nginx -t`                                    |
+| 查看 Nginx 日志  | `sudo tail -f /var/log/nginx/error.log`            |
+| 续期 SSL 证书    | `sudo certbot renew`                               |
+| 清理 Docker 资源 | `docker system prune -a`                           |
+| 查看容器资源使用 | `docker stats`                                     |
 
 ### 10.3 性能优化建议
 
@@ -1305,17 +1306,18 @@ client_max_body_size 10m;
 ```yaml
 # 根据实际使用情况调整
 app:
-  mem_limit: 768m  # 增加到 768MB
-  cpus: 1.5        # 增加到 1.5 核心
+  mem_limit: 768m # 增加到 768MB
+  cpus: 1.5 # 增加到 1.5 核心
 
 mysql:
   mem_limit: 1024m # 增加到 1GB
-  cpus: 1.5        # 增加到 1.5 核心
+  cpus: 1.5 # 增加到 1.5 核心
 ```
 
 ### 10.4 安全加固建议
 
 1. **修改 SSH 默认端口**
+
    ```bash
    sudo nano /etc/ssh/sshd_config
    # Port 22 改为 Port 2222
@@ -1323,6 +1325,7 @@ mysql:
    ```
 
 2. **配置 fail2ban 防止暴力破解**
+
    ```bash
    sudo apt install -y fail2ban
    sudo systemctl enable fail2ban
@@ -1330,11 +1333,13 @@ mysql:
    ```
 
 3. **定期更新系统**
+
    ```bash
    sudo apt update && sudo apt upgrade -y
    ```
 
 4. **配置自动安全更新**
+
    ```bash
    sudo apt install -y unattended-upgrades
    sudo dpkg-reconfigure -plow unattended-upgrades
@@ -1403,4 +1408,3 @@ echo "Test email" | mail -s "Test Subject" your-email@example.com
 **维护者**: Person_Web Project Team
 
 ---
-

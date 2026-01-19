@@ -106,7 +106,7 @@ const mysql = require('mysql2/promise');
     const db = drizzle(connection);
 
     console.log('[INFO] 开始执行迁移...');
-    await migrate(db, { migrationsFolder: './drizzle' });
+    await migrate(db, { migrationsFolder: './drizzle/migrations' });
 
     console.log('[SUCCESS] 数据库迁移完成！');
     await connection.end();
