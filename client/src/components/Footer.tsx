@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Github, Twitter, Mail } from "lucide-react";
+import { Github, MessageCircle, Mail } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -42,7 +42,7 @@ export default function Footer() {
             <h4 className="text-sm font-bold uppercase tracking-wider">联系</h4>
             <div className="flex gap-4">
               <a
-                href="https://github.com"
+                href="https://github.com/zhanghongchen1213"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 border-2 border-border hover:bg-primary hover:text-primary-foreground transition-colors"
@@ -51,7 +51,22 @@ export default function Footer() {
                 <Github className="w-5 h-5" />
               </a>
               <a
-                href="mailto:contact@example.com"
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  alert('微信号: 18954242710');
+                }}
+                className="p-2 border-2 border-border hover:bg-primary hover:text-primary-foreground transition-colors"
+                aria-label="微信"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  alert('邮箱: m18954242710@163.com');
+                }}
                 className="p-2 border-2 border-border hover:bg-primary hover:text-primary-foreground transition-colors"
                 aria-label="Email"
               >
