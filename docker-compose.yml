@@ -1,0 +1,107 @@
+# ============================================
+# Docker Compose Configuration for Person_Web
+# Optimized for 2C2G environment
+# ============================================
+
+version: '3.8'
+
+services:
+  # ============================================
+  # MySQL Database Service
+  # ============================================
+  mysql:
+    image: mysql:8.0
+    container_name: person_web_mysql
+    restart: unless-stopped
+
+    # Port mapping (only for local access)
+    ports:
+      - "3306:3306"
+
+    # Environment variables
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-personal_blog}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+
+    # Resource limits (768MB for MySQL)
+    mem_limit: 768m
+    memswap_limit: 768m
+    cpus: 1.0
+
+    # Data persistence
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    # Network configuration
+    networks:
+      - person_web_network
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ============================================
+  # Application Service
+  # ============================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: person_web_app
+    restart: unless-stopped
+
+    # Port mapping
+    ports:
+      - "3000:3000"
+
+    # Environment variables from file
+    env_file:
+      - .env.production
+
+    # Additional environment variables
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-rootpassword}@mysql:3306/${MYSQL_DATABASE:-personal_blog}?charset=utf8mb4
+
+    # Resource limits (512MB for app)
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1.0
+
+    # Data persistence for uploads
+    volumes:
+      - ./uploads:/app/uploads
+
+    # Network configuration
+    networks:
+      - person_web_network
+
+    # Service dependencies
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    # Health check (inherited from Dockerfile)
+    # The HEALTHCHECK instruction in Dockerfile will be used
+
+# ============================================
+# Network Configuration
+# ============================================
+networks:
+  person_web_network:
+    driver: bridge
+    name: person_web_network
+
+# ============================================
+# Volume Configuration
+# ============================================
+volumes:
+  mysql_data:
+    driver: local
+    name: person_web_mysql_data
