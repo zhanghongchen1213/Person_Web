@@ -1,9 +1,16 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Link } from "wouter";
-import { Github, Twitter, Mail, Linkedin, ArrowRight } from "lucide-react";
+import { Github, Mail, MessageCircle, ArrowRight } from "lucide-react";
 
 export default function About() {
+  const scrollToContact = () => {
+    const contactSection = document.getElementById('contact-section');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <Navbar />
@@ -21,17 +28,17 @@ export default function About() {
                   <span className="brutalist-underline">我</span>
                 </h1>
                 <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8">
-                  你好！我是一名热爱技术的开发者，专注于 Web 开发和系统设计。
+                  你好！我是一名热爱技术的开发者!<br/>
                   这个博客是我记录学习历程、分享技术心得的地方。
                 </p>
                 <div className="flex flex-wrap gap-4">
-                  <a
-                    href="mailto:contact@example.com"
+                  <button
+                    onClick={scrollToContact}
                     className="brutalist-btn"
                   >
                     联系我
                     <Mail className="w-4 h-4 ml-2" />
-                  </a>
+                  </button>
                   <Link
                     href="/articles"
                     className="inline-flex items-center justify-center px-6 py-3 border-2 border-border font-bold uppercase tracking-wider transition-all hover:bg-muted"
@@ -42,12 +49,23 @@ export default function About() {
                 </div>
               </div>
 
-              {/* Avatar/Image Placeholder */}
+              {/* Avatar/Image */}
               <div className="flex justify-center lg:justify-end">
-                <div className="w-64 h-64 md:w-80 md:h-80 border-4 border-border bg-muted flex items-center justify-center">
-                  <span className="text-8xl md:text-9xl font-black text-muted-foreground">
-                    ?
-                  </span>
+                <div className="w-64 h-64 md:w-80 md:h-80 border-4 border-border bg-muted overflow-hidden rounded-full">
+                  <img
+                    src="https://github.com/zhanghongchen1213.png"
+                    alt="GitHub Avatar"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // 如果图片加载失败，显示问号占位符
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent) {
+                        parent.classList.add('flex', 'items-center', 'justify-center');
+                        parent.innerHTML = '<span class="text-8xl md:text-9xl font-black text-muted-foreground">?</span>';
+                      }
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -364,7 +382,7 @@ export default function About() {
         </section>
 
         {/* Contact Section */}
-        <section className="bg-primary text-primary-foreground">
+        <section id="contact-section" className="bg-primary text-primary-foreground">
           <div className="container py-16 md:py-24">
             <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-3xl md:text-4xl lg:text-5xl mb-6">
@@ -373,10 +391,10 @@ export default function About() {
               <p className="text-lg opacity-80 mb-8">
                 欢迎通过以下方式与我联系
               </p>
-              
+
               <div className="flex justify-center gap-4 flex-wrap">
                 <a
-                  href="https://github.com"
+                  href="https://github.com/zhanghongchen1213"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-4 border-2 border-primary-foreground hover:bg-primary-foreground hover:text-primary transition-colors"
@@ -385,25 +403,23 @@ export default function About() {
                   <Github className="w-6 h-6" />
                 </a>
                 <a
-                  href="https://twitter.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // 这里可以添加显示微信二维码的逻辑
+                    alert('微信号: 18954242710');
+                  }}
                   className="p-4 border-2 border-primary-foreground hover:bg-primary-foreground hover:text-primary transition-colors"
-                  aria-label="Twitter"
+                  aria-label="微信"
                 >
-                  <Twitter className="w-6 h-6" />
+                  <MessageCircle className="w-6 h-6" />
                 </a>
                 <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-4 border-2 border-primary-foreground hover:bg-primary-foreground hover:text-primary transition-colors"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin className="w-6 h-6" />
-                </a>
-                <a
-                  href="mailto:contact@example.com"
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    alert('邮箱: m18954242710@163.com');
+                  }}
                   className="p-4 border-2 border-primary-foreground hover:bg-primary-foreground hover:text-primary transition-colors"
                   aria-label="Email"
                 >
