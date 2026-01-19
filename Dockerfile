@@ -19,6 +19,9 @@ RUN npm install -g pnpm
 # This layer will be cached if package files don't change
 COPY package.json pnpm-lock.yaml ./
 
+# Copy patches directory (required for pnpm patched dependencies)
+COPY patches ./patches
+
 # Install all dependencies (including devDependencies for build)
 RUN pnpm install --frozen-lockfile
 
@@ -47,6 +50,9 @@ ENV NODE_ENV=production
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
+
+# Copy patches directory (required for pnpm patched dependencies)
+COPY patches ./patches
 
 # Install production dependencies only
 # This significantly reduces image size
