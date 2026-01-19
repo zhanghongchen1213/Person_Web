@@ -132,7 +132,7 @@ export default function AdminArticles() {
 
   // 处理编辑
   const handleEdit = (id: number) => {
-    setLocation(`/write/${id}`);
+    setLocation(`/edit/${id}`);
   };
 
   // 处理修改发布日期
