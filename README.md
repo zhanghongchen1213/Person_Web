@@ -339,7 +339,11 @@ sudo bash deploy/scripts/setup-env.sh
 sudo bash deploy/scripts/deploy.sh
 ```
 
-⏱️ **预计耗时**：5-10 分钟（首次部署需要下载 Docker 镜像）
+⏱️ **预计耗时**：10-20 分钟（首次部署需要下载 Docker 镜像，会比较慢，请耐心等待）
+
+[![ybCXcY.md.png](https://i.imgs.ovh/2026/01/19/ybCXcY.md.png)](https://imgloc.com/image/ybCXcY)
+
+---
 
 ### 5.2 部署过程说明
 
