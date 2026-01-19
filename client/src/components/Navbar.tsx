@@ -49,9 +49,6 @@ export default function Navbar({ onSearch }: NavbarProps) {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl md:text-2xl font-black tracking-tighter uppercase">
-              [BLOG]
-            </span>
           </Link>
 
           {/* Desktop Navigation */}

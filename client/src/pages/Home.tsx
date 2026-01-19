@@ -22,15 +22,14 @@ export default function Home() {
         <section className="border-b-2 border-border">
           <div className="container py-16 md:py-24 lg:py-32">
             <div className="max-w-4xl">
-              <h1 className="mb-6">
+             <h1 className="mb-6 flex flex-col md:flex-row md:items-center gap-2 md:gap-8">
                 <span className="brutalist-bracket">思考</span>
-                <br />
                 <span className="brutalist-underline">记录</span>
-                <br />
-                分享
+                <span>分享</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-6">
-                专注于嵌入式系统、机器人技术和深度学习的工程师。在这里分享项目实践、技术教程和学习笔记。
+                专注于嵌入式系统、机器人技术和深度学习的工程师<br />
+                在这里分享项目实践、技术教程和学习笔记。
               </p>
 
               {/* 技术关键词标签 */}
@@ -39,13 +38,13 @@ export default function Home() {
                   嵌入式
                 </span>
                 <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider border-2 border-border bg-background">
-                  ROS
+                  ROS开发
                 </span>
                 <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider border-2 border-border bg-background">
                   深度学习
                 </span>
                 <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider border-2 border-border bg-background">
-                  DIY
+                  DIY设计
                 </span>
               </div>
 
@@ -65,27 +64,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Stats Section */}
-        {statsData && (
-          <section className="border-b-2 border-border bg-muted">
-            <div className="container py-12 md:py-16">
-              <div className="grid grid-cols-2 gap-8 max-w-md mx-auto">
-                <div className="text-center">
-                  <div className="stat-number">{statsData.articleCount || 0}</div>
-                  <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground mt-2">
-                    文章
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="stat-number">{statsData.categoryCount || 0}</div>
-                  <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground mt-2">
-                    分类
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* Latest Articles */}
         <section className="border-b-2 border-border">
@@ -135,6 +113,29 @@ export default function Home() {
             )}
           </div>
         </section>
+
+         {/* Stats Section */}
+        {statsData && (
+          <section className="border-b-2 border-border bg-muted">
+            <div className="container py-12 md:py-16">
+              <div className="grid grid-cols-2 gap-8 max-w-md mx-auto">
+                <div className="text-center">
+                  <div className="stat-number">{statsData.articleCount || 0}</div>
+                  <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground mt-2">
+                    文章
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="stat-number">{statsData.categoryCount || 0}</div>
+                  <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground mt-2">
+                    分类
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
 
         {/* CTA Section */}
         <section className="bg-primary text-primary-foreground">
