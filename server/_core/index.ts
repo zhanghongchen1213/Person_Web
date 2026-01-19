@@ -8,6 +8,7 @@ import { registerMockOAuthRoutes } from "./mock-oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { logCacheStats } from "../performance";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -66,6 +67,14 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+
+    // Start performance monitoring - log cache stats every 5 minutes
+    const STATS_INTERVAL = 5 * 60 * 1000; // 5 minutes
+    setInterval(() => {
+      logCacheStats();
+    }, STATS_INTERVAL);
+
+    console.log('[Performance Monitor] Started - Stats will be logged every 5 minutes');
   });
 }
 

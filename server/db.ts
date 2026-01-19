@@ -15,7 +15,7 @@ export async function getDb() {
         charset: 'utf8mb4',
         connectionLimit: 10,
       });
-      _db = drizzle(pool);
+      _db = drizzle(pool) as unknown as ReturnType<typeof drizzle>;
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
