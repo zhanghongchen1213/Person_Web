@@ -139,6 +139,28 @@ if [ ${#MISSING_VARS[@]} -gt 0 ]; then
     log_info "请在 ${ENV_FILE} 中配置这些变量"
     exit 1
 fi
+
+# 检查 GitHub OAuth 配置
+if [ "$GITHUB_CLIENT_ID" == "your_github_client_id_here" ] || [ -z "$GITHUB_CLIENT_ID" ]; then
+    log_warn "⚠️  检测到 GitHub OAuth 使用占位符值或未配置"
+    log_warn "管理员将无法登录后台！"
+    log_info ""
+    log_info "建议操作:"
+    log_info "  1. 停止部署: 按 Ctrl+C"
+    log_info "  2. 运行配置脚本: bash deploy/scripts/setup-env.sh"
+    log_info "  3. 配置真实的 GitHub OAuth 信息"
+    log_info "  4. 重新运行部署脚本"
+    log_info ""
+    log_info "是否继续部署？[y/N]"
+    read -r CONTINUE_DEPLOY
+
+    if [[ ! "$CONTINUE_DEPLOY" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+        log_info "部署已取消"
+        exit 0
+    fi
+    log_warn "继续部署，但管理员功能将不可用"
+fi
+
 log_info "环境变量验证通过"
 
 # ============================================

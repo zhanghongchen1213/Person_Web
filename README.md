@@ -1,405 +1,358 @@
-# Person_Web 生产环境部署指南
+# Person_Web 个人博客部署指南
 
-> 最后更新时间: 2026-01-19
-> 目标服务器: 华为云 Ubuntu 22.04, 2C2G
-> 域名: zhcmqtt.top
+## 前言
+
+> **📅 最后更新**：2026-01-19
+> **🎯 目标读者**：有编程基础的开发者（不需要全栈经验）
+> **🚀 部署目标**：将个人博客部署到云服务器（如华为云、阿里云、腾讯云等）
+
+本文将手把手教你如何将 Person_Web 个人博客项目部署到云服务器上。即使你不是全栈工程师，只要有基本的编程知识和 Linux 命令行使用经验，就能按照本指南完成部署。
+
+### 你将学到什么
+
+- ✅ 如何在云服务器上安装 Docker 环境
+- ✅ 如何配置 Nginx 反向代理
+- ✅ 如何申请免费的 HTTPS 证书
+- ✅ 如何使用一键脚本部署应用
+- ✅ 如何以访客身份访问博客
+- ✅ 如何以管理员身份登录后台
+
+---
+
+### 部署架构简介
+
+```mermaid
+graph TD
+    A[用户浏览器] --> B[域名 zhcmqtt.top]
+    B --> C[Nginx 反向代理 + HTTPS]
+    C --> D[Docker 容器]
+    D --> E[应用容器<br/>React + Express + tRPC]
+    D --> F[数据库容器<br/>MySQL 8.0]
+```
+
+---
 
 ## 📋 目录
 
-- [1. 服务器环境要求](#1-服务器环境要求)
-- [2. Docker 和 Docker Compose 安装](#2-docker-和-docker-compose-安装)
-- [3. Nginx 安装和配置](#3-nginx-安装和配置)
-- [4. SSL 证书申请](#4-ssl-证书申请)
-- [5. 首次部署流程](#5-首次部署流程)
-- [6. 更新部署流程](#6-更新部署流程)
-- [7. 常见问题排查 (FAQ)](#7-常见问题排查-faq)
-- [8. 日志查看命令](#8-日志查看命令)
-- [9. 备份和恢复指南](#9-备份和恢复指南)
+- [第一步：准备云服务器](#第一步准备云服务器)
+- [第二步：一键配置服务器环境](#第二步一键配置服务器环境)
+- [第三步：配置云服务商安全组](#第三步配置云服务商安全组)
+- [第四步：上传项目代码](#第四步上传项目代码)
+- [第五步：配置环境变量](#第五步配置环境变量)
+- [第六步：一键部署应用](#第六步一键部署应用)
+- [第七步：访问你的博客](#第七步访问你的博客)
+- [第八步：配置域名和 HTTPS（可选）](#第八步配置域名和-https可选)
+- [常见问题解答](#常见问题解答)
+- [日常维护指南](#日常维护指南)
 
 ---
 
-## 1. 服务器环境要求
+## 一、准备云服务器
 
-### 1.1 硬件配置
+### 1.1 购买云服务器
 
-| 项目 | 最低要求 | 推荐配置     |
-| ---- | -------- | ------------ |
-| CPU  | 2 核心   | 2 核心       |
-| 内存 | 2GB      | 2GB 或更高   |
-| 磁盘 | 20GB     | 40GB 或更高  |
-| 网络 | 1Mbps    | 5Mbps 或更高 |
+你可以选择以下任一云服务商：
 
-### 1.2 操作系统
+- **华为云**：https://www.huaweicloud.com/
+- **阿里云**：https://www.aliyun.com/
+- **腾讯云**：https://cloud.tencent.com/
 
-- **推荐**: Ubuntu 22.04 LTS (Jammy Jellyfish)
-- **支持**: Ubuntu 20.04 LTS, Debian 11+, CentOS 8+
+**推荐配置**：
 
-### 1.3 软件依赖
+| 配置项   | 最低要求         | 说明                   |
+| -------- | ---------------- | ---------------------- |
+| CPU      | 2 核心           | 保证应用流畅运行       |
+| 内存     | 2GB              | 足够运行 Docker 容器   |
+| 磁盘     | 20GB             | 存储系统、应用和数据库 |
+| 操作系统 | Ubuntu 22.04 LTS | 推荐使用 Ubuntu        |
+| 带宽     | 1Mbps            | 个人博客足够使用       |
 
-| 软件           | 版本要求 | 说明             |
-| -------------- | -------- | ---------------- |
-| Docker         | >= 20.10 | 容器运行时       |
-| Docker Compose | >= 2.0   | 容器编排工具     |
-| Nginx          | >= 1.18  | 反向代理服务器   |
-| Git            | >= 2.25  | 版本控制（可选） |
-
-### 1.4 网络要求
-
-- **开放端口**:
-  - `80` (HTTP) - 用于 SSL 证书验证和 HTTP 重定向
-  - `443` (HTTPS) - 用于 HTTPS 访问
-  - `22` (SSH) - 用于远程管理（建议修改默认端口）
-
-- **域名解析**:
-  - 确保域名 `zhcmqtt.top` 和 `www.zhcmqtt.top` 已正确解析到服务器 IP
-
-### 1.5 安全建议
-
-- ✅ 配置防火墙（UFW 或 iptables）
-- ✅ 禁用 root 用户 SSH 登录
-- ✅ 使用 SSH 密钥认证
-- ✅ 定期更新系统补丁
-- ✅ 配置自动备份
+💡 **小贴士**：新用户通常有优惠活动，2核2G配置一年大约 100-300 元。
 
 ---
 
-## 2. Docker 和 Docker Compose 安装
+### 1.2 购买域名（可选但推荐）
 
-### 2.1 更新系统包
+如果你想使用自己的域名（如 `myblog.com`），需要：
 
-```bash
-# 更新包索引
-sudo apt update
+1. 在域名注册商购买域名（如阿里云、腾讯云、GoDaddy）
+2. 将域名解析到你的服务器 IP 地址
 
-# 升级已安装的包
-sudo apt upgrade -y
+**域名解析步骤**：
+
+```
+1. 登录域名管理控制台
+2. 找到 DNS 解析设置
+3. 添加 A 记录：
+   - 主机记录：@ (代表根域名)
+   - 记录类型：A
+   - 记录值：你的服务器公网 IP
+4. 添加 A 记录：
+   - 主机记录：www
+   - 记录类型：A
+   - 记录值：你的服务器公网 IP
 ```
 
-### 2.2 安装 Docker
-
-#### 方法 1: 使用官方安装脚本（推荐）
-
-```bash
-# 下载并执行 Docker 官方安装脚本
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# 将当前用户添加到 docker 组（避免每次使用 sudo）
-sudo usermod -aG docker $USER
-
-# 重新登录以使组权限生效
-# 或者执行: newgrp docker
-```
-
-#### 方法 2: 手动安装
-
-```bash
-# 安装依赖
-sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-
-# 添加 Docker 官方 GPG 密钥
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-# 添加 Docker APT 仓库
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# 更新包索引
-sudo apt update
-
-# 安装 Docker Engine
-sudo apt install -y docker-ce docker-ce-cli containerd.io
-
-# 将当前用户添加到 docker 组
-sudo usermod -aG docker $USER
-```
-
-#### 验证 Docker 安装
-
-```bash
-# 检查 Docker 版本
-docker --version
-# 预期输出: Docker version 24.0.x, build xxxxx
-
-# 测试 Docker 运行
-docker run hello-world
-# 预期输出: Hello from Docker! ...
-```
-
-### 2.3 安装 Docker Compose
-
-Docker Compose V2 已集成到 Docker CLI 中，作为插件使用。
-
-#### 验证 Docker Compose 安装
-
-```bash
-# 检查 Docker Compose 版本（V2）
-docker compose version
-# 预期输出: Docker Compose version v2.x.x
-
-# 如果使用旧版本（V1）
-docker-compose --version
-# 预期输出: docker-compose version 1.x.x
-```
-
-#### 如果未安装 Docker Compose V2
-
-```bash
-# 下载 Docker Compose V2 插件
-DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-mkdir -p $DOCKER_CONFIG/cli-plugins
-curl -SL https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
-
-# 添加执行权限
-chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
-
-# 验证安装
-docker compose version
-```
-
-### 2.4 配置 Docker 服务
-
-```bash
-# 启动 Docker 服务
-sudo systemctl start docker
-
-# 设置 Docker 开机自启
-sudo systemctl enable docker
-
-# 检查 Docker 服务状态
-sudo systemctl status docker
-# 预期输出: Active: active (running)
-```
+💡 **小贴士**：如果暂时没有域名，可以先使用服务器 IP 地址访问，后续再配置域名。
 
 ---
 
-## 3. Nginx 安装和配置
+### 1.3 连接到服务器
 
-### 3.1 安装 Nginx
+使用 SSH 连接到你的服务器：
 
-```bash
-# 安装 Nginx
-sudo apt install -y nginx
-
-# 启动 Nginx 服务
-sudo systemctl start nginx
-
-# 设置 Nginx 开机自启
-sudo systemctl enable nginx
-
-# 检查 Nginx 服务状态
-sudo systemctl status nginx
-# 预期输出: Active: active (running)
-```
-
-### 3.2 验证 Nginx 安装
+**Windows 用户**：
 
 ```bash
-# 检查 Nginx 版本
-nginx -v
-# 预期输出: nginx version: nginx/1.18.x
-
-# 测试 Nginx 配置语法
-sudo nginx -t
-# 预期输出: syntax is ok, test is successful
-
-# 访问服务器 IP，应显示 Nginx 默认欢迎页面
-curl http://localhost
+# 使用 PowerShell 或 Windows Terminal
+ssh root@你的服务器IP
+# 例如：ssh root@123.45.67.89
 ```
 
-### 3.3 配置防火墙
+**Mac/Linux 用户**：
 
 ```bash
-# 安装 UFW（如果未安装）
-sudo apt install -y ufw
-
-# 允许 SSH（重要！避免被锁定）
-sudo ufw allow 22/tcp
-
-# 允许 HTTP 和 HTTPS
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-
-# 启用防火墙
-sudo ufw enable
-
-# 检查防火墙状态
-sudo ufw status
-# 预期输出:
-# Status: active
-# To                         Action      From
-# --                         ------      ----
-# 22/tcp                     ALLOW       Anywhere
-# 80/tcp                     ALLOW       Anywhere
-# 443/tcp                    ALLOW       Anywhere
+# 使用终端
+ssh root@你的服务器IP
 ```
 
-### 3.4 部署 Nginx 配置文件
+首次连接会提示是否信任服务器，输入 `yes` 并回车，然后输入服务器密码。
 
-项目提供了完整的 Nginx 配置文件，位于 `deploy/nginx/zhcmqtt.top.conf`。
-
-```bash
-# 假设项目已克隆到 /opt/Person_Web
-cd /opt/Person_Web
-
-# 复制 Nginx 配置文件到 sites-available
-sudo cp deploy/nginx/zhcmqtt.top.conf /etc/nginx/sites-available/zhcmqtt.top.conf
-
-# 创建软链接到 sites-enabled
-sudo ln -s /etc/nginx/sites-available/zhcmqtt.top.conf /etc/nginx/sites-enabled/
-
-# 删除默认配置（可选）
-sudo rm -f /etc/nginx/sites-enabled/default
-
-# 测试 Nginx 配置
-sudo nginx -t
-
-# 重载 Nginx 配置
-sudo systemctl reload nginx
-```
-
-**注意**: 在申请 SSL 证书之前，Nginx 配置中的 SSL 相关部分会导致错误。建议先注释掉 HTTPS 服务器块，申请证书后再启用。
+✅ **成功标志**：看到类似 `root@hostname:~#` 的命令提示符。
 
 ---
 
-## 4. SSL 证书申请
+## 二、一键配置服务器环境
 
-### 4.1 安装 Certbot
+项目提供了一键配置脚本，可以自动完成 Docker、Nginx 和防火墙的安装配置。
 
-```bash
-# 安装 Certbot 和 Nginx 插件
-sudo apt install -y certbot python3-certbot-nginx
-```
-
-### 4.2 申请 SSL 证书
-
-#### 方法 1: 使用项目提供的脚本（推荐）
-
-```bash
-# 进入项目目录
-cd /opt/Person_Web
-
-# 执行 SSL 证书申请脚本
-sudo bash deploy/scripts/setup-ssl.sh
-```
-
-#### 方法 2: 手动申请
-
-```bash
-# 使用 Certbot 申请证书（Nginx 插件会自动配置）
-sudo certbot --nginx -d zhcmqtt.top -d www.zhcmqtt.top
-
-# 或者使用 webroot 方式（需要手动配置 Nginx）
-sudo certbot certonly --webroot -w /var/www/html -d zhcmqtt.top -d www.zhcmqtt.top
-```
-
-#### 申请过程中的提示
-
-1. **输入邮箱地址**: 用于接收证书过期提醒
-2. **同意服务条款**: 输入 `Y` 同意
-3. **是否共享邮箱**: 输入 `N` 拒绝（可选）
-4. **选择重定向**: 输入 `2` 自动重定向 HTTP 到 HTTPS（推荐）
-
-### 4.3 验证 SSL 证书
-
-```bash
-# 检查证书文件是否存在
-sudo ls -la /etc/letsencrypt/live/zhcmqtt.top/
-
-# 预期输出:
-# cert.pem -> ../../archive/zhcmqtt.top/cert1.pem
-# chain.pem -> ../../archive/zhcmqtt.top/chain1.pem
-# fullchain.pem -> ../../archive/zhcmqtt.top/fullchain1.pem
-# privkey.pem -> ../../archive/zhcmqtt.top/privkey1.pem
-
-# 测试 HTTPS 访问
-curl -I https://zhcmqtt.top
-# 预期输出: HTTP/2 200
-```
-
-### 4.4 配置证书自动续期
-
-Certbot 会自动配置 cron job 或 systemd timer 来自动续期证书。
-
-```bash
-# 测试证书续期（dry-run 模式）
-sudo certbot renew --dry-run
-
-# 预期输出: Congratulations, all simulated renewals succeeded
-
-# 检查自动续期配置
-sudo systemctl list-timers | grep certbot
-# 或
-sudo crontab -l | grep certbot
-```
-
-### 4.5 更新 Nginx 配置
-
-证书申请成功后，更新 Nginx 配置以启用 HTTPS。
-
-```bash
-# 编辑 Nginx 配置文件
-sudo nano /etc/nginx/sites-available/zhcmqtt.top.conf
-
-# 确保 SSL 证书路径正确:
-# ssl_certificate /etc/letsencrypt/live/zhcmqtt.top/fullchain.pem;
-# ssl_certificate_key /etc/letsencrypt/live/zhcmqtt.top/privkey.pem;
-
-# 测试配置
-sudo nginx -t
-
-# 重载 Nginx
-sudo systemctl reload nginx
-```
-
----
-
-## 5. 首次部署流程
-
-### 5.1 准备工作
-
-#### 5.1.1 创建项目目录
+### 2.1 创建项目目录
 
 ```bash
 # 创建项目目录
 sudo mkdir -p /opt/Person_Web
 
-# 设置目录所有者（替换 your_user 为实际用户名）
+# 设置目录所有者为当前用户
 sudo chown -R $USER:$USER /opt/Person_Web
 
 # 进入项目目录
 cd /opt/Person_Web
 ```
 
-#### 5.1.2 获取项目代码
-
-**方法 1: 使用 Git 克隆（推荐）**
+### 2.2 上传代码到服务器
 
 ```bash
+# 安装 Git（如果未安装）
+sudo apt install -y git
+
 # 克隆项目仓库
-git clone <repository-url> /opt/Person_Web
+git clone https://github.com/zhanghongchen1213/Person_Web /opt/Person_Web
 
 # 进入项目目录
 cd /opt/Person_Web
 ```
 
-**方法 2: 上传代码包**
+### 2.3 执行一键配置脚本
 
 ```bash
-# 在本地打包项目（排除 node_modules 和 .git）
-tar -czf person-web.tar.gz --exclude=node_modules --exclude=.git --exclude=dist .
+# 赋予脚本执行权限
+chmod +x deploy/scripts/setup-server.sh
 
-# 上传到服务器
-scp person-web.tar.gz user@server:/opt/
-
-# 在服务器上解压
-cd /opt
-tar -xzf person-web.tar.gz -C Person_Web
-cd Person_Web
+# 执行服务器环境配置脚本
+sudo bash deploy/scripts/setup-server.sh
 ```
 
-### 5.2 配置环境变量
+脚本会自动完成以下操作：
+
+1. ✅ **更新系统软件包** - 更新 apt 软件包列表
+2. ✅ **安装 Docker** - 使用官方脚本安装 Docker 和 Docker Compose
+3. ✅ **配置 Docker 权限** - 将当前用户添加到 docker 组
+4. ✅ **安装 Nginx** - 安装并启动 Nginx 服务
+5. ✅ **配置防火墙** - 开放必要端口（22, 80, 443）
+6. ✅ **验证安装** - 测试所有服务是否正常运行
+
+### 2.4 预期输出
+
+脚本执行成功后，你会看到类似以下的输出：
+
+```
+[INFO] ==========================================
+[INFO] Person_Web 服务器环境一键配置脚本
+[INFO] ==========================================
+[STEP] 1/6 更新系统软件包...
+[INFO] 系统软件包更新完成
+[STEP] 2/6 安装 Docker...
+[INFO] Docker 安装完成: Docker version 24.0.7
+[STEP] 3/6 配置 Docker 权限...
+[INFO] Docker 权限配置完成
+[STEP] 4/6 安装 Nginx...
+[INFO] Nginx 安装完成: nginx version 1.18.0
+[STEP] 5/6 配置防火墙...
+[INFO] 防火墙配置完成
+[STEP] 6/6 验证安装...
+[SUCCESS] 所有服务安装验证通过！
+[INFO] ==========================================
+[SUCCESS] 服务器环境配置完成！
+[INFO] ==========================================
+```
+
+### 2.5 手动配置（可选）
+
+如果自动脚本执行失败，你也可以手动执行以下命令：
 
 ```bash
+# 1. 更新系统
+sudo apt update && sudo apt upgrade -y
+
+# 2. 安装 Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+# 3. 安装 Nginx
+sudo apt install -y nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# 4. 配置防火墙
+sudo apt install -y ufw
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw --force enable
+
+# 5. 验证安装
+docker --version
+docker compose version
+nginx -v
+sudo ufw status
+```
+
+⚠️ **警告**：配置防火墙时务必先允许 SSH 端口（22），否则会失去服务器连接！
+
+---
+
+## 三、配置云服务商安全组
+
+除了服务器防火墙，还需要在云服务商控制台配置安全组：
+
+1. 登录云服务商控制台
+2. 找到你的服务器实例
+3. 进入"安全组"或"防火墙"设置
+4. 添加入站规则：
+   - 端口 22（SSH）
+   - 端口 80（HTTP）
+   - 端口 443（HTTPS）
+
+💡 **小贴士**：不同云服务商的界面略有不同，但操作逻辑相同。
+
+---
+
+## 四、配置环境变量
+
+环境变量包含了应用运行所需的配置信息，如数据库密码、JWT 密钥等。
+
+### 4.1 使用一键配置脚本（推荐）
+
+项目提供了交互式环境变量配置脚本，可以自动生成强密码并创建配置文件。
+
+⚠️ **重要提示**：为了确保博客安全，**强烈推荐使用 GitHub OAuth 认证**，这样只有你的 GitHub 账号能够登录管理员后台。
+
+#### 步骤 1：创建 GitHub OAuth 应用（推荐）
+
+在运行配置脚本之前，建议先创建 GitHub OAuth 应用以获取必要的认证参数。
+
+1. 访问 [GitHub Developer Settings](https://github.com/settings/developers)
+2. 点击 **"New OAuth App"** 创建新应用
+3. 填写应用信息：
+   - **Application name**: 你的博客名称（如 "My Personal Blog"）
+   - **Homepage URL**: `http://你的服务器IP:3000` 或 `https://你的域名`
+   - **Authorization callback URL**: `http://你的服务器IP:3000/api/auth/github/callback`
+4. 点击 **"Register application"**
+5. 记录下 **Client ID** 和 **Client Secret**（稍后配置时需要）
+6. 获取你的 GitHub 用户 ID：
+   - 访问 `https://api.github.com/users/你的GitHub用户名`
+   - 记录返回的 JSON 中的 `id` 字段值
+
+💡 **示例**：如果你的 GitHub 用户名是 `zhangsan`，访问 `https://api.github.com/users/zhangsan`，会看到类似：
+
+```json
+{
+  "id": 12345678,
+  "login": "zhangsan",
+  ...
+}
+```
+
+记录下 `id: 12345678`，稍后配置时需要填写 `github:12345678`。
+
+#### 步骤 2：运行配置脚本
+
+```bash
+# 进入项目目录
+cd /opt/Person_Web
+
+# 赋予脚本执行权限
+chmod +x deploy/scripts/setup-env.sh
+
+# 执行环境变量配置脚本
+bash deploy/scripts/setup-env.sh
+```
+
+脚本会交互式地询问你以下配置：
+
+1. **MySQL root 密码**（留空自动生成32位强密码）
+2. **JWT 密钥**（留空自动生成32位强密码）
+3. **GitHub OAuth 配置**（必须配置，输入上一步获取的参数）：
+   - GitHub Client ID
+   - GitHub Client Secret
+   - GitHub Callback URL
+4. **管理员 GitHub 用户 ID**（格式为 `github:你的GitHub用户ID`）
+
+配置完成后，脚本会自动生成 `.env.production` 文件。
+
+✅ **预期输出**（配置 GitHub OAuth）：
+
+```
+[INFO] ==========================================
+[INFO] Person_Web 环境变量配置脚本
+[INFO] ==========================================
+[STEP] 1/6 配置数据库密码
+[INFO] 已自动生成密码: xxxxxxxxxx
+[STEP] 2/6 配置 JWT 密钥
+[INFO] 已自动生成密钥: xxxxxxxxxx
+[STEP] 3/6 配置 GitHub OAuth
+[WARN] ⚠️  GitHub OAuth 是管理员登录的唯一方式，必须配置！
+[INFO] 请输入 GitHub Client ID: Ov23liXXXXXXXXXXXX
+[INFO] 请输入 GitHub Client Secret: **********************
+[INFO] 请输入 GitHub Callback URL: http://你的服务器IP:3000/api/auth/github/callback
+[STEP] 4/6 配置管理员 GitHub 用户 ID
+[INFO] 请输入管理员的 GitHub 用户 ID (格式: github:12345678):
+[INFO] 获取方法: 访问 https://api.github.com/users/你的GitHub用户名
+[STEP] 5/6 配置访问域名
+[INFO] 使用域名: 你的服务器IP
+[STEP] 6/6 确认配置
+[SUCCESS] 配置文件生成完成: /opt/Person_Web/.env.production
+```
+
+🔒 **安全优势**：
+
+- ✅ 只有你的 GitHub 账号能够登录管理员后台
+- ✅ 使用 GitHub 官方 OAuth 认证，安全可靠
+- ✅ 无需记忆复杂的登录链接
+- ✅ 支持后续添加其他 GitHub 用户为管理员
+
+### 4.2 手动配置（可选）
+
+如果需要手动配置，可以按照以下步骤操作：
+
+#### 创建生产环境配置文件
+
+```bash
+# 进入项目目录
+cd /opt/Person_Web
+
 # 复制环境变量模板
 cp .env.production.example .env.production
 
@@ -407,77 +360,110 @@ cp .env.production.example .env.production
 nano .env.production
 ```
 
-**必需配置的环境变量**:
+#### 配置必需的环境变量
+
+在打开的编辑器中，修改以下配置：
 
 ```env
 # 数据库连接（Docker Compose 会自动配置）
-DATABASE_URL=mysql://root:your_mysql_password@mysql:3306/personal_blog?charset=utf8mb4
+DATABASE_URL=mysql://root:你的数据库密码@mysql:3306/personal_blog?charset=utf8mb4
 
 # 运行环境
 NODE_ENV=production
 
 # JWT 密钥（必须修改为强密码！）
-JWT_SECRET=your-very-strong-secret-key-here-change-me
+JWT_SECRET=你的超级强密码-至少32位随机字符
 
-# 管理员 OpenID（替换为实际的 OpenID）
-OWNER_OPEN_ID=your-actual-openid-here
+# 管理员 OpenID（用于本地测试，生产环境需要配置真实的 OAuth）
+OWNER_OPEN_ID=mock-user-openid-dev
 
 # 应用端口
 PORT=3000
 
 # MySQL 配置（用于 Docker Compose）
-MYSQL_ROOT_PASSWORD=your_mysql_password
+MYSQL_ROOT_PASSWORD=你的数据库密码
 MYSQL_DATABASE=personal_blog
+
+# OAuth 配置（本地测试用）
+VITE_OAUTH_PORTAL_URL=http://localhost:3000
+OAUTH_SERVER_URL=http://localhost:3000
+VITE_APP_ID=local-dev-app-id
 ```
 
-**生成强密码的方法**:
+#### 生成强密码
+
+使用以下命令生成强密码：
 
 ```bash
-# 方法 1: 使用 openssl
+# 生成 32 位随机密码
 openssl rand -base64 32
-
-# 方法 2: 使用 /dev/urandom
-cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1
-
-# 方法 3: 使用 pwgen（需要安装）
-sudo apt install -y pwgen
-pwgen -s 32 1
 ```
 
-**安全提示**:
+将生成的密码复制到 `.env.production` 文件中的 `JWT_SECRET` 和 `MYSQL_ROOT_PASSWORD`。
 
-- ⚠️ **绝对不要**将 `.env.production` 文件提交到 Git 仓库
-- ⚠️ **必须修改** `JWT_SECRET` 为强密码
-- ⚠️ **必须修改** `MYSQL_ROOT_PASSWORD` 为强密码
-- ⚠️ **必须配置** 正确的 `OWNER_OPEN_ID`
+#### 保存并退出编辑器
 
-### 5.3 执行一键部署
+- 按 `Ctrl + O` 保存文件
+- 按 `Enter` 确认
+- 按 `Ctrl + X` 退出编辑器
 
-项目提供了一键部署脚本，自动完成所有部署步骤。
+⚠️ **安全提示**：
+
+- **绝对不要**将 `.env.production` 文件提交到 Git 仓库
+- **必须修改** `JWT_SECRET` 为强密码
+- **必须修改** `MYSQL_ROOT_PASSWORD` 为强密码
+
+✅ **验证配置文件**：
+
+```bash
+# 查看配置文件是否存在
+ls -la .env.production
+
+# 检查文件内容（确保密码已修改）
+cat .env.production
+```
+
+---
+
+## 五、一键部署应用
+
+项目提供了一键部署脚本，会自动完成所有部署步骤。
+
+### 5.1 赋予脚本执行权限
 
 ```bash
 # 进入项目目录
 cd /opt/Person_Web
 
-# 赋予脚本执行权限
+# 赋予所有部署脚本执行权限
 chmod +x deploy/scripts/*.sh
+```
 
+### 5.2 执行一键部署
+
+```bash
 # 执行一键部署脚本
 bash deploy/scripts/deploy.sh
 ```
 
-**部署脚本会自动执行以下步骤**:
+⏱️ **预计耗时**：5-10 分钟（首次部署需要下载 Docker 镜像）
 
-1. ✅ 检查 Docker 和 Docker Compose 是否安装
-2. ✅ 检查 `.env.production` 配置文件
-3. ✅ 停止旧容器（如果存在）
-4. ✅ 构建新的 Docker 镜像
-5. ✅ 启动 MySQL 和 App 容器
-6. ✅ 执行数据库迁移
-7. ✅ 健康检查（等待应用启动）
-8. ✅ 输出部署结果和常用命令
+### 5.3 部署过程说明
 
-**预期输出**:
+部署脚本会自动执行以下 8 个步骤：
+
+1. ✅ **检查 Docker 环境** - 确保 Docker 和 Docker Compose 已安装
+2. ✅ **检查配置文件** - 验证 `.env.production` 文件存在且配置正确
+3. ✅ **停止旧容器** - 如果有旧版本运行，先停止并删除
+4. ✅ **构建新镜像** - 构建包含最新代码的 Docker 镜像
+5. ✅ **启动新容器** - 启动应用容器和数据库容器
+6. ✅ **执行数据库迁移** - 创建数据库表结构
+7. ✅ **健康检查** - 等待应用启动并验证运行状态
+8. ✅ **输出部署结果** - 显示部署成功信息和常用命令
+
+### 5.4 预期输出
+
+部署成功后，你会看到类似以下的输出：
 
 ```
 [INFO] ==========================================
@@ -515,175 +501,382 @@ bash deploy/scripts/deploy.sh
 [INFO]   - 停止所有服务: docker compose down
 [INFO]
 [INFO] 访问地址:
-[INFO]   - HTTP: http://zhcmqtt.top
-[INFO]   - HTTPS: https://zhcmqtt.top
+[INFO]   - HTTP: http://你的服务器IP:3000
 ```
 
-### 5.4 验证部署
+### 5.5 验证部署
 
-#### 5.4.1 检查容器状态
+#### 检查容器状态
 
 ```bash
 # 查看所有容器状态
 docker compose ps
-
-# 预期输出:
-# NAME                IMAGE               STATUS              PORTS
-# person_web_app      person-web:latest   Up 2 minutes        0.0.0.0:3000->3000/tcp
-# person_web_mysql    mysql:8.0           Up 2 minutes        0.0.0.0:3306->3306/tcp
 ```
 
-#### 5.4.2 检查应用日志
+✅ **预期输出**：
+
+```
+NAME                IMAGE               STATUS              PORTS
+person_web_app      person-web:latest   Up 2 minutes (healthy)   0.0.0.0:3000->3000/tcp
+person_web_mysql    mysql:8.0           Up 2 minutes (healthy)   0.0.0.0:3306->3306/tcp
+```
+
+两个容器的状态都应该是 `Up` 且显示 `(healthy)`。
+
+#### 查看应用日志
 
 ```bash
 # 查看应用日志（实时）
 docker compose logs -f app
-
-# 预期输出:
-# [INFO] Server running on http://localhost:3000
-# [INFO] Database connected successfully
 ```
 
-#### 5.4.3 测试应用访问
+✅ **预期输出**：应该能看到类似以下的日志：
+
+```
+[INFO] Server running on http://localhost:3000
+[INFO] Database connected successfully
+```
+
+按 `Ctrl + C` 退出日志查看。
+
+#### 测试应用访问
 
 ```bash
 # 测试本地访问
 curl http://localhost:3000
-
-# 测试域名访问（HTTP）
-curl http://zhcmqtt.top
-
-# 测试域名访问（HTTPS）
-curl https://zhcmqtt.top
 ```
 
-#### 5.4.4 浏览器访问
-
-打开浏览器，访问 `https://zhcmqtt.top`，应该能看到应用首页。
-
-### 5.5 初始化数据
-
-首次部署后，需要初始化一些基础数据。
-
-```bash
-# 进入应用容器
-docker exec -it person_web_app sh
-
-# 在容器内执行初始化脚本（如果有）
-# node dist/scripts/init-data.js
-
-# 退出容器
-exit
-```
+✅ **预期输出**：返回 HTML 内容（博客首页）
 
 ---
 
-## 6. 更新部署流程
+## 六、访问你的博客
 
-当需要更新应用代码时，使用以下流程。
+恭喜！你的博客已经部署成功了。现在让我们了解如何访问博客。
 
-### 6.1 拉取最新代码
+💡 **提示**：如果你还没有域名，可以直接使用服务器 IP 地址访问。域名配置是可选的，可以在第七步中完成。
+
+### 6.1 使用 IP 地址访问（推荐新手）
+
+#### 访客访问
+
+访客可以通过以下方式访问你的博客：
+
+```
+http://你的服务器IP:3000
+```
+
+例如：`http://123.45.67.89:3000`
+
+💡 **访客可以做什么**：
+
+- ✅ 浏览所有已发布的博客文章
+- ✅ 查看文章分类
+- ✅ 搜索文章
+- ✅ 查看文档（如果有）
+- ❌ 无法创建、编辑或删除文章
+
+#### 管理员访问
+
+作为博客的管理员，你需要使用 **GitHub OAuth 登录**进行身份验证。
+
+⚠️ **重要提示**：在第四步"配置环境变量"时，如果你已经按照推荐方式配置了 GitHub OAuth，可以直接登录。如果还没有配置，请先返回第四步完成 GitHub OAuth 配置。
+
+**步骤 1：配置 GitHub OAuth 应用**（如果第四步已配置，可跳过）
+
+1. 访问 [GitHub Developer Settings](https://github.com/settings/developers)
+2. 点击 "New OAuth App" 创建新应用
+3. 填写应用信息：
+   - **Application name**: 你的博客名称（如 "My Personal Blog"）
+   - **Homepage URL**: `http://你的服务器IP:3000` 或 `https://你的域名`
+   - **Authorization callback URL**: `http://你的服务器IP:3000/api/auth/github/callback`
+4. 点击 "Register application"
+5. 记录 **Client ID** 和 **Client Secret**
+
+**步骤 2：更新环境变量**
+
+编辑 `.env.production` 文件，添加 GitHub OAuth 配置：
+
+```bash
+# 编辑环境变量文件
+nano /opt/Person_Web/.env.production
+```
+
+添加或修改以下配置：
+
+```env
+# GitHub OAuth 配置
+GITHUB_CLIENT_ID=你的GitHub_Client_ID
+GITHUB_CLIENT_SECRET=你的GitHub_Client_Secret
+GITHUB_CALLBACK_URL=http://你的服务器IP:3000/api/auth/github/callback
+
+# 管理员 GitHub ID（格式: github:你的GitHub用户ID）
+# 获取你的 GitHub 用户 ID: 访问 https://api.github.com/users/你的GitHub用户名
+OWNER_OPEN_ID=github:你的GitHub用户ID
+```
+
+**步骤 3：重启应用**
+
+```bash
+cd /opt/Person_Web
+docker-compose restart app
+```
+
+**步骤 4：登录博客**
+
+访问登录页面：`http://你的服务器IP:3000/login`
+
+点击 "使用 GitHub 登录" 按钮，将跳转到 GitHub 授权页面，授权后自动登录。
+
+✅ **优势**：
+
+- 安全可靠，使用 GitHub 官方 OAuth
+- 无需记忆复杂的登录链接
+- 支持多用户管理（通过配置多个 GitHub ID）
+
+💡 **管理员可以做什么**：
+
+- ✅ 创建新文章（博客或文档）
+- ✅ 编辑已有文章
+- ✅ 删除文章
+- ✅ 管理分类
+- ✅ 修改文章发布状态（草稿/已发布/归档）
+- ✅ 上传图片
+
+### 6.2 保存登录页面到书签
+
+为了方便访问，建议你将登录页面保存到浏览器书签中。
+
+**操作步骤**：
+
+1. 在浏览器中打开登录页面：`http://你的服务器IP:3000/login`
+2. 按 `Ctrl + D`（Windows）或 `Cmd + D`（Mac）添加书签
+3. 将书签命名为"我的博客后台"
+4. 下次需要管理博客时，直接点击书签即可
+
+### 6.3 访问测试
+
+让我们测试一下访客访问和管理员访问：
+
+#### 测试访客访问：
+
+1. 打开浏览器
+2. 输入你的博客地址（IP:3000）
+3. 应该能看到博客首页
+4. 点击文章可以查看详情
+5. 右上角没有"写文章"或"管理"按钮
+
+#### 测试管理员访问：
+
+1. 打开浏览器
+2. 访问登录页面：`http://你的服务器IP:3000/login`
+3. 点击 "使用 GitHub 登录" 按钮
+4. 在 GitHub 授权页面点击 "Authorize"
+5. 授权成功后会自动跳转回博客首页
+6. 右上角应该出现"写文章"按钮
+7. 点击"写文章"可以创建新文章
+
+✅ **成功标志**：
+
+- 访客模式：可以浏览文章，但无法编辑
+- 管理员模式：右上角有"写文章"按钮，可以创建和编辑文章
+
+💡 **下一步**：如果你有域名，可以继续阅读[七、配置域名和 HTTPS（可选）](#七配置域名和-https可选)来配置自定义域名和 HTTPS 证书。
+
+---
+
+## 七、配置域名和 HTTPS（可选）
+
+⚠️ **本步骤为可选项**：如果你没有域名或暂时不需要 HTTPS，可以跳过此步骤。使用 IP 地址访问博客已经完全可以正常使用。
+
+如果你有自己的域名，强烈建议配置 HTTPS 证书，让你的博客更安全、更专业。
+
+### 7.1 前置准备
+
+在开始配置之前，请确保：
+
+1. ✅ 你已经购买了域名（如 `myblog.com`）
+2. ✅ 域名已经解析到你的服务器 IP 地址
+3. ✅ 博客已经可以通过 IP 地址正常访问
+
+**域名解析步骤**：
+
+1. 登录域名管理控制台
+2. 找到 DNS 解析设置
+3. 添加 A 记录：
+   - 主机记录：`@`（代表根域名）
+   - 记录类型：`A`
+   - 记录值：你的服务器公网 IP
+4. 添加 A 记录：
+   - 主机记录：`www`
+   - 记录类型：`A`
+   - 记录值：你的服务器公网 IP
+
+💡 **小贴士**：DNS 解析生效通常需要 10 分钟到 24 小时，请耐心等待。
+
+### 7.2 配置域名（一键脚本）
+
+项目提供了域名配置脚本，可以自动替换所有配置文件中的域名。
 
 ```bash
 # 进入项目目录
 cd /opt/Person_Web
 
-# 拉取最新代码
-git pull origin main
+# 赋予脚本执行权限
+chmod +x deploy/scripts/setup-domain.sh
 
-# 或者上传新的代码包并解压
+# 执行域名配置脚本
+bash deploy/scripts/setup-domain.sh 你的域名
+
+# 例如：bash deploy/scripts/setup-domain.sh myblog.com
 ```
 
-### 6.2 执行更新部署
+⏱️ **预计耗时**：10 秒
+
+脚本会自动完成以下操作：
+
+1. ✅ 备份原始配置文件
+2. ✅ 替换 SSL 证书申请脚本中的域名
+3. ✅ 创建新的 Nginx 配置文件（使用你的域名）
+4. ✅ 输出后续操作步骤
+
+### 7.3 部署 Nginx 配置
 
 ```bash
-# 执行一键部署脚本（会自动重新构建镜像）
-bash deploy/scripts/deploy.sh
+# 复制 Nginx 配置文件到系统目录
+sudo cp /opt/Person_Web/deploy/nginx/你的域名.conf /etc/nginx/sites-available/
+
+# 创建软链接启用配置
+sudo ln -s /etc/nginx/sites-available/你的域名.conf /etc/nginx/sites-enabled/
+
+# 删除默认配置（可选）
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# 测试 Nginx 配置
+sudo nginx -t
+
+# 重载 Nginx
+sudo systemctl reload nginx
 ```
 
-**更新部署流程**:
+✅ **预期输出**：`syntax is ok` 和 `test is successful`
 
-1. ✅ 停止旧容器
-2. ✅ 构建新镜像（包含最新代码）
-3. ✅ 启动新容器
-4. ✅ 执行数据库迁移（如果有新的迁移）
-5. ✅ 健康检查
+### 7.4 申请 SSL 证书（一键脚本）
 
-### 6.3 零停机更新（可选）
-
-如果需要零停机更新，可以使用滚动更新策略。
+项目提供了 SSL 证书申请脚本，可以自动完成所有步骤。
 
 ```bash
-# 构建新镜像（不停止旧容器）
-docker compose build app
+# 执行 SSL 证书申请脚本
+sudo bash /opt/Person_Web/deploy/scripts/setup-ssl.sh 你的域名 你的邮箱
 
-# 滚动更新（逐个替换容器）
-docker compose up -d --no-deps --build app
-
-# 验证新容器运行正常
-docker compose ps
-docker compose logs -f app
+# 例如：sudo bash /opt/Person_Web/deploy/scripts/setup-ssl.sh myblog.com admin@myblog.com
 ```
 
-### 6.4 回滚到上一个版本
+⏱️ **预计耗时**：2-3 分钟
 
-如果更新后出现问题，可以快速回滚。
+脚本会自动完成以下操作：
+
+1. ✅ 检查并安装 Certbot
+2. ✅ 申请 Let's Encrypt SSL 证书
+3. ✅ 配置证书自动续期
+4. ✅ 测试证书续期功能
+5. ✅ 重载 Nginx 配置
+
+**或者使用 Certbot 手动申请**（如果脚本失败）：
 
 ```bash
-# 方法 1: 使用 Git 回滚代码
-cd /opt/Person_Web
-git log --oneline -5  # 查看最近 5 次提交
-git checkout <previous-commit-hash>
-bash deploy/scripts/deploy.sh
+# 安装 Certbot（如果未安装）
+sudo apt install -y certbot python3-certbot-nginx
 
-# 方法 2: 使用 Docker 镜像标签
-docker tag person-web:latest person-web:backup
-# 部署前先备份当前镜像，出问题时恢复
-docker tag person-web:backup person-web:latest
-docker compose up -d
+# 使用 Certbot 自动申请并配置证书
+sudo certbot --nginx -d 你的域名 -d www.你的域名
+
+# 例如：sudo certbot --nginx -d myblog.com -d www.myblog.com
 ```
+
+### 7.5 验证 HTTPS 访问
+
+```bash
+# 测试 HTTPS 访问
+curl -I https://你的域名
+```
+
+✅ **预期输出**：`HTTP/2 200`
+
+或者在浏览器中访问 `https://你的域名`，应该能看到绿色的锁图标。
+
+### 7.6 证书自动续期说明
+
+SSL 证书申请脚本已经自动配置了证书续期任务。Let's Encrypt 证书有效期为 90 天，系统会在到期前自动续期。
+
+你可以手动测试续期功能：
+
+```bash
+# 测试证书续期（不会真正续期）
+sudo certbot renew --dry-run
+```
+
+✅ **预期输出**：`Congratulations, all simulated renewals succeeded`
+
+💡 **小贴士**：
+
+- 证书会在到期前 30 天自动续期
+- 续期失败会发送邮件通知到你配置的邮箱
+- 可以使用 `sudo certbot certificates` 查看证书状态
 
 ---
 
-## 7. 常见问题排查 (FAQ)
+## 常见问题解答
 
-### 7.1 容器无法启动
+### Q1: 容器无法启动怎么办？
 
-**问题**: 执行 `docker compose up -d` 后容器无法启动
+**问题现象**：执行 `docker compose ps` 后看到容器状态不是 `Up`
 
-**排查步骤**:
+**解决步骤**：
 
 ```bash
-# 1. 查看容器状态
-docker compose ps
-
-# 2. 查看容器日志
+# 1. 查看容器日志
 docker compose logs app
 docker compose logs mysql
 
-# 3. 检查端口占用
+# 2. 检查端口是否被占用
 sudo netstat -tulpn | grep :3000
 sudo netstat -tulpn | grep :3306
 
-# 4. 检查磁盘空间
+# 3. 检查磁盘空间
 df -h
 
-# 5. 检查内存使用
-free -h
+# 4. 如果端口被占用，停止占用端口的进程或修改配置
 ```
 
-**常见原因**:
+### Q2: 访问博客显示 502 Bad Gateway
 
-1. **端口被占用**: 修改 `docker-compose.yml` 中的端口映射
-2. **内存不足**: 调整 `mem_limit` 配置或增加服务器内存
-3. **磁盘空间不足**: 清理 Docker 镜像和容器 `docker system prune -a`
-4. **环境变量错误**: 检查 `.env.production` 文件配置
+**问题现象**：浏览器显示 "502 Bad Gateway"
 
-### 7.2 数据库连接失败
+**解决步骤**：
 
-**问题**: 应用日志显示 "Cannot connect to database"
+```bash
+# 1. 检查应用容器是否运行
+docker compose ps app
 
-**排查步骤**:
+# 2. 如果容器未运行，启动容器
+docker compose up -d app
+
+# 3. 查看应用日志
+docker compose logs -f app
+
+# 4. 检查 Nginx 配置
+sudo nginx -t
+
+# 5. 重启 Nginx
+sudo systemctl restart nginx
+```
+
+### Q3: 数据库连接失败
+
+**问题现象**：应用日志显示 "Cannot connect to database"
+
+**解决步骤**：
 
 ```bash
 # 1. 检查 MySQL 容器状态
@@ -692,522 +885,352 @@ docker compose ps mysql
 # 2. 查看 MySQL 日志
 docker compose logs mysql
 
-# 3. 测试数据库连接
-docker exec -it person_web_mysql mysql -uroot -p
-# 输入密码后应能进入 MySQL 命令行
+# 3. 检查环境变量配置
+cat .env.production | grep DATABASE_URL
+cat .env.production | grep MYSQL_ROOT_PASSWORD
 
-# 4. 检查数据库是否存在
-docker exec -it person_web_mysql mysql -uroot -p -e "SHOW DATABASES;"
-
-# 5. 检查网络连接
-docker exec -it person_web_app ping mysql
+# 4. 重启所有容器
+docker compose restart
 ```
 
-**解决方案**:
+### Q4: 如何更新博客内容？
 
-1. **MySQL 未就绪**: 等待 MySQL 健康检查通过（约 30 秒）
-2. **密码错误**: 检查 `.env.production` 中的 `MYSQL_ROOT_PASSWORD`
-3. **数据库不存在**: 检查 `MYSQL_DATABASE` 配置
-4. **网络问题**: 重启容器 `docker compose restart`
-
-### 7.3 Nginx 502 Bad Gateway
-
-**问题**: 访问域名时显示 "502 Bad Gateway"
-
-**排查步骤**:
+**更新代码**：
 
 ```bash
-# 1. 检查应用容器是否运行
-docker compose ps app
+# 1. 进入项目目录
+cd /opt/Person_Web
 
-# 2. 检查应用是否监听 3000 端口
-docker exec -it person_web_app netstat -tulpn | grep :3000
+# 2. 拉取最新代码（如果使用 Git）
+git pull origin main
 
-# 3. 测试本地访问
-curl http://localhost:3000
-
-# 4. 查看 Nginx 错误日志
-sudo tail -f /var/log/nginx/error.log
-
-# 5. 检查 Nginx 配置
-sudo nginx -t
+# 3. 重新部署
+bash deploy/scripts/deploy.sh
 ```
 
-**解决方案**:
+### Q5: 如何备份数据？
 
-1. **应用未启动**: 启动应用容器 `docker compose up -d app`
-2. **端口配置错误**: 检查 Nginx 配置中的 `proxy_pass` 地址
-3. **防火墙阻止**: 检查防火墙规则 `sudo ufw status`
-4. **SELinux 阻止**: 临时禁用 `sudo setenforce 0`（CentOS）
-
-### 7.4 SSL 证书错误
-
-**问题**: 浏览器显示 "Your connection is not private"
-
-**排查步骤**:
-
-```bash
-# 1. 检查证书文件是否存在
-sudo ls -la /etc/letsencrypt/live/zhcmqtt.top/
-
-# 2. 检查证书有效期
-sudo certbot certificates
-
-# 3. 测试 SSL 配置
-curl -vI https://zhcmqtt.top
-
-# 4. 检查 Nginx SSL 配置
-sudo nginx -t
-```
-
-**解决方案**:
-
-1. **证书未申请**: 执行 `sudo certbot --nginx -d zhcmqtt.top`
-2. **证书过期**: 手动续期 `sudo certbot renew`
-3. **证书路径错误**: 检查 Nginx 配置中的证书路径
-4. **域名不匹配**: 重新申请证书，包含所有子域名
-
-### 7.5 应用性能问题
-
-**问题**: 应用响应缓慢或超时
-
-**排查步骤**:
-
-```bash
-# 1. 检查容器资源使用
-docker stats
-
-# 2. 查看应用日志（慢查询）
-docker compose logs app | grep "SLOW QUERY"
-
-# 3. 检查数据库性能
-docker exec -it person_web_mysql mysql -uroot -p -e "SHOW PROCESSLIST;"
-
-# 4. 检查磁盘 I/O
-iostat -x 1 5
-
-# 5. 检查网络延迟
-ping zhcmqtt.top
-```
-
-**解决方案**:
-
-1. **内存不足**: 增加容器内存限制或服务器内存
-2. **数据库慢查询**: 优化 SQL 查询，添加索引
-3. **缓存未命中**: 检查缓存配置，增加缓存 TTL
-4. **磁盘 I/O 瓶颈**: 使用 SSD 或优化数据库配置
-
-### 7.6 图片上传失败
-
-**问题**: 上传图片时报错或图片无法显示
-
-**排查步骤**:
-
-```bash
-# 1. 检查 uploads 目录权限
-ls -la uploads/
-
-# 2. 检查磁盘空间
-df -h
-
-# 3. 查看应用日志
-docker compose logs app | grep "upload"
-
-# 4. 测试上传功能
-curl -X POST -F "file=@test.jpg" http://localhost:3000/api/upload
-```
-
-**解决方案**:
-
-1. **权限不足**: 修改目录权限 `chmod 755 uploads/`
-2. **磁盘空间不足**: 清理旧文件或扩容磁盘
-3. **文件大小限制**: 修改 Nginx 配置 `client_max_body_size`
-4. **路径配置错误**: 检查 `docker-compose.yml` 中的 volume 挂载
-
----
-
-## 8. 日志查看命令
-
-### 8.1 Docker 容器日志
-
-```bash
-# 查看所有容器日志
-docker compose logs
-
-# 查看应用日志（实时）
-docker compose logs -f app
-
-# 查看 MySQL 日志（实时）
-docker compose logs -f mysql
-
-# 查看最近 100 行日志
-docker compose logs --tail=100 app
-
-# 查看特定时间段的日志
-docker compose logs --since="2026-01-19T10:00:00" app
-
-# 查看日志并显示时间戳
-docker compose logs -t app
-```
-
-### 8.2 Nginx 日志
-
-```bash
-# 查看 Nginx 访问日志（实时）
-sudo tail -f /var/log/nginx/access.log
-
-# 查看 Nginx 错误日志（实时）
-sudo tail -f /var/log/nginx/error.log
-
-# 查看特定域名的日志
-sudo tail -f /var/log/nginx/zhcmqtt.top.access.log
-sudo tail -f /var/log/nginx/zhcmqtt.top.error.log
-
-# 统计访问量
-sudo cat /var/log/nginx/access.log | wc -l
-
-# 统计 IP 访问次数（Top 10）
-sudo awk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -10
-
-# 统计访问最多的 URL（Top 10）
-sudo awk '{print $7}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -10
-```
-
-### 8.3 系统日志
-
-```bash
-# 查看系统日志
-sudo journalctl -xe
-
-# 查看 Docker 服务日志
-sudo journalctl -u docker -f
-
-# 查看 Nginx 服务日志
-sudo journalctl -u nginx -f
-
-# 查看最近 1 小时的日志
-sudo journalctl --since "1 hour ago"
-```
-
-### 8.4 应用性能日志
-
-```bash
-# 查看性能监控日志（每 5 分钟输出）
-docker compose logs app | grep "Performance Stats"
-
-# 查看缓存命中率
-docker compose logs app | grep "Cache Hit Rate"
-
-# 查看慢查询日志
-docker compose logs app | grep "SLOW QUERY"
-
-# 查看 API 请求耗时
-docker compose logs app | grep "tRPC"
-```
-
----
-
-## 9. 备份和恢复指南
-
-### 9.1 数据库备份
-
-#### 9.1.1 手动备份
+**备份数据库**：
 
 ```bash
 # 创建备份目录
-mkdir -p /opt/backups/mysql
+mkdir -p /opt/backups
 
-# 备份所有数据库
-docker exec person_web_mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} --all-databases > /opt/backups/mysql/all-databases-$(date +%Y%m%d-%H%M%S).sql
-
-# 备份单个数据库
-docker exec person_web_mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} personal_blog > /opt/backups/mysql/personal_blog-$(date +%Y%m%d-%H%M%S).sql
+# 备份数据库
+docker exec person_web_mysql mysqldump -uroot -p你的数据库密码 personal_blog > /opt/backups/blog-$(date +%Y%m%d).sql
 
 # 压缩备份文件
-gzip /opt/backups/mysql/personal_blog-$(date +%Y%m%d-%H%M%S).sql
+gzip /opt/backups/blog-$(date +%Y%m%d).sql
 ```
 
-#### 9.1.2 自动备份脚本
-
-创建自动备份脚本 `/opt/scripts/backup-mysql.sh`:
+**备份上传的文件**：
 
 ```bash
-#!/bin/bash
-
-# 配置
-BACKUP_DIR="/opt/backups/mysql"
-MYSQL_ROOT_PASSWORD="your_mysql_password"
-DATABASE_NAME="personal_blog"
-RETENTION_DAYS=7
-
-# 创建备份目录
-mkdir -p $BACKUP_DIR
-
-# 备份文件名
-BACKUP_FILE="$BACKUP_DIR/${DATABASE_NAME}-$(date +%Y%m%d-%H%M%S).sql"
-
-# 执行备份
-docker exec person_web_mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} ${DATABASE_NAME} > $BACKUP_FILE
-
-# 压缩备份文件
-gzip $BACKUP_FILE
-
-# 删除超过保留期的备份
-find $BACKUP_DIR -name "*.sql.gz" -mtime +$RETENTION_DAYS -delete
-
-echo "Backup completed: ${BACKUP_FILE}.gz"
+# 备份 uploads 目录
+tar -czf /opt/backups/uploads-$(date +%Y%m%d).tar.gz -C /opt/Person_Web uploads/
 ```
 
-#### 9.1.3 配置定时备份
+### Q6: 如何恢复数据？
 
-```bash
-# 赋予脚本执行权限
-chmod +x /opt/scripts/backup-mysql.sh
-
-# 编辑 crontab
-crontab -e
-
-# 添加定时任务（每天凌晨 2 点执行备份）
-0 2 * * * /opt/scripts/backup-mysql.sh >> /var/log/mysql-backup.log 2>&1
-```
-
-### 9.2 数据库恢复
-
-#### 9.2.1 从备份文件恢复
+**恢复数据库**：
 
 ```bash
 # 解压备份文件
-gunzip /opt/backups/mysql/personal_blog-20260119-020000.sql.gz
+gunzip /opt/backups/blog-20260119.sql.gz
 
 # 恢复数据库
-docker exec -i person_web_mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} personal_blog < /opt/backups/mysql/personal_blog-20260119-020000.sql
-
-# 验证恢复结果
-docker exec -it person_web_mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "USE personal_blog; SHOW TABLES;"
+docker exec -i person_web_mysql mysql -uroot -p你的数据库密码 personal_blog < /opt/backups/blog-20260119.sql
 ```
 
-#### 9.2.2 恢复到新数据库
+### Q7: 忘记管理员登录页面地址怎么办？
+
+管理员登录页面地址：
+
+```
+http://你的域名或IP:3000/login
+```
+
+例如：`http://123.45.67.89:3000/login` 或 `https://myblog.com/login`
+
+访问登录页面后，点击 "使用 GitHub 登录" 按钮即可通过 GitHub OAuth 进行身份验证。
+
+### Q8: 如何查看应用运行状态？
 
 ```bash
-# 创建新数据库
-docker exec -it person_web_mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE personal_blog_restore;"
+# 查看容器状态
+docker compose ps
 
-# 恢复到新数据库
-docker exec -i person_web_mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} personal_blog_restore < /opt/backups/mysql/personal_blog-20260119-020000.sql
+# 查看容器资源使用情况
+docker stats
 
-# 切换应用使用新数据库（修改 .env.production）
-# DATABASE_URL=mysql://root:password@mysql:3306/personal_blog_restore?charset=utf8mb4
+# 查看应用日志
+docker compose logs -f app
 
-# 重启应用
+# 查看最近 100 行日志
+docker compose logs --tail=100 app
+```
+
+### Q9: GitHub OAuth 登录显示 404 错误怎么办？
+
+**问题现象**：点击"使用 GitHub 登录"按钮后，页面显示 404 错误或无法跳转
+
+**常见原因**：
+
+1. **环境变量未配置**：`GITHUB_CLIENT_ID` 仍然是占位符 `your_github_client_id_here`
+2. **GitHub OAuth App 未创建**：未在 GitHub 创建 OAuth 应用
+3. **Callback URL 不匹配**：GitHub OAuth App 中配置的回调地址与实际不符
+4. **容器未重启**：修改环境变量后未重启应用容器
+
+**排查步骤**：
+
+**步骤 1：检查环境变量配置**
+
+```bash
+# 查看 .env.production 文件中的 GitHub OAuth 配置
+cd /opt/Person_Web
+cat .env.production | grep GITHUB
+
+# 预期输出应该包含真实的 Client ID，而不是占位符
+# GITHUB_CLIENT_ID=Ov23liXXXXXXXXXXXX (真实的 Client ID)
+# GITHUB_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxx (真实的 Secret)
+# GITHUB_CALLBACK_URL=http://your-domain.com/api/auth/github/callback
+```
+
+如果看到 `your_github_client_id_here`，说明环境变量未正确配置。
+
+**步骤 2：创建 GitHub OAuth 应用**
+
+1. 访问 [GitHub Developer Settings](https://github.com/settings/developers)
+2. 点击 "New OAuth App" 创建新应用
+3. 填写应用信息：
+   - **Application name**: 你的博客名称（如 "My Personal Blog"）
+   - **Homepage URL**: `http://你的服务器IP:3000` 或 `https://你的域名`
+   - **Authorization callback URL**: `http://你的服务器IP:3000/api/auth/github/callback`
+4. 点击 "Register application"
+5. 记录 **Client ID** 和 **Client Secret**
+
+**步骤 3：更新环境变量**
+
+```bash
+# 编辑环境变量文件
+nano /opt/Person_Web/.env.production
+
+# 修改以下配置（替换为你的真实值）：
+GITHUB_CLIENT_ID=你的GitHub_Client_ID
+GITHUB_CLIENT_SECRET=你的GitHub_Client_Secret
+GITHUB_CALLBACK_URL=http://你的服务器IP:3000/api/auth/github/callback
+
+# 如果使用 GitHub OAuth，还需要配置管理员 GitHub ID
+# 访问 https://api.github.com/users/你的GitHub用户名 获取你的 GitHub 用户 ID
+OWNER_OPEN_ID=github:你的GitHub用户ID
+
+# 保存并退出（Ctrl+O, Enter, Ctrl+X）
+```
+
+**步骤 4：重启应用容器**
+
+```bash
+cd /opt/Person_Web
 docker compose restart app
+
+# 等待容器重启完成（约 10-20 秒）
+docker compose ps
+
+# 查看应用日志，确认没有错误
+docker compose logs --tail=50 app
 ```
 
-### 9.3 上传文件备份
-
-#### 9.3.1 手动备份
+**步骤 5：验证配置**
 
 ```bash
-# 创建备份目录
-mkdir -p /opt/backups/uploads
+# 测试 GitHub OAuth 回调接口是否可访问
+curl -I http://localhost:3000/api/auth/github/callback
 
-# 备份 uploads 目录
-tar -czf /opt/backups/uploads/uploads-$(date +%Y%m%d-%H%M%S).tar.gz -C /opt/Person_Web uploads/
-
-# 查看备份文件大小
-ls -lh /opt/backups/uploads/
+# 预期输出：HTTP/1.1 400 Bad Request (这是正常的，因为没有提供授权码)
+# 如果返回 404，说明路由配置有问题
 ```
 
-#### 9.3.2 自动备份脚本
+**步骤 6：测试登录**
 
-创建自动备份脚本 `/opt/scripts/backup-uploads.sh`:
+1. 打开浏览器，访问 `http://你的服务器IP:3000/login`
+2. 点击 "使用 GitHub 登录" 按钮
+3. 应该会跳转到 GitHub 授权页面
+4. 授权后会自动跳转回博客并完成登录
+
+**常见错误及解决方案**：
+
+| 错误信息              | 原因                       | 解决方案                                         |
+| --------------------- | -------------------------- | ------------------------------------------------ |
+| 404 Not Found         | 环境变量未配置或容器未重启 | 检查环境变量并重启容器                           |
+| Invalid client_id     | Client ID 错误             | 检查 GitHub OAuth App 的 Client ID               |
+| Redirect URI mismatch | 回调地址不匹配             | 确保 GitHub OAuth App 中的回调地址与环境变量一致 |
+| Unauthorized          | Client Secret 错误         | 检查 GitHub OAuth App 的 Client Secret           |
+
+**使用一键配置脚本（推荐）**：
+
+如果手动配置太复杂，可以使用项目提供的一键配置脚本：
 
 ```bash
-#!/bin/bash
+cd /opt/Person_Web
+bash deploy/scripts/setup-env.sh
 
-# 配置
-BACKUP_DIR="/opt/backups/uploads"
-SOURCE_DIR="/opt/Person_Web/uploads"
-RETENTION_DAYS=30
+# 脚本会交互式地询问你：
+# - 是否配置 GitHub OAuth？选择 y
+# - 输入 GitHub Client ID
+# - 输入 GitHub Client Secret
+# - 输入 GitHub Callback URL
+# - 输入管理员 GitHub 用户 ID
 
-# 创建备份目录
-mkdir -p $BACKUP_DIR
-
-# 备份文件名
-BACKUP_FILE="$BACKUP_DIR/uploads-$(date +%Y%m%d-%H%M%S).tar.gz"
-
-# 执行备份
-tar -czf $BACKUP_FILE -C $(dirname $SOURCE_DIR) $(basename $SOURCE_DIR)
-
-# 删除超过保留期的备份
-find $BACKUP_DIR -name "*.tar.gz" -mtime +$RETENTION_DAYS -delete
-
-echo "Backup completed: $BACKUP_FILE"
+# 配置完成后重新部署
+bash deploy/scripts/deploy.sh
 ```
 
-#### 9.3.3 配置定时备份
+**安全提示**：
 
-```bash
-# 赋予脚本执行权限
-chmod +x /opt/scripts/backup-uploads.sh
-
-# 编辑 crontab
-crontab -e
-
-# 添加定时任务（每周日凌晨 3 点执行备份）
-0 3 * * 0 /opt/scripts/backup-uploads.sh >> /var/log/uploads-backup.log 2>&1
-```
-
-### 9.4 上传文件恢复
-
-```bash
-# 解压备份文件到临时目录
-mkdir -p /tmp/restore
-tar -xzf /opt/backups/uploads/uploads-20260119-030000.tar.gz -C /tmp/restore
-
-# 停止应用容器（避免文件冲突）
-docker compose stop app
-
-# 恢复文件
-rm -rf /opt/Person_Web/uploads/*
-cp -r /tmp/restore/uploads/* /opt/Person_Web/uploads/
-
-# 设置正确的权限
-chmod -R 755 /opt/Person_Web/uploads/
-
-# 启动应用容器
-docker compose start app
-
-# 清理临时文件
-rm -rf /tmp/restore
-```
-
-### 9.5 完整系统备份
-
-#### 9.5.1 创建完整备份脚本
-
-创建 `/opt/scripts/backup-full.sh`:
-
-```bash
-#!/bin/bash
-
-# 配置
-BACKUP_ROOT="/opt/backups"
-PROJECT_DIR="/opt/Person_Web"
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-BACKUP_DIR="$BACKUP_ROOT/full-$TIMESTAMP"
-
-# 创建备份目录
-mkdir -p $BACKUP_DIR
-
-echo "Starting full backup at $(date)"
-
-# 1. 备份数据库
-echo "Backing up database..."
-docker exec person_web_mysql mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} personal_blog | gzip > $BACKUP_DIR/database.sql.gz
-
-# 2. 备份上传文件
-echo "Backing up uploads..."
-tar -czf $BACKUP_DIR/uploads.tar.gz -C $PROJECT_DIR uploads/
-
-# 3. 备份配置文件
-echo "Backing up configuration..."
-cp $PROJECT_DIR/.env.production $BACKUP_DIR/
-cp $PROJECT_DIR/docker-compose.yml $BACKUP_DIR/
-
-# 4. 创建备份清单
-echo "Creating backup manifest..."
-cat > $BACKUP_DIR/manifest.txt <<EOF
-Backup Date: $(date)
-Database: personal_blog
-Uploads Size: $(du -sh $PROJECT_DIR/uploads | cut -f1)
-Configuration: .env.production, docker-compose.yml
-EOF
-
-# 5. 压缩整个备份目录
-echo "Compressing backup..."
-tar -czf $BACKUP_ROOT/full-backup-$TIMESTAMP.tar.gz -C $BACKUP_ROOT full-$TIMESTAMP
-
-# 6. 清理临时目录
-rm -rf $BACKUP_DIR
-
-# 7. 删除超过 30 天的备份
-find $BACKUP_ROOT -name "full-backup-*.tar.gz" -mtime +30 -delete
-
-echo "Full backup completed: $BACKUP_ROOT/full-backup-$TIMESTAMP.tar.gz"
-```
-
-#### 9.5.2 从完整备份恢复
-
-```bash
-# 解压完整备份
-BACKUP_FILE="/opt/backups/full-backup-20260119-040000.tar.gz"
-RESTORE_DIR="/tmp/restore-full"
-
-mkdir -p $RESTORE_DIR
-tar -xzf $BACKUP_FILE -C $RESTORE_DIR
-
-# 进入恢复目录
-cd $RESTORE_DIR/full-20260119-040000
-
-# 1. 恢复数据库
-echo "Restoring database..."
-gunzip -c database.sql.gz | docker exec -i person_web_mysql mysql -uroot -p${MYSQL_ROOT_PASSWORD} personal_blog
-
-# 2. 恢复上传文件
-echo "Restoring uploads..."
-docker compose stop app
-tar -xzf uploads.tar.gz -C /opt/Person_Web/
-docker compose start app
-
-# 3. 恢复配置文件（可选，谨慎操作）
-echo "Configuration files available in: $RESTORE_DIR/full-20260119-040000"
-echo "Please review before restoring: .env.production, docker-compose.yml"
-
-# 清理
-cd /
-rm -rf $RESTORE_DIR
-
-echo "Restore completed!"
-```
-
-### 9.6 远程备份（推荐）
-
-#### 9.6.1 使用 rsync 同步到远程服务器
-
-```bash
-# 安装 rsync
-sudo apt install -y rsync
-
-# 同步备份到远程服务器
-rsync -avz --delete /opt/backups/ user@backup-server:/backups/person-web/
-
-# 添加到 crontab（每天凌晨 4 点同步）
-0 4 * * * rsync -avz --delete /opt/backups/ user@backup-server:/backups/person-web/ >> /var/log/rsync-backup.log 2>&1
-```
-
-#### 9.6.2 使用对象存储（阿里云 OSS / 腾讯云 COS）
-
-```bash
-# 安装 ossutil（阿里云 OSS 工具）
-wget http://gosspublic.alicdn.com/ossutil/1.7.15/ossutil64
-chmod +x ossutil64
-sudo mv ossutil64 /usr/local/bin/ossutil
-
-# 配置 OSS
-ossutil config
-
-# 上传备份到 OSS
-ossutil cp -r /opt/backups/ oss://your-bucket/person-web-backups/
-
-# 添加到 crontab（每天凌晨 5 点上传）
-0 5 * * * ossutil cp -r /opt/backups/ oss://your-bucket/person-web-backups/ >> /var/log/oss-backup.log 2>&1
-```
+- GitHub Client Secret 是敏感信息，请勿泄露
+- 不要将包含真实 Client ID 和 Secret 的 `.env.production` 文件提交到 Git 仓库
+- 生产环境建议使用 HTTPS，确保 OAuth 流程安全
 
 ---
 
-## 10. 附录
+## 日常维护指南
 
-### 10.1 项目文件结构
+### 常用命令速查表
+
+| 操作            | 命令                                               |
+| --------------- | -------------------------------------------------- |
+| 查看容器状态    | `docker compose ps`                                |
+| 启动所有服务    | `docker compose up -d`                             |
+| 停止所有服务    | `docker compose down`                              |
+| 重启应用        | `docker compose restart app`                       |
+| 重启数据库      | `docker compose restart mysql`                     |
+| 查看应用日志    | `docker compose logs -f app`                       |
+| 查看数据库日志  | `docker compose logs -f mysql`                     |
+| 进入应用容器    | `docker exec -it person_web_app sh`                |
+| 进入数据库容器  | `docker exec -it person_web_mysql mysql -uroot -p` |
+| 重新部署        | `bash deploy/scripts/deploy.sh`                    |
+| 重载 Nginx      | `sudo systemctl reload nginx`                      |
+| 测试 Nginx 配置 | `sudo nginx -t`                                    |
+
+### 定期维护任务
+
+#### 每周任务
+
+1. **检查容器状态**
+
+   ```bash
+   docker compose ps
+   docker stats --no-stream
+   ```
+
+2. **查看磁盘使用情况**
+
+   ```bash
+   df -h
+   du -sh /opt/Person_Web/uploads
+   ```
+
+3. **备份数据库**
+
+   ```bash
+   mkdir -p /opt/backups
+   docker exec person_web_mysql mysqldump -uroot -p你的数据库密码 personal_blog | gzip > /opt/backups/blog-$(date +%Y%m%d).sql.gz
+   ```
+
+#### 每月任务
+
+1. **更新系统软件包**
+
+   ```bash
+   sudo apt update
+   sudo apt upgrade -y
+   ```
+
+2. **清理 Docker 资源**
+
+   ```bash
+   # 清理未使用的镜像、容器、网络
+   docker system prune -a
+   ```
+
+3. **检查 SSL 证书有效期**
+
+   ```bash
+   sudo certbot certificates
+   ```
+
+#### 每季度任务
+
+1. **完整备份**
+
+   ```bash
+   # 备份数据库
+   docker exec person_web_mysql mysqldump -uroot -p你的数据库密码 personal_blog | gzip > /opt/backups/full-backup-$(date +%Y%m%d)-db.sql.gz
+
+   # 备份上传文件
+   tar -czf /opt/backups/full-backup-$(date +%Y%m%d)-uploads.tar.gz -C /opt/Person_Web uploads/
+
+   # 备份配置文件
+   cp /opt/Person_Web/.env.production /opt/backups/env-backup-$(date +%Y%m%d)
+   ```
+
+2. **性能优化检查**
+
+   ```bash
+   # 查看容器资源使用
+   docker stats
+
+   # 查看数据库大小
+   docker exec person_web_mysql mysql -uroot -p你的数据库密码 -e "SELECT table_schema AS 'Database', ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'Size (MB)' FROM information_schema.tables GROUP BY table_schema;"
+   ```
+
+### 故障排查流程
+
+当博客出现问题时，按照以下流程排查：
+
+1. **检查容器状态**
+
+   ```bash
+   docker compose ps
+   ```
+
+2. **查看应用日志**
+
+   ```bash
+   docker compose logs --tail=50 app
+   ```
+
+3. **查看数据库日志**
+
+   ```bash
+   docker compose logs --tail=50 mysql
+   ```
+
+4. **检查系统资源**
+
+   ```bash
+   free -h  # 内存使用
+   df -h    # 磁盘使用
+   ```
+
+5. **重启服务**
+
+   ```bash
+   docker compose restart
+   ```
+
+6. **如果问题依然存在，查看详细日志**
+
+   ```bash
+   docker compose logs app > /tmp/app-logs.txt
+   docker compose logs mysql > /tmp/mysql-logs.txt
+   ```
+
+---
+
+## 附录
+
+### 项目文件结构
 
 ```
 Person_Web/
@@ -1227,184 +1250,117 @@ Person_Web/
 │   └── migrations/       # 迁移文件
 ├── deploy/               # 部署相关
 │   ├── nginx/           # Nginx 配置
-│   │   └── zhcmqtt.top.conf
-│   ├── scripts/         # 部署脚本
-│   │   ├── deploy.sh    # 一键部署
-│   │   ├── migrate.sh   # 数据库迁移
-│   │   └── setup-ssl.sh # SSL 证书申请
-│   └── README.md        # 本文档
+│   └── scripts/         # 部署脚本
 ├── uploads/              # 上传文件目录
 ├── .env.production       # 生产环境变量
 ├── docker-compose.yml    # Docker Compose 配置
 ├── Dockerfile            # Docker 镜像构建
 └── package.json          # 项目依赖
-
 ```
 
-### 10.2 常用命令速查表
+### 技术栈说明
 
-| 操作             | 命令                                               |
-| ---------------- | -------------------------------------------------- |
-| 启动所有服务     | `docker compose up -d`                             |
-| 停止所有服务     | `docker compose down`                              |
-| 重启应用         | `docker compose restart app`                       |
-| 查看容器状态     | `docker compose ps`                                |
-| 查看应用日志     | `docker compose logs -f app`                       |
-| 进入应用容器     | `docker exec -it person_web_app sh`                |
-| 进入数据库容器   | `docker exec -it person_web_mysql mysql -uroot -p` |
-| 执行数据库迁移   | `bash deploy/scripts/migrate.sh`                   |
-| 一键部署         | `bash deploy/scripts/deploy.sh`                    |
-| 重载 Nginx       | `sudo systemctl reload nginx`                      |
-| 测试 Nginx 配置  | `sudo nginx -t`                                    |
-| 查看 Nginx 日志  | `sudo tail -f /var/log/nginx/error.log`            |
-| 续期 SSL 证书    | `sudo certbot renew`                               |
-| 清理 Docker 资源 | `docker system prune -a`                           |
-| 查看容器资源使用 | `docker stats`                                     |
+- **前端**: React 19 + TypeScript + Vite
+- **后端**: Express + tRPC + TypeScript
+- **数据库**: MySQL 8.0
+- **ORM**: Drizzle ORM
+- **容器化**: Docker + Docker Compose
+- **Web 服务器**: Nginx
+- **SSL 证书**: Let's Encrypt (Certbot)
 
-### 10.3 性能优化建议
+### 安全建议
 
-#### 10.3.1 数据库优化
+1. **定期更新密码**
+   - 定期修改 `.env.production` 中的 `JWT_SECRET` 和 `MYSQL_ROOT_PASSWORD`
+   - 修改后需要重新部署应用
 
-```sql
--- 添加索引（在 MySQL 容器内执行）
-ALTER TABLE articles ADD INDEX idx_status (status);
-ALTER TABLE articles ADD INDEX idx_type (type);
-ALTER TABLE articles ADD INDEX idx_category_id (categoryId);
-ALTER TABLE articles ADD INDEX idx_published_at (publishedAt);
+2. **配置防火墙**
+   - 只开放必要的端口（22, 80, 443）
+   - 考虑修改 SSH 默认端口（22）
 
--- 查看慢查询日志
-SHOW VARIABLES LIKE 'slow_query%';
-SET GLOBAL slow_query_log = 'ON';
-SET GLOBAL long_query_time = 1;
-```
-
-#### 10.3.2 Nginx 优化
-
-在 `deploy/nginx/zhcmqtt.top.conf` 中添加:
-
-```nginx
-# 增加 worker 进程数
-worker_processes auto;
-
-# 增加连接数
-events {
-    worker_connections 2048;
-}
-
-# 启用 HTTP/2
-listen 443 ssl http2;
-
-# 增加缓冲区大小
-client_body_buffer_size 128k;
-client_max_body_size 10m;
-```
-
-#### 10.3.3 Docker 优化
-
-在 `docker-compose.yml` 中调整资源限制:
-
-```yaml
-# 根据实际使用情况调整
-app:
-  mem_limit: 768m # 增加到 768MB
-  cpus: 1.5 # 增加到 1.5 核心
-
-mysql:
-  mem_limit: 1024m # 增加到 1GB
-  cpus: 1.5 # 增加到 1.5 核心
-```
-
-### 10.4 安全加固建议
-
-1. **修改 SSH 默认端口**
-
-   ```bash
-   sudo nano /etc/ssh/sshd_config
-   # Port 22 改为 Port 2222
-   sudo systemctl restart sshd
-   ```
-
-2. **配置 fail2ban 防止暴力破解**
-
-   ```bash
-   sudo apt install -y fail2ban
-   sudo systemctl enable fail2ban
-   sudo systemctl start fail2ban
-   ```
-
-3. **定期更新系统**
-
-   ```bash
-   sudo apt update && sudo apt upgrade -y
-   ```
-
-4. **配置自动安全更新**
+3. **启用自动安全更新**
 
    ```bash
    sudo apt install -y unattended-upgrades
    sudo dpkg-reconfigure -plow unattended-upgrades
    ```
 
-5. **限制 Docker 容器权限**
-   ```yaml
-   # 在 docker-compose.yml 中添加
-   security_opt:
-     - no-new-privileges:true
-   read_only: true
-   ```
+4. **定期备份**
+   - 设置自动备份任务（cron job）
+   - 将备份文件存储到远程服务器或对象存储
 
-### 10.5 监控和告警
+5. **监控日志**
+   - 定期查看 Nginx 访问日志，识别异常访问
+   - 监控应用错误日志
 
-#### 10.5.1 使用 Uptime Kuma 监控
+### 性能优化建议
 
-```bash
-# 安装 Uptime Kuma
-docker run -d --restart=always -p 3001:3001 -v uptime-kuma:/app/data --name uptime-kuma louislam/uptime-kuma:1
+1. **数据库优化**
+   - 定期清理旧数据
+   - 为常用查询字段添加索引
+   - 定期执行 `OPTIMIZE TABLE` 命令
 
-# 访问 http://your-server:3001 配置监控
-```
+2. **静态资源优化**
+   - 启用 Nginx gzip 压缩
+   - 配置浏览器缓存
+   - 使用 CDN 加速静态资源
 
-#### 10.5.2 配置邮件告警
+3. **容器资源限制**
+   - 根据实际使用情况调整 `docker-compose.yml` 中的资源限制
+   - 监控容器资源使用情况
 
-```bash
-# 安装 mailutils
-sudo apt install -y mailutils
+### 获取帮助
 
-# 测试邮件发送
-echo "Test email" | mail -s "Test Subject" your-email@example.com
-```
+如果遇到本文档未涵盖的问题：
 
----
+1. **查看项目文档**
+   - [plan.md](plan.md) - 开发计划
+   - [spec.md](spec.md) - 技术规范
 
-## 11. 联系与支持
+2. **查看日志**
+   - 应用日志：`docker compose logs app`
+   - 数据库日志：`docker compose logs mysql`
+   - Nginx 日志：`/var/log/nginx/error.log`
 
-### 11.1 技术支持
-
-- **项目文档**: 查看 [plan.md](../plan.md) 了解详细的开发计划
-- **技术规范**: 查看 [spec.md](../spec.md) 了解项目需求和技术规范
-- **项目启动指南**: 查看 [PROJECT_ANALYSIS.md](../PROJECT_ANALYSIS.md)
-
-### 11.2 常见资源
-
-- **Docker 官方文档**: https://docs.docker.com/
-- **Docker Compose 文档**: https://docs.docker.com/compose/
-- **Nginx 官方文档**: https://nginx.org/en/docs/
-- **Let's Encrypt 文档**: https://letsencrypt.org/docs/
-- **MySQL 官方文档**: https://dev.mysql.com/doc/
-
-### 11.3 故障排查流程
-
-1. **查看容器状态**: `docker compose ps`
-2. **查看应用日志**: `docker compose logs -f app`
-3. **查看数据库日志**: `docker compose logs -f mysql`
-4. **查看 Nginx 日志**: `sudo tail -f /var/log/nginx/error.log`
-5. **检查系统资源**: `docker stats`, `free -h`, `df -h`
-6. **参考本文档的 FAQ 章节**
+3. **在线资源**
+   - Docker 官方文档：https://docs.docker.com/
+   - Nginx 官方文档：https://nginx.org/en/docs/
+   - MySQL 官方文档：https://dev.mysql.com/doc/
 
 ---
 
-**文档版本**: v1.0.0
+## 总结
+
+恭喜你完成了 Person_Web 个人博客的部署！现在你已经拥有了一个功能完整的个人博客系统。
+
+**你已经学会了**：
+
+- ✅ 在云服务器上安装 Docker 环境
+- ✅ 配置 Nginx 反向代理
+- ✅ 申请免费的 HTTPS 证书
+- ✅ 使用一键脚本部署应用
+- ✅ 区分访客访问和管理员访问
+- ✅ 日常维护和故障排查
+
+**下一步建议**：
+
+1. 创建你的第一篇博客文章
+2. 配置博客的基本信息（关于页面等）
+3. 设置定期备份任务
+4. 优化 SEO 设置
+5. 分享你的博客给朋友
+
+**重要提醒**：
+
+- 📌 将管理员登录链接保存到浏览器书签
+- 📌 定期备份数据库和上传文件
+- 📌 关注 SSL 证书有效期
+- 📌 定期更新系统和应用
+
+祝你使用愉快！🎉
+
+---
+
+**文档版本**: v2.0.0
 **最后更新**: 2026-01-19
-**维护者**: Person_Web Project Team
-
----
+**适用对象**: 有编程基础的开发者（不需要全栈经验）

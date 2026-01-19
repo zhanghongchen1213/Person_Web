@@ -25,3 +25,9 @@ export const getLoginUrl = () => {
     return "#";
   }
 };
+
+// Generate GitHub OAuth login URL
+export const getGitHubLoginUrl = () => {
+  const state = Math.random().toString(36).substring(7);
+  return `/api/auth/github/login?state=${state}`;
+};

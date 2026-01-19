@@ -27,13 +27,19 @@ log_error() {
 }
 
 # 配置变量
-DOMAIN="zhcmqtt.top"
-WWW_DOMAIN="www.zhcmqtt.top"
-EMAIL="admin@${DOMAIN}"  # 用于接收证书过期通知
+# 支持通过参数传递域名，如果没有传递则使用默认值
+DOMAIN="${1:-zhcmqtt.top}"
+WWW_DOMAIN="www.${DOMAIN}"
+EMAIL="${2:-admin@${DOMAIN}}"  # 用于接收证书过期通知
 WEBROOT="/var/www/html"  # Nginx webroot 路径
 
 log_info "开始 SSL 证书申请流程..."
 log_info "域名: ${DOMAIN}, ${WWW_DOMAIN}"
+log_info "邮箱: ${EMAIL}"
+log_info ""
+log_info "使用方法: sudo bash setup-ssl.sh [域名] [邮箱]"
+log_info "示例: sudo bash setup-ssl.sh myblog.com admin@myblog.com"
+log_info ""
 
 # 1. 检查是否以 root 权限运行
 if [ "$EUID" -ne 0 ]; then
