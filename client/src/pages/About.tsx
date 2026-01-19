@@ -84,7 +84,7 @@ export default function About() {
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    STM32 / ESP32
+                    STM32 / ESP32 / GD32 / SF32 / HC32 
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
@@ -149,7 +149,7 @@ export default function About() {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    Arduino / 树莓派
+                    树莓派 / 香橙派 / Jetson orin 
                   </li>
                 </ul>
               </div>
@@ -343,10 +343,10 @@ export default function About() {
                 <div className="absolute -left-[calc(1rem+5px)] md:-left-[calc(2rem+5px)] top-0 w-2 h-2 bg-foreground" />
                 <div className="mb-2">
                   <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                    2023 - 至今
+                    2024 - 至今
                   </span>
                 </div>
-                <h3 className="text-xl font-bold mb-2">高级开发工程师</h3>
+                <h3 className="text-xl font-bold mb-2">嵌入式开发工程师</h3>
                 <p className="text-muted-foreground">
                   负责核心业务系统的架构设计与开发，带领团队完成多个重要项目。
                 </p>
@@ -356,12 +356,12 @@ export default function About() {
                 <div className="absolute -left-[calc(1rem+5px)] md:-left-[calc(2rem+5px)] top-0 w-2 h-2 bg-foreground" />
                 <div className="mb-2">
                   <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                    2020 - 2023
+                    2021 - 2024
                   </span>
                 </div>
-                <h3 className="text-xl font-bold mb-2">全栈开发工程师</h3>
+                <h3 className="text-xl font-bold mb-2">机械电子工程硕士</h3>
                 <p className="text-muted-foreground">
-                  参与多个 Web 应用的全栈开发，积累了丰富的项目经验。
+                  参与多个嵌入式项目的开发，积累了丰富的项目经验。
                 </p>
               </div>
 
@@ -369,10 +369,10 @@ export default function About() {
                 <div className="absolute -left-[calc(1rem+5px)] md:-left-[calc(2rem+5px)] top-0 w-2 h-2 bg-foreground" />
                 <div className="mb-2">
                   <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                    2016 - 2020
+                    2017 - 2021
                   </span>
                 </div>
-                <h3 className="text-xl font-bold mb-2">计算机科学学士</h3>
+                <h3 className="text-xl font-bold mb-2">机械电子工程学士</h3>
                 <p className="text-muted-foreground">
                   系统学习计算机基础知识，培养了扎实的编程能力。
                 </p>
