@@ -11,6 +11,7 @@ import Archive from "./pages/Archive";
 import About from "./pages/About";
 import WriteArticle from "./pages/WriteArticle";
 import DocReader from "./pages/DocReader";
+import AdminArticles from "./pages/AdminArticles";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/write" component={WriteArticle} />
       <Route path="/edit/:id" component={WriteArticle} />
+      <Route path="/admin/articles" component={AdminArticles} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

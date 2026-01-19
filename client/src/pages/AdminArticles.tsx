@@ -2,8 +2,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
-import { useState } from "react";
+import { useLocation, useSearch } from "wouter";
+import { useState, useEffect } from "react";
 import {
   Loader2,
   Edit,
@@ -11,7 +11,9 @@ import {
   Calendar,
   FileText,
   BookOpen,
-  LayoutList
+  LayoutList,
+  Search,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -35,18 +37,70 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 export default function AdminArticles() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<"draft" | "published" | "archived" | undefined>();
+  const searchParams = useSearch();
+
+  // 从 URL 参数初始化状态
+  const urlParams = new URLSearchParams(searchParams);
+  const [page, setPage] = useState(parseInt(urlParams.get("page") || "1"));
+  const [statusFilter, setStatusFilter] = useState<"draft" | "published" | "archived" | undefined>(
+    (urlParams.get("status") as "draft" | "published" | "archived") || undefined
+  );
+  const [categoryFilter, setCategoryFilter] = useState<string | undefined>(
+    urlParams.get("category") || undefined
+  );
+  const [searchQuery, setSearchQuery] = useState(urlParams.get("search") || "");
+  const [searchInput, setSearchInput] = useState(searchQuery);
+
+  // 同步 URL 参数
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set("page", page.toString());
+    if (statusFilter) params.set("status", statusFilter);
+    if (categoryFilter) params.set("category", categoryFilter);
+    if (searchQuery) params.set("search", searchQuery);
+
+    const newSearch = params.toString();
+    const currentPath = window.location.pathname;
+    const newUrl = newSearch ? `${currentPath}?${newSearch}` : currentPath;
+    window.history.replaceState({}, "", newUrl);
+  }, [page, statusFilter, categoryFilter, searchQuery]);
+
+  // 获取分类列表
+  const { data: categories } = trpc.category.list.useQuery({ type: "blog" });
 
   // 获取文章列表
   const { data: articlesData, isLoading, refetch } = trpc.article.adminList.useQuery({
     page,
     limit: 20,
     status: statusFilter,
+    type: categoryFilter ? undefined : undefined, // 可以根据需要添加类型筛选
   });
 
   // 删除文章 mutation
@@ -60,6 +114,17 @@ export default function AdminArticles() {
     },
   });
 
+  // 修改发布日期 mutation
+  const updatePublishedAtMutation = trpc.article.updatePublishedAt.useMutation({
+    onSuccess: () => {
+      toast.success("发布日期已更新");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`更新失败: ${error.message}`);
+    },
+  });
+
   // 处理删除
   const handleDelete = (id: number, title: string) => {
     deleteMutation.mutate({ id });
@@ -68,6 +133,36 @@ export default function AdminArticles() {
   // 处理编辑
   const handleEdit = (id: number) => {
     setLocation(`/write/${id}`);
+  };
+
+  // 处理修改发布日期
+  const handleUpdatePublishedAt = (id: number, date: Date) => {
+    updatePublishedAtMutation.mutate({ id, publishedAt: date });
+  };
+
+  // 处理搜索
+  const handleSearch = () => {
+    setSearchQuery(searchInput);
+    setPage(1); // 重置到第一页
+  };
+
+  // 清除搜索
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setSearchQuery("");
+    setPage(1);
+  };
+
+  // 处理状态筛选
+  const handleStatusFilter = (status: "draft" | "published" | "archived" | undefined) => {
+    setStatusFilter(status);
+    setPage(1); // 重置到第一页
+  };
+
+  // 处理分类筛选
+  const handleCategoryFilter = (categoryId: string) => {
+    setCategoryFilter(categoryId === "all" ? undefined : categoryId);
+    setPage(1); // 重置到第一页
   };
 
   // 格式化日期
@@ -163,38 +258,89 @@ export default function AdminArticles() {
         </div>
 
         {/* 操作栏 */}
-        <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex gap-2">
-            <Button
-              variant={statusFilter === undefined ? "default" : "outline"}
-              onClick={() => setStatusFilter(undefined)}
+        <div className="mb-6 space-y-4">
+          {/* 搜索和分类筛选 */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* 搜索框 */}
+            <div className="flex-1 flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="搜索文章标题..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch();
+                    }
+                  }}
+                  className="pl-9 pr-9"
+                />
+                {searchInput && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <Button onClick={handleSearch}>搜索</Button>
+            </div>
+
+            {/* 分类筛选 */}
+            <Select
+              value={categoryFilter || "all"}
+              onValueChange={handleCategoryFilter}
             >
-              全部
-            </Button>
-            <Button
-              variant={statusFilter === "draft" ? "default" : "outline"}
-              onClick={() => setStatusFilter("draft")}
-            >
-              草稿
-            </Button>
-            <Button
-              variant={statusFilter === "published" ? "default" : "outline"}
-              onClick={() => setStatusFilter("published")}
-            >
-              已发布
-            </Button>
-            <Button
-              variant={statusFilter === "archived" ? "default" : "outline"}
-              onClick={() => setStatusFilter("archived")}
-            >
-              已归档
-            </Button>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="选择分类" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部分类</SelectItem>
+                {categories?.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <Button onClick={() => setLocation("/write")}>
-            <FileText className="w-4 h-4" />
-            新建文章
-          </Button>
+          {/* 状态筛选 */}
+          <div className="flex flex-wrap gap-2 items-center justify-between">
+            <div className="flex gap-2">
+              <Button
+                variant={statusFilter === undefined ? "default" : "outline"}
+                onClick={() => handleStatusFilter(undefined)}
+              >
+                全部
+              </Button>
+              <Button
+                variant={statusFilter === "draft" ? "default" : "outline"}
+                onClick={() => handleStatusFilter("draft")}
+              >
+                草稿
+              </Button>
+              <Button
+                variant={statusFilter === "published" ? "default" : "outline"}
+                onClick={() => handleStatusFilter("published")}
+              >
+                已发布
+              </Button>
+              <Button
+                variant={statusFilter === "archived" ? "default" : "outline"}
+                onClick={() => handleStatusFilter("archived")}
+              >
+                已归档
+              </Button>
+            </div>
+
+            <Button onClick={() => setLocation("/write")}>
+              <FileText className="w-4 h-4" />
+              新建文章
+            </Button>
+          </div>
         </div>
 
         {/* 文章列表 */}
@@ -266,6 +412,31 @@ export default function AdminArticles() {
                           <Edit className="w-4 h-4" />
                         </Button>
 
+                        {/* 修改日期按钮 */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              title="修改发布日期"
+                            >
+                              <Calendar className="w-4 h-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="end">
+                            <CalendarComponent
+                              mode="single"
+                              selected={article.publishedAt ? new Date(article.publishedAt) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  handleUpdatePublishedAt(article.id, date);
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+
                         {/* 删除按钮 */}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -304,11 +475,116 @@ export default function AdminArticles() {
           )}
         </div>
 
-        {/* 统计信息 */}
+        {/* 统计信息和分页 */}
         {articlesData && articlesData.total > 0 && (
-          <div className="mt-4 text-sm text-muted-foreground">
-            共 {articlesData.total} 篇文章
-            {statusFilter && ` (筛选: ${statusFilter === "draft" ? "草稿" : statusFilter === "published" ? "已发布" : "已归档"})`}
+          <div className="mt-6 space-y-4">
+            {/* 统计信息 */}
+            <div className="text-sm text-muted-foreground">
+              共 {articlesData.total} 篇文章
+              {statusFilter && ` (筛选: ${statusFilter === "draft" ? "草稿" : statusFilter === "published" ? "已发布" : "已归档"})`}
+              {categoryFilter && categories && ` (分类: ${categories.find(c => c.id.toString() === categoryFilter)?.name})`}
+              {searchQuery && ` (搜索: "${searchQuery}")`}
+            </div>
+
+            {/* 分页组件 */}
+            {articlesData.total > 20 && (() => {
+              const totalPages = Math.ceil(articlesData.total / 20);
+              return (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (page > 1) setPage(page - 1);
+                        }}
+                        className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+
+                    <PaginationItem>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setPage(1);
+                        }}
+                        isActive={page === 1}
+                        className="cursor-pointer"
+                      >
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+
+                    {totalPages > 7 && page > 3 && (
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )}
+
+                    {(() => {
+                      const pages = [];
+                      const start = Math.max(2, page - 1);
+                      const end = Math.min(totalPages - 1, page + 1);
+                      for (let i = start; i <= end; i++) {
+                        if (totalPages <= 7 || (i >= start && i <= end)) {
+                          pages.push(
+                            <PaginationItem key={i}>
+                              <PaginationLink
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPage(i);
+                                }}
+                                isActive={page === i}
+                                className="cursor-pointer"
+                              >
+                                {i}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        }
+                      }
+                      return pages;
+                    })()}
+
+                    {totalPages > 7 && page < totalPages - 2 && (
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )}
+
+                    {totalPages > 1 && (
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPage(totalPages);
+                          }}
+                          isActive={page === totalPages}
+                          className="cursor-pointer"
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (page < totalPages) setPage(page + 1);
+                        }}
+                        className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              );
+            })()}
           </div>
         )}
       </main>

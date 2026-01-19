@@ -7,7 +7,8 @@
       "mcp__puppeteer__find_selector",
       "mcp__puppeteer__type",
       "mcp__puppeteer__click",
-      "mcp__puppeteer__wait"
+      "mcp__puppeteer__wait",
+      "mcp__puppeteer__get_content"
     ]
   }
 }
