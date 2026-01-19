@@ -86,10 +86,30 @@ if command -v docker &> /dev/null; then
 else
     log_info "开始安装 Docker..."
 
-    # 使用官方安装脚本
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
-    rm -f get-docker.sh
+    # 尝试使用阿里云镜像安装脚本（适用于国内服务器）
+    log_info "尝试使用阿里云镜像安装 Docker..."
+    if curl -fsSL https://get.docker.com | sh -s docker --mirror Aliyun; then
+        log_success "Docker 安装完成（使用阿里云镜像）"
+    else
+        log_warn "阿里云镜像安装失败，尝试手动安装..."
+
+        # 手动安装 Docker（使用阿里云镜像源）
+        apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+
+        # 添加 Docker 官方 GPG 密钥（使用阿里云镜像）
+        curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | apt-key add -
+
+        # 添加 Docker 软件源（使用阿里云镜像）
+        add-apt-repository "deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+
+        # 更新软件包索引
+        apt-get update
+
+        # 安装 Docker
+        apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+        log_success "Docker 手动安装完成"
+    fi
 
     log_success "Docker 安装完成: $(docker --version)"
 fi
