@@ -14,7 +14,8 @@ WORKDIR /app
 
 # Configure npm to use Taobao mirror and install pnpm globally
 RUN npm config set registry https://registry.npmmirror.com && \
-    npm install -g pnpm
+    npm install -g pnpm && \
+    pnpm config set registry https://registry.npmmirror.com
 
 # Copy package files for dependency installation
 # This layer will be cached if package files don't change
@@ -24,7 +25,10 @@ COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 
 # Install all dependencies (including devDependencies for build)
-RUN pnpm install --frozen-lockfile
+# Add retry mechanism and increase timeout for network issues
+RUN pnpm install --frozen-lockfile || \
+    pnpm install --frozen-lockfile || \
+    pnpm install --frozen-lockfile
 
 # Copy source code
 # Separate layer to leverage Docker cache
@@ -32,6 +36,8 @@ COPY . .
 
 # Build the application
 # This compiles both frontend and backend
+# Increase Node.js heap size to 1.5GB for build process
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 RUN pnpm build
 
 # ============================================
@@ -45,7 +51,8 @@ WORKDIR /app
 
 # Configure npm to use Taobao mirror and install pnpm globally
 RUN npm config set registry https://registry.npmmirror.com && \
-    npm install -g pnpm
+    npm install -g pnpm && \
+    pnpm config set registry https://registry.npmmirror.com
 
 # Set production environment
 ENV NODE_ENV=production
@@ -58,7 +65,10 @@ COPY patches ./patches
 
 # Install production dependencies only
 # This significantly reduces image size
-RUN pnpm install --prod --frozen-lockfile
+# Add retry mechanism and increase timeout for network issues
+RUN pnpm install --prod --frozen-lockfile || \
+    pnpm install --prod --frozen-lockfile || \
+    pnpm install --prod --frozen-lockfile
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
