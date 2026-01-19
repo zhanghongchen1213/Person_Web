@@ -12,8 +12,9 @@ FROM node:22-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Configure npm to use Taobao mirror and install pnpm globally
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm install -g pnpm
 
 # Copy package files for dependency installation
 # This layer will be cached if package files don't change
@@ -42,8 +43,9 @@ FROM node:22-alpine AS runner
 # Set working directory
 WORKDIR /app
 
-# Install pnpm globally (needed for production dependencies)
-RUN npm install -g pnpm
+# Configure npm to use Taobao mirror and install pnpm globally
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm install -g pnpm
 
 # Set production environment
 ENV NODE_ENV=production

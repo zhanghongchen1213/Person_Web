@@ -139,25 +139,90 @@ sudo chown -R $USER:$USER /opt/Person_Web
 cd /opt/Person_Web
 ```
 
-### 2.2 上传代码到服务器
+### 2.2 上传项目到服务器
+
+#### 方法一：使用 GitHub 镜像加速（推荐，适用于国内服务器）
+
+如果你的云服务器无法直接访问 GitHub，可以使用以下镜像加速服务：
 
 ```bash
 # 安装 Git（如果未安装）
 sudo apt install -y git
 
-# 克隆项目仓库
-git clone https://github.com/zhanghongchen1213/Person_Web /opt/Person_Web
+# 方案 1：使用 ghproxy.com 镜像（推荐）
+git clone https://ghproxy.com/https://github.com/zhanghongchen1213/Person_Web /opt/Person_Web
+
+# 方案 2：使用 gitclone.com 镜像
+git clone https://gitclone.com/github.com/zhanghongchen1213/Person_Web /opt/Person_Web
+
+# 方案 3：使用 fastgit 镜像
+git clone https://hub.fastgit.xyz/zhanghongchen1213/Person_Web /opt/Person_Web
 
 # 进入项目目录
 cd /opt/Person_Web
 ```
 
-### 2.3 执行一键配置脚本
+💡 **小贴士**：
+
+- 镜像服务可能会有延迟，建议优先尝试 ghproxy.com
+- 如果一个镜像失败，可以尝试其他镜像
+- 镜像服务仅用于克隆，后续 git 操作会自动使用原始仓库地址
+
+#### 方法二：手动上传代码（备选方案）
+
+如果 Git 克隆始终失败，可以手动上传代码：
+
+1. **在本地下载项目**：
+   - 访问 https://github.com/zhanghongchen1213/Person_Web
+   - 点击 "Code" → "Download ZIP"
+   - 解压到本地
+
+2. **上传到服务器**并解压
+
+   ```bash
+   unzip Person_Web-main.zip
+   rm -rf Person_Web-main.zip
+   cd Person_Web-main
+   ```
+
+### 2.3 配置网络环境（重要，适用于国内服务器）
+
+⚠️ **重要提示**：如果你的云服务器在国内，或者无法正常访问 GitHub、Docker Hub 等国外资源，**必须先执行此步骤**配置镜像源，否则后续安装可能会失败或非常缓慢。
+
+项目提供了网络环境配置脚本，可以自动配置国内镜像源，解决网络访问问题。
 
 ```bash
-# 赋予脚本执行权限
-chmod +x deploy/scripts/setup-server.sh
+# 进入项目目录
+cd /opt/Person_Web
 
+# 赋予脚本执行权限
+chmod +x deploy/scripts/*
+
+# 执行网络环境配置脚本
+sudo bash deploy/scripts/setup-network.sh
+```
+
+脚本会自动完成以下配置：
+
+1. ✅ **APT 软件源** - 切换到阿里云镜像，加速软件包下载
+2. ✅ **Docker 镜像源** - 配置国内镜像加速器（腾讯云、DaoCloud、DockerProxy）
+3. ✅ **Git 配置优化** - 禁用 HTTP/2，增加缓冲区，解决克隆失败问题
+4. ✅ **npm 镜像源** - 配置淘宝镜像（如已安装 npm）
+
+✅ **预期输出**：
+
+[![yV63jQ.md.png](https://i.imgs.ovh/2026/01/19/yV63jQ.md.png)](https://imgloc.com/image/yV63jQ)
+
+💡 **配置效果**：
+
+- ✅ APT 软件包下载速度提升 10-50 倍
+- ✅ Docker 镜像拉取速度提升 10-100 倍
+- ✅ Git 克隆成功率接近 100%
+- ✅ npm 包安装速度提升 5-20 倍
+
+### 2.4 执行服务器环境配置脚本
+
+```bash
 # 执行服务器环境配置脚本
 sudo bash deploy/scripts/setup-server.sh
 ```
@@ -171,65 +236,9 @@ sudo bash deploy/scripts/setup-server.sh
 5. ✅ **配置防火墙** - 开放必要端口（22, 80, 443）
 6. ✅ **验证安装** - 测试所有服务是否正常运行
 
-### 2.4 预期输出
+### 2.5 预期输出
 
-脚本执行成功后，你会看到类似以下的输出：
-
-```
-[INFO] ==========================================
-[INFO] Person_Web 服务器环境一键配置脚本
-[INFO] ==========================================
-[STEP] 1/6 更新系统软件包...
-[INFO] 系统软件包更新完成
-[STEP] 2/6 安装 Docker...
-[INFO] Docker 安装完成: Docker version 24.0.7
-[STEP] 3/6 配置 Docker 权限...
-[INFO] Docker 权限配置完成
-[STEP] 4/6 安装 Nginx...
-[INFO] Nginx 安装完成: nginx version 1.18.0
-[STEP] 5/6 配置防火墙...
-[INFO] 防火墙配置完成
-[STEP] 6/6 验证安装...
-[SUCCESS] 所有服务安装验证通过！
-[INFO] ==========================================
-[SUCCESS] 服务器环境配置完成！
-[INFO] ==========================================
-```
-
-### 2.5 手动配置（可选）
-
-如果自动脚本执行失败，你也可以手动执行以下命令：
-
-```bash
-# 1. 更新系统
-sudo apt update && sudo apt upgrade -y
-
-# 2. 安装 Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-newgrp docker
-
-# 3. 安装 Nginx
-sudo apt install -y nginx
-sudo systemctl start nginx
-sudo systemctl enable nginx
-
-# 4. 配置防火墙
-sudo apt install -y ufw
-sudo ufw allow 22/tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw --force enable
-
-# 5. 验证安装
-docker --version
-docker compose version
-nginx -v
-sudo ufw status
-```
-
-⚠️ **警告**：配置防火墙时务必先允许 SSH 端口（22），否则会失去服务器连接！
+[![yV8yHp.md.png](https://i.imgs.ovh/2026/01/19/yV8yHp.md.png)](https://imgloc.com/image/yV8yHp)
 
 ---
 
@@ -290,14 +299,8 @@ sudo ufw status
 #### 步骤 2：运行配置脚本
 
 ```bash
-# 进入项目目录
-cd /opt/Person_Web
-
-# 赋予脚本执行权限
-chmod +x deploy/scripts/setup-env.sh
-
 # 执行环境变量配置脚本
-bash deploy/scripts/setup-env.sh
+sudo bash deploy/scripts/setup-env.sh
 ```
 
 脚本会交互式地询问你以下配置：
@@ -314,27 +317,7 @@ bash deploy/scripts/setup-env.sh
 
 ✅ **预期输出**（配置 GitHub OAuth）：
 
-```
-[INFO] ==========================================
-[INFO] Person_Web 环境变量配置脚本
-[INFO] ==========================================
-[STEP] 1/6 配置数据库密码
-[INFO] 已自动生成密码: xxxxxxxxxx
-[STEP] 2/6 配置 JWT 密钥
-[INFO] 已自动生成密钥: xxxxxxxxxx
-[STEP] 3/6 配置 GitHub OAuth
-[WARN] ⚠️  GitHub OAuth 是管理员登录的唯一方式，必须配置！
-[INFO] 请输入 GitHub Client ID: Ov23liXXXXXXXXXXXX
-[INFO] 请输入 GitHub Client Secret: **********************
-[INFO] 请输入 GitHub Callback URL: http://你的服务器IP:3000/api/auth/github/callback
-[STEP] 4/6 配置管理员 GitHub 用户 ID
-[INFO] 请输入管理员的 GitHub 用户 ID (格式: github:12345678):
-[INFO] 获取方法: 访问 https://api.github.com/users/你的GitHub用户名
-[STEP] 5/6 配置访问域名
-[INFO] 使用域名: 你的服务器IP
-[STEP] 6/6 确认配置
-[SUCCESS] 配置文件生成完成: /opt/Person_Web/.env.production
-```
+[![yV8aLO.md.png](https://i.imgs.ovh/2026/01/19/yV8aLO.md.png)](https://imgloc.com/image/yV8aLO)
 
 🔒 **安全优势**：
 
@@ -343,112 +326,22 @@ bash deploy/scripts/setup-env.sh
 - ✅ 无需记忆复杂的登录链接
 - ✅ 支持后续添加其他 GitHub 用户为管理员
 
-### 4.2 手动配置（可选）
-
-如果需要手动配置，可以按照以下步骤操作：
-
-#### 创建生产环境配置文件
-
-```bash
-# 进入项目目录
-cd /opt/Person_Web
-
-# 复制环境变量模板
-cp .env.production.example .env.production
-
-# 编辑环境变量文件
-nano .env.production
-```
-
-#### 配置必需的环境变量
-
-在打开的编辑器中，修改以下配置：
-
-```env
-# 数据库连接（Docker Compose 会自动配置）
-DATABASE_URL=mysql://root:你的数据库密码@mysql:3306/personal_blog?charset=utf8mb4
-
-# 运行环境
-NODE_ENV=production
-
-# JWT 密钥（必须修改为强密码！）
-JWT_SECRET=你的超级强密码-至少32位随机字符
-
-# 管理员 OpenID（用于本地测试，生产环境需要配置真实的 OAuth）
-OWNER_OPEN_ID=mock-user-openid-dev
-
-# 应用端口
-PORT=3000
-
-# MySQL 配置（用于 Docker Compose）
-MYSQL_ROOT_PASSWORD=你的数据库密码
-MYSQL_DATABASE=personal_blog
-
-# OAuth 配置（本地测试用）
-VITE_OAUTH_PORTAL_URL=http://localhost:3000
-OAUTH_SERVER_URL=http://localhost:3000
-VITE_APP_ID=local-dev-app-id
-```
-
-#### 生成强密码
-
-使用以下命令生成强密码：
-
-```bash
-# 生成 32 位随机密码
-openssl rand -base64 32
-```
-
-将生成的密码复制到 `.env.production` 文件中的 `JWT_SECRET` 和 `MYSQL_ROOT_PASSWORD`。
-
-#### 保存并退出编辑器
-
-- 按 `Ctrl + O` 保存文件
-- 按 `Enter` 确认
-- 按 `Ctrl + X` 退出编辑器
-
-⚠️ **安全提示**：
-
-- **绝对不要**将 `.env.production` 文件提交到 Git 仓库
-- **必须修改** `JWT_SECRET` 为强密码
-- **必须修改** `MYSQL_ROOT_PASSWORD` 为强密码
-
-✅ **验证配置文件**：
-
-```bash
-# 查看配置文件是否存在
-ls -la .env.production
-
-# 检查文件内容（确保密码已修改）
-cat .env.production
-```
-
 ---
 
 ## 五、一键部署应用
 
 项目提供了一键部署脚本，会自动完成所有部署步骤。
 
-### 5.1 赋予脚本执行权限
-
-```bash
-# 进入项目目录
-cd /opt/Person_Web
-
-# 赋予所有部署脚本执行权限
-chmod +x deploy/scripts/*.sh
-```
-
-### 5.2 执行一键部署
+### 5.1 执行一键部署
 
 ```bash
 # 执行一键部署脚本
-bash deploy/scripts/deploy.sh
+sudo bash deploy/scripts/deploy.sh
 ```
 
 ⏱️ **预计耗时**：5-10 分钟（首次部署需要下载 Docker 镜像）
 
-### 5.3 部署过程说明
+### 5.2 部署过程说明
 
 部署脚本会自动执行以下 8 个步骤：
 
@@ -461,50 +354,9 @@ bash deploy/scripts/deploy.sh
 7. ✅ **健康检查** - 等待应用启动并验证运行状态
 8. ✅ **输出部署结果** - 显示部署成功信息和常用命令
 
-### 5.4 预期输出
+### 5.3 预期输出
 
-部署成功后，你会看到类似以下的输出：
-
-```
-[INFO] ==========================================
-[INFO] Person_Web 一键部署脚本
-[INFO] ==========================================
-[STEP] 1/8 检查 Docker 环境...
-[INFO] Docker 已安装: Docker version 24.0.7
-[STEP] 2/8 检查 Docker Compose...
-[INFO] 使用 docker compose: Docker Compose version v2.24.0
-[STEP] 3/8 检查 .env.production 配置文件...
-[INFO] 配置文件存在: .env.production
-[INFO] 环境变量验证通过
-[STEP] 4/8 停止旧容器...
-[INFO] 停止并删除旧容器...
-[STEP] 5/8 构建新镜像...
-[INFO] 开始构建 Docker 镜像（使用 --no-cache）...
-[STEP] 6/8 启动新容器...
-[INFO] 启动容器...
-[STEP] 7/8 执行数据库迁移...
-[INFO] 调用数据库迁移脚本...
-[SUCCESS] 数据库迁移完成！
-[STEP] 8/8 执行健康检查...
-[INFO] 等待应用启动（最多 60 秒）...
-[SUCCESS] 应用健康检查通过
-[INFO] ==========================================
-[SUCCESS] 部署成功完成！
-[INFO] ==========================================
-[INFO] 部署耗时: 120 秒
-[INFO]
-[INFO] 常用命令:
-[INFO]   - 查看容器状态: docker compose ps
-[INFO]   - 查看应用日志: docker compose logs -f app
-[INFO]   - 查看数据库日志: docker compose logs -f mysql
-[INFO]   - 重启应用: docker compose restart app
-[INFO]   - 停止所有服务: docker compose down
-[INFO]
-[INFO] 访问地址:
-[INFO]   - HTTP: http://你的服务器IP:3000
-```
-
-### 5.5 验证部署
+### 5.4 验证部署
 
 #### 检查容器状态
 
