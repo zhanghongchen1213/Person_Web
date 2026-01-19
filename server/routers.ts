@@ -5,6 +5,14 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
+import {
+  appCache,
+  generateArticleListKey,
+  generateCategoryListKey,
+  generateDocTreeKey,
+  invalidateArticleCache,
+  invalidateCategoryCache,
+} from "./_core/cache";
 
 // Admin procedure - only allows admin users
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -28,7 +36,7 @@ export const appRouter = router({
 
   // Article routes
   article: router({
-    // List articles (public)
+    // List articles (public) - with cache (TTL: 5 minutes)
     list: publicProcedure
       .input(z.object({
         limit: z.number().min(1).max(50).default(10),
@@ -39,14 +47,31 @@ export const appRouter = router({
         search: z.string().optional(),
       }).optional())
       .query(async ({ input }) => {
-        return await db.getArticles({
+        const params = {
           limit: input?.limit ?? 10,
           page: input?.page ?? 1,
           status: input?.status ?? "published",
           type: input?.type,
           categorySlug: input?.categorySlug,
           search: input?.search,
-        });
+        };
+
+        // Generate cache key
+        const cacheKey = generateArticleListKey(params);
+
+        // Try to get from cache
+        const cached = appCache.get(cacheKey);
+        if (cached) {
+          return cached as Awaited<ReturnType<typeof db.getArticles>>;
+        }
+
+        // Cache miss - fetch from database
+        const result = await db.getArticles(params);
+
+        // Store in cache with 5 minutes TTL
+        appCache.set(cacheKey, result, 5 * 60 * 1000);
+
+        return result;
       }),
 
     // Get single article by slug (public)
@@ -133,6 +158,10 @@ export const appRouter = router({
           ...input,
           authorId: ctx.user.id,
         });
+
+        // Invalidate article cache
+        invalidateArticleCache();
+
         return { id: articleId };
       }),
 
@@ -153,6 +182,10 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         await db.updateArticle(id, data);
+
+        // Invalidate article cache
+        invalidateArticleCache();
+
         return { success: true };
       }),
 
@@ -161,6 +194,10 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteArticle(input.id);
+
+        // Invalidate article cache
+        invalidateArticleCache();
+
         return { success: true };
       }),
 
@@ -185,6 +222,9 @@ export const appRouter = router({
 
         await db.updateArticlePublishedAt(input.id, input.publishedAt);
 
+        // Invalidate article cache
+        invalidateArticleCache();
+
         // Return updated article
         const updatedArticle = await db.getArticleById(input.id);
         return updatedArticle;
@@ -193,13 +233,28 @@ export const appRouter = router({
 
   // Category routes
   category: router({
-    // List categories (public)
+    // List categories (public) - with cache (TTL: 10 minutes)
     list: publicProcedure
       .input(z.object({
         type: z.enum(["blog", "doc"]).optional(),
       }).optional())
       .query(async ({ input }) => {
-        return await db.getCategories({ type: input?.type });
+        // Generate cache key
+        const cacheKey = generateCategoryListKey({ type: input?.type });
+
+        // Try to get from cache
+        const cached = appCache.get(cacheKey);
+        if (cached) {
+          return cached as Awaited<ReturnType<typeof db.getCategories>>;
+        }
+
+        // Cache miss - fetch from database
+        const result = await db.getCategories({ type: input?.type });
+
+        // Store in cache with 10 minutes TTL
+        appCache.set(cacheKey, result, 10 * 60 * 1000);
+
+        return result;
       }),
 
     // Get category by slug (public)
@@ -225,6 +280,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const id = await db.createCategory(input);
+
+        // Invalidate category cache
+        invalidateCategoryCache();
+
         return { id };
       }),
 
@@ -242,6 +301,10 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         await db.updateCategory(id, data);
+
+        // Invalidate category cache
+        invalidateCategoryCache();
+
         return { success: true };
       }),
 
@@ -250,6 +313,10 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteCategory(input.id);
+
+        // Invalidate category cache
+        invalidateCategoryCache();
+
         return { success: true };
       }),
 
@@ -272,6 +339,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const category = await db.findOrCreateCategory({ name: input.name, type: input.type });
+
+        // Invalidate category cache (in case a new category was created)
+        invalidateCategoryCache();
+
         return category;
       }),
 
@@ -301,13 +372,29 @@ export const appRouter = router({
     /**
      * Get document tree for navigation sidebar.
      * Returns categories of type 'doc' with their articles sorted by order.
+     * Cached with 10 minutes TTL.
      */
     tree: publicProcedure
       .input(z.object({
         categorySlug: z.string().optional(),
       }).optional())
       .query(async ({ input }) => {
-        return await db.getDocTree(input?.categorySlug);
+        // Generate cache key
+        const cacheKey = generateDocTreeKey(input?.categorySlug);
+
+        // Try to get from cache
+        const cached = appCache.get(cacheKey);
+        if (cached) {
+          return cached as Awaited<ReturnType<typeof db.getDocTree>>;
+        }
+
+        // Cache miss - fetch from database
+        const result = await db.getDocTree(input?.categorySlug);
+
+        // Store in cache with 10 minutes TTL
+        appCache.set(cacheKey, result, 10 * 60 * 1000);
+
+        return result;
       }),
   }),
 });
