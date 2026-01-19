@@ -355,10 +355,11 @@ export async function getCategories(options?: { type?: ContentType }): Promise<C
   if (options?.type) {
     return await db.select().from(categories)
       .where(eq(categories.type, options.type))
-      .orderBy(categories.sortOrder, categories.name);
+      .orderBy(asc(categories.sortOrder), asc(categories.name));
   }
 
-  return await db.select().from(categories).orderBy(categories.sortOrder, categories.name);
+  return await db.select().from(categories)
+    .orderBy(asc(categories.sortOrder), asc(categories.name));
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
@@ -382,15 +383,16 @@ export async function findOrCreateCategory(data: {
   if (!db) throw new Error("Database not available");
 
   // First, try to find existing category by name (case-insensitive)
-  const existing = await db.select().from(categories)
-    .where(and(
-      sql`LOWER(${categories.name}) = LOWER(${data.name})`,
-      eq(categories.type, data.type)
-    ))
-    .limit(1);
+  // Get all categories of the same type and filter in memory
+  const allCategories = await db.select().from(categories)
+    .where(eq(categories.type, data.type));
 
-  if (existing.length > 0) {
-    return existing[0];
+  const existing = allCategories.find(
+    cat => cat.name.toLowerCase() === data.name.toLowerCase()
+  );
+
+  if (existing) {
+    return existing;
   }
 
   // Category doesn't exist, create new one
@@ -542,7 +544,7 @@ export async function getArticleCountByCategory(): Promise<Array<{ categoryId: n
   if (!db) return [];
 
   // Get all categories
-  const allCategories = await db.select().from(categories).orderBy(categories.sortOrder);
+  const allCategories = await db.select().from(categories).orderBy(asc(categories.sortOrder));
 
   // Get counts in a single query using GROUP BY
   const countResults = await db.select({
