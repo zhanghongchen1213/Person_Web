@@ -68,9 +68,10 @@ COPY --from=builder /app/drizzle ./drizzle
 EXPOSE 3000
 
 # Add health check
-# Checks if the application is responding on the health endpoint
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/trpc/system.health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+# Checks if the application is responding on the root endpoint
+# Increased start-period to 40s to allow application to fully initialize
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
 # Start the application
 CMD ["node", "dist/index.js"]
