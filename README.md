@@ -653,6 +653,71 @@ gunzip /opt/backups/blog-20260119.sql.gz
 docker exec -i person_web_mysql mysql -uroot -p你的数据库密码 personal_blog < /opt/backups/blog-20260119.sql
 ```
 
+### Q3: 2G 内存服务器构建失败怎么办？
+
+**问题现象**：
+
+- 构建过程中显示 `Killed` 或 `exit code: 137`
+- 构建卡在 `computing gzip size...` 阶段后失败
+- 错误信息：`JavaScript heap out of memory` 或 `Reached heap limit`
+
+**原因分析**：
+
+2G 内存服务器在构建大型前端项目时容易出现内存不足（OOM）问题：
+- 系统本身占用：200-300MB
+- Docker 守护进程：100-200MB
+- MySQL 容器（如运行）：400-500MB
+- 构建进程需要：1GB+
+- **总需求超过 2GB 可用内存**
+
+**解决方案**：
+
+项目已经针对 2G 内存服务器进行了优化，包括：
+
+1. ✅ **降低 Node.js 堆内存**：限制为 1GB（`--max-old-space-size=1024`）
+2. ✅ **禁用内存密集型操作**：
+   - 禁用 source map 生成
+   - 禁用 gzip 大小计算
+   - 优化代码分割策略
+3. ✅ **构建前释放内存**：自动停止 MySQL 容器释放约 400-500MB 内存
+
+**如果仍然失败，可以尝试**：
+
+**方案 1：启用 Swap 交换空间（推荐）**
+
+```bash
+# 创建 2GB Swap 文件
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# 验证 Swap 已启用
+free -h
+
+# 永久启用（重启后生效）
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+**方案 2：手动停止所有容器后构建**
+
+```bash
+cd /opt/Person_Web
+
+# 停止所有容器释放内存
+docker compose down
+
+# 清理 Docker 缓存
+docker system prune -af
+
+# 重新部署
+bash deploy/scripts/deploy.sh
+```
+
+**方案 3：升级服务器配置**
+
+如果预算允许，建议升级到 4GB 内存配置，可以获得更稳定的构建体验。
+
 ---
 
 ## 日常维护指南

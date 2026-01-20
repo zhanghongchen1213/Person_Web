@@ -36,8 +36,8 @@ COPY . .
 
 # Build the application
 # This compiles both frontend and backend
-# Increase Node.js heap size to 1.5GB for build process
-ENV NODE_OPTIONS="--max-old-space-size=1536"
+# Set Node.js heap size to 1GB for 2GB memory servers
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 RUN pnpm build
 
 # ============================================

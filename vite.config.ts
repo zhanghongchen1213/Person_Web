@@ -24,6 +24,11 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Memory optimization for 2GB servers
+    sourcemap: false, // Disable source maps to reduce memory usage
+    reportCompressedSize: false, // Disable gzip size reporting (memory intensive)
+    chunkSizeWarningLimit: 1000,
+    minify: 'esbuild',
   },
   server: {
     host: true,
