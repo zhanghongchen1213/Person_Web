@@ -1,24 +1,96 @@
 # 从零开始搭建、部署个人博客指南
 
-## 前言
+[![GitHub](https://img.shields.io/badge/GitHub-Person__Web-blue?logo=github)](https://github.com/zhanghongchen1213/Person_Web)
+[![在线演示](https://img.shields.io/badge/在线演示-zhcmqtt.top-green)](https://zhcmqtt.top)
+[![License](https://img.shields.io/badge/license-MIT-orange)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-支持-blue?logo=docker)](https://www.docker.com/)
+
+## 📖 前言
+
+### 项目简介
+
+Person_Web 是一个基于 **React 19 + Express + tRPC + MySQL** 的现代化全栈个人博客系统。本项目采用 Docker 容器化部署，提供完整的一键部署脚本，让你可以快速在云服务器上搭建属于自己的技术博客。
+
+### 📝 项目信息
 
 > **📝 开源地址**：[Person_Web](https://github.com/zhanghongchen1213/Person_Web)
-> **🎯 个人博客**：[zhcmqtt.top](https://zhcmqtt.top)
+> **🎯 在线演示**：[zhcmqtt.top](https://zhcmqtt.top)
 > **📅 最后更新**：2026-01-20
-> **🚀 部署目标**：将个人博客部署到云服务器（如华为云、阿里云、腾讯云等）
+> **🚀 部署目标**：将个人博客部署到云服务器（华为云、阿里云、腾讯云等）
+> **⏱️ 预计耗时**：首次部署约 30-60 分钟（含服务器配置）
 
-本文将手把手教你如何将 Person_Web 个人博客项目部署到云服务器上。即使你不是全栈工程师，只要有基本的编程知识和 Linux 命令行使用经验，就能按照本指南完成部署。
+### 📸 项目截图
 
-### 你将学到什么
+<div align="center">
 
-- ✅ 如何在云服务器上安装 Docker 环境
-- ✅ 如何配置 Nginx 反向代理
-- ✅ 如何申请免费的 HTTPS 证书
-- ✅ 如何使用一键脚本部署应用
-- ✅ 如何以访客身份访问博客
-- ✅ 如何以管理员身份登录后台
+**个人页面**
+
+[![个人页面](https://i.imgs.ovh/2026/01/20/yzv3Eh.md.jpeg)](https://imgloc.com/image/yzv3Eh)
+
+**首页展示**
+
+[![首页](https://i.imgs.ovh/2026/01/20/yzvi0e.md.png)](https://imgloc.com/image/yzvi0e)
+
+**文章详情页**
+
+[![文章详情](https://i.imgs.ovh/2026/01/20/yzF0za.md.png)](https://imgloc.com/image/yzF0za)
+
+</div>
 
 ---
+
+### 🎯 适合人群
+
+本教程适合以下人群：
+
+- ✅ **技术爱好者**：有基本的编程基础和 Linux 命令行使用经验
+- ✅ **内容创作者**：需要一个稳定、美观的博客平台来发布技术文章
+
+### ⭐ 项目特点
+
+#### 🚀 技术栈先进
+
+- **前端**：React 19 + TypeScript + Vite + TailwindCSS
+- **后端**：Express + tRPC
+- **数据库**：MySQL 8.0 + Drizzle ORM
+- **部署**：Docker + Docker Compose + Nginx + Let's Encrypt
+
+#### 🎨 功能完整
+
+- ✅ Markdown 编辑器，支持代码高亮和实时预览
+- ✅ 文章分类管理、标签系统
+- ✅ 响应式设计，完美适配移动端
+- ✅ 暗黑模式支持
+- ✅ GitHub OAuth 认证，安全可靠
+- ✅ 图片上传和管理
+- ✅ 文档系统（支持技术文档编写）
+- ✅ SEO 友好
+
+#### 🛠️ 部署简单
+
+- ✅ **一键部署脚本**：自动化完成所有配置
+- ✅ **Docker 容器化**：环境隔离，避免依赖冲突
+- ✅ **详细文档**：每一步都有清晰的说明和截图
+- ✅ **国内优化**：提供镜像加速方案，解决网络问题
+- ✅ **HTTPS 支持**：自动申请和续期 SSL 证书
+
+#### 💰 成本低廉
+
+- 云服务器：2核2G 配置约 100-300 元/年
+- 域名：.top/.xyz 等域名约 10-50 元/年
+- SSL 证书：Let's Encrypt 免费证书
+- **总成本**：约 110-350 元/年即可拥有专业博客
+
+### 📊 部署效果
+
+部署完成后，你将拥有：
+
+- 🌐 一个可通过域名访问的个人博客网站
+- 🔒 HTTPS 加密连接，绿色安全锁标识
+- 📝 功能完整的后台管理系统
+- 📱 完美适配 PC、平板、手机的响应式界面
+- ⚡ 快速的页面加载速度
+- 🔐 安全的 GitHub OAuth 认证
 
 ### 部署架构简介
 
@@ -898,40 +970,3 @@ Person_Web/
    - Docker 官方文档：https://docs.docker.com/
    - Nginx 官方文档：https://nginx.org/en/docs/
    - MySQL 官方文档：https://dev.mysql.com/doc/
-
----
-
-## 总结
-
-恭喜你完成了 Person_Web 个人博客的部署！现在你已经拥有了一个功能完整的个人博客系统。
-
-**你已经学会了**：
-
-- ✅ 在云服务器上安装 Docker 环境
-- ✅ 配置 Nginx 反向代理
-- ✅ 申请免费的 HTTPS 证书
-- ✅ 使用一键脚本部署应用
-- ✅ 区分访客访问和管理员访问
-- ✅ 日常维护和故障排查
-
-**下一步建议**：
-
-1. 创建你的第一篇博客文章
-2. 配置博客的基本信息（关于页面等）
-3. 设置定期备份任务
-4. 优化 SEO 设置
-5. 分享你的博客给朋友
-
-**重要提醒**：
-
-- 📌 定期备份数据库和上传文件
-- 📌 关注 SSL 证书有效期
-- 📌 定期更新系统和应用
-
-祝你使用愉快！🎉
-
----
-
-**文档版本**: v2.0.0
-**最后更新**: 2026-01-19
-**适用对象**: 有编程基础的开发者（不需要全栈经验）
