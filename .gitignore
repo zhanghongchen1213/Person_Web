@@ -108,3 +108,34 @@ temp/
 *.sqlite3
 nul
 .env.example
+
+# AI Tools Configuration (Claude Code, Trae, etc.)
+.claude/
+.trae/
+
+# Development Planning Documents
+plan.md
+spec.md
+
+# Test Files
+**/__tests__/
+*.test.ts
+*.test.tsx
+vitest.config.ts
+
+# Temporary and Development Files
+cookies.txt
+temp_*.sql
+*.tmp
+image.png
+init-categories.js
+
+# Backup Files
+*.backup
+*.bak
+
+# Uploads Directory (managed by Docker volume)
+uploads/
+
+# Performance Monitoring (optional)
+server/PERFORMANCE_MONITORING.md
