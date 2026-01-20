@@ -126,6 +126,7 @@ export function registerGitHubOAuthRoutes(app: Express) {
       console.log(`[GitHubOAuth] User saved to database: ${openId}`);
 
       // 创建会话 token
+      console.log(`[GitHubOAuth] Creating session with appId: ${ENV.appId}`);
       const sessionToken = await sdk.createSessionToken(openId, {
         name: githubUser.name || githubUser.login,
         expiresInMs: ONE_YEAR_MS,
@@ -133,6 +134,7 @@ export function registerGitHubOAuthRoutes(app: Express) {
 
       // 设置 cookie
       const cookieOptions = getSessionCookieOptions(req);
+      console.log(`[GitHubOAuth] Cookie options:`, cookieOptions);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
       console.log("[GitHubOAuth] Session created, redirecting to home");

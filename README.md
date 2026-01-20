@@ -276,8 +276,8 @@ sudo bash deploy/scripts/setup-server.sh
 2. 点击 **"New OAuth App"** 创建新应用
 3. 填写应用信息：
    - **Application name**: 你的博客名称（如 "My Personal Blog"）
-   - **Homepage URL**: `http://你的服务器IP:3000` 或 `https://你的域名`
-   - **Authorization callback URL**: `http://你的服务器IP:3000/api/auth/github/callback`
+   - **Homepage URL**: `https://你的域名`
+   - **Authorization callback URL**: `https://你的域名/api/auth/github/callback`
 4. 点击 **"Register application"**
 5. 记录下 **Client ID** 和 **Client Secret**（稍后配置时需要）
 6. 获取你的 GitHub 用户 ID：
@@ -408,115 +408,13 @@ curl http://localhost:3000
 
 ---
 
-## 六、访问你的博客
-
-恭喜！你的博客已经部署成功了。现在让我们了解如何访问博客。
-
-💡 **提示**：如果你还没有域名，可以直接使用服务器 IP 地址访问。域名配置是可选的，可以在第七步中完成。
-
-### 6.1 使用 IP 地址访问（无域名）
-
-#### 访客访问
-
-访客可以通过以下方式访问你的博客：
-
-```
-http://你的服务器IP:3000
-```
-
-例如：`http://123.45.67.89:3000`
-
-💡 **访客可以做什么**：
-
-- ✅ 浏览所有已发布的博客文章
-- ✅ 查看文章分类
-- ✅ 搜索文章
-- ✅ 查看文档（如果有）
-- ❌ 无法创建、编辑或删除文章
-
-#### 管理员访问
-
-作为博客的管理员，你需要使用 **GitHub OAuth 登录**进行身份验证。
-
-⚠️ **重要提示**：在第四步"配置环境变量"时，如果你已经按照推荐方式配置了 GitHub OAuth，可以直接登录。如果还没有配置，请先返回第四步完成 GitHub OAuth 配置。
-
-**步骤 1：配置 GitHub OAuth 应用**（如果第四步已配置，可跳过）
-
-1. 访问 [GitHub Developer Settings](https://github.com/settings/developers)
-2. 点击 "New OAuth App" 创建新应用
-3. 填写应用信息：
-   - **Application name**: 你的博客名称（如 "My Personal Blog"）
-   - **Homepage URL**: `http://你的服务器IP:3000` 或 `https://你的域名`
-   - **Authorization callback URL**: `http://你的服务器IP:3000/api/auth/github/callback`
-4. 点击 "Register application"
-5. 记录 **Client ID** 和 **Client Secret**
-
-**步骤 2：更新环境变量**
-
-编辑 `.env.production` 文件，添加 GitHub OAuth 配置：
-
-```bash
-# 编辑环境变量文件
-nano /opt/Person_Web/.env.production
-```
-
-添加或修改以下配置：
-
-```env
-# GitHub OAuth 配置
-GITHUB_CLIENT_ID=你的GitHub_Client_ID
-GITHUB_CLIENT_SECRET=你的GitHub_Client_Secret
-GITHUB_CALLBACK_URL=http://你的服务器IP:3000/api/auth/github/callback
-
-# 管理员 GitHub ID（格式: github:你的GitHub用户ID）
-# 获取你的 GitHub 用户 ID: 访问 https://api.github.com/users/你的GitHub用户名
-OWNER_OPEN_ID=github:你的GitHub用户ID
-```
-
-**步骤 3：重启应用**
-
-```bash
-cd /opt/Person_Web
-docker-compose restart app
-```
-
-**步骤 4：登录博客**
-
-访问登录页面：`http://你的服务器IP:3000/login`
-
-点击 "使用 GitHub 登录" 按钮，将跳转到 GitHub 授权页面，授权后自动登录。
-
-✅ **优势**：
-
-- 安全可靠，使用 GitHub 官方 OAuth
-- 无需记忆复杂的登录链接
-- 支持多用户管理（通过配置多个 GitHub ID）
-
-💡 **管理员可以做什么**：
-
-- ✅ 创建新文章（博客或文档）
-- ✅ 编辑已有文章
-- ✅ 删除文章
-- ✅ 管理分类
-- ✅ 修改文章发布状态（草稿/已发布/归档）
-- ✅ 上传图片
-
-✅ **成功标志**：
-
-- 访客模式：可以浏览文章，但无法编辑
-- 管理员模式：右上角有"写文章"按钮，可以创建和编辑文章
-
-💡 **下一步**：如果你有域名，可以继续阅读[七、配置域名和 HTTPS（可选）](#七配置域名和-https可选)来配置自定义域名和 HTTPS 证书。
-
----
-
-## 七、配置域名和 HTTPS（可选）
+## 六、配置域名和 HTTPS
 
 ⚠️ **本步骤为可选项**：如果你没有域名或暂时不需要 HTTPS，可以跳过此步骤。使用 IP 地址访问博客已经完全可以正常使用。
 
 如果你有自己的域名，强烈建议配置 HTTPS 证书，让你的博客更安全、更专业。
 
-### 7.1 前置准备
+### 6.1 前置准备
 
 在开始配置之前，请确保：
 
@@ -524,7 +422,7 @@ docker-compose restart app
 2. ✅ 域名已经解析到你的服务器 IP 地址
 3. ✅ 博客已经可以通过 IP 地址正常访问
 
-### 7.2 配置域名（一键脚本）
+### 6.2 配置域名（一键脚本）
 
 项目提供了域名配置脚本，可以自动替换所有配置文件中的域名。
 
@@ -543,38 +441,66 @@ sudo bash deploy/scripts/setup-domain.sh 你的域名
 3. ✅ 创建新的 Nginx 配置文件（使用你的域名）
 4. ✅ 输出后续操作步骤
 
-### 7.3 部署 Nginx 配置
+### 6.3 准备 Let's Encrypt 验证目录
+
+在部署 Nginx 配置前，需要先创建 SSL 证书验证目录：
 
 ```bash
-# 复制 Nginx 配置文件到系统目录
-sudo cp /opt/Person_Web/deploy/nginx/你的域名.conf /etc/nginx/sites-available/
-# 例如：sudo cp /opt/Person_Web/deploy/nginx/zhcmqtt.top.conf /etc/nginx/sites-available/
+# 创建 Let's Encrypt 验证目录
+sudo mkdir -p /var/www/html/.well-known/acme-challenge
+
+# 设置正确的权限
+sudo chmod -R 755 /var/www/html/.well-known
+```
+
+### 6.4 部署 HTTP Nginx 配置（用于证书申请）
+
+⚠️ **重要**：首次配置时，需要先部署 HTTP 配置，申请证书成功后再切换到 HTTPS 配置。
+
+```bash
+# 删除旧配置（如果存在）
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo rm -f /etc/nginx/sites-enabled/你的域名.conf
+# 例如：sudo rm -f /etc/nginx/sites-enabled/zhcmqtt.top.conf
+
+# 复制 HTTP 配置文件到系统目录
+sudo cp deploy/nginx/你的域名.conf /etc/nginx/sites-available/
+# 例如：sudo cp deploy/nginx/zhcmqtt.top.conf /etc/nginx/sites-available/
 
 # 创建软链接启用配置
 sudo ln -s /etc/nginx/sites-available/你的域名.conf /etc/nginx/sites-enabled/
 # 例如：sudo ln -s /etc/nginx/sites-available/zhcmqtt.top.conf /etc/nginx/sites-enabled/
 
-# 删除默认配置（可选）
-sudo rm -f /etc/nginx/sites-enabled/default
-
 # 测试 Nginx 配置
 sudo nginx -t
 
-# 重载 Nginx
-sudo systemctl reload nginx
+# 重启 Nginx
+sudo systemctl restart nginx
 ```
 
 ✅ **预期输出**：`syntax is ok` 和 `test is successful`
 
-### 7.4 申请 SSL 证书（一键脚本）
+**验证 HTTP 访问**：
+
+```bash
+# 测试域名访问
+curl -I http://你的域名
+# 例如：curl -I http://zhcmqtt.top
+
+# 应该返回 HTTP/1.1 200 或看到 HTML 内容
+```
+
+### 6.5 申请 SSL 证书（一键脚本）
+
+⚠️ **前提条件**：确保 HTTP 访问正常后再执行此步骤。
 
 项目提供了 SSL 证书申请脚本，可以自动完成所有步骤。
 
 ```bash
 # 执行 SSL 证书申请脚本
-sudo bash /opt/Person_Web/deploy/scripts/setup-ssl.sh 你的域名 你的邮箱
+sudo bash deploy/scripts/setup-ssl.sh 你的域名 你的邮箱
 
-# 例如：sudo bash /opt/Person_Web/deploy/scripts/setup-ssl.sh zhcmqtt.top admin@zhcmqtt.top
+# 例如：sudo bash deploy/scripts/setup-ssl.sh zhcmqtt.top admin@zhcmqtt.top
 ```
 
 ⏱️ **预计耗时**：2-3 分钟
@@ -585,20 +511,56 @@ sudo bash /opt/Person_Web/deploy/scripts/setup-ssl.sh 你的域名 你的邮箱
 2. ✅ 申请 Let's Encrypt SSL 证书
 3. ✅ 配置证书自动续期
 4. ✅ 测试证书续期功能
-5. ✅ 重载 Nginx 配置
 
-### 7.5 验证 HTTPS 访问
+✅ **成功标志**：看到 `Congratulations! Your certificate and chain have been saved` 消息
+
+---
+
+[![ybi7ft.md.png](https://i.imgs.ovh/2026/01/20/ybi7ft.md.png)](https://imgloc.com/image/ybi7ft)
+
+---
+
+### 6.6 部署 HTTPS Nginx 配置
+
+证书申请成功后，需要切换到 HTTPS 配置：
+
+```bash
+# 删除 HTTP 配置
+sudo rm -f /etc/nginx/sites-enabled/你的域名.conf
+# 例如：sudo rm -f /etc/nginx/sites-enabled/zhcmqtt.top.conf
+
+# 复制 HTTPS 配置文件
+sudo cp deploy/nginx/你的域名-https.conf /etc/nginx/sites-available/
+# 例如：sudo cp deploy/nginx/zhcmqtt.top-https.conf /etc/nginx/sites-available/
+
+# 启用 HTTPS 配置
+sudo ln -s /etc/nginx/sites-available/你的域名-https.conf /etc/nginx/sites-enabled/
+# 例如：sudo ln -s /etc/nginx/sites-available/zhcmqtt.top-https.conf /etc/nginx/sites-enabled/
+
+# 测试配置
+sudo nginx -t
+
+# 重启 Nginx
+sudo systemctl restart nginx
+```
+
+### 6.7 验证 HTTPS 访问
 
 ```bash
 # 测试 HTTPS 访问
 curl -I https://你的域名
+# 例如：curl -I https://zhcmqtt.top
 ```
 
 ✅ **预期输出**：`HTTP/2 200`
 
-或者在浏览器中访问 `https://你的域名`，应该能看到绿色的锁图标。
+或者在浏览器中访问 `https://你的域名`，应该能看到：
 
-### 7.6 证书自动续期说明
+- ✅ 绿色锁图标
+- ✅ 地址栏显示"安全"或"连接是安全的"
+- ✅ HTTP 自动重定向到 HTTPS
+
+### 6.8 证书自动续期说明
 
 SSL 证书申请脚本已经自动配置了证书续期任务。Let's Encrypt 证书有效期为 90 天，系统会在到期前自动续期。
 
@@ -616,6 +578,54 @@ sudo certbot renew --dry-run
 - 证书会在到期前 30 天自动续期
 - 续期失败会发送邮件通知到你配置的邮箱
 - 可以使用 `sudo certbot certificates` 查看证书状态
+
+---
+
+## 七、访问你的博客
+
+恭喜！你的博客已经部署成功了。现在让我们了解如何访问博客。
+
+💡 **提示**：如果你还没有域名，可以直接使用服务器 IP 地址访问。域名配置是可选的，可以在第七步中完成。
+
+### 7.1 使用 域名 访问
+
+#### 访客访问
+
+访客可以通过以下方式访问你的博客：
+
+```
+https://你的域名
+```
+
+例如：`https://zhcmqtt.top`
+
+💡 **访客可以做什么**：
+
+- ✅ 浏览所有已发布的博客文章
+- ✅ 查看文章分类
+- ✅ 搜索文章
+- ✅ 查看文档（如果有）
+- ❌ 无法创建、编辑或删除文章
+
+#### 管理员访问
+
+作为博客的管理员，你需要使用 **GitHub OAuth 登录**进行身份验证。
+
+⚠️ **重要提示**：在第四步"配置环境变量"时，如果你已经按照推荐方式配置了 GitHub OAuth，可以直接登录。如果还没有配置，请先返回第四步完成 GitHub OAuth 配置。
+
+💡 **管理员可以做什么**：
+
+- ✅ 创建新文章（博客或文档）https://你的域名/write
+- ✅ 编辑已有文章 https://你的域名/admin/articles
+- ✅ 删除文章
+- ✅ 管理分类
+- ✅ 修改文章发布状态（草稿/已发布/归档）
+- ✅ 上传图片
+
+✅ **成功标志**：
+
+- 访客模式：可以浏览文章，但无法编辑
+- 管理员模式：右上角有"写文章"按钮，可以创建和编辑文章,删除文章,管理分类,修改文章发布状态,上传图片
 
 ---
 
@@ -654,72 +664,6 @@ gunzip /opt/backups/blog-20260119.sql.gz
 # 恢复数据库
 docker exec -i person_web_mysql mysql -uroot -p你的数据库密码 personal_blog < /opt/backups/blog-20260119.sql
 ```
-
-### Q3: 2G 内存服务器构建失败怎么办？
-
-**问题现象**：
-
-- 构建过程中显示 `Killed` 或 `exit code: 137`
-- 构建卡在 `computing gzip size...` 阶段后失败
-- 错误信息：`JavaScript heap out of memory` 或 `Reached heap limit`
-
-**原因分析**：
-
-2G 内存服务器在构建大型前端项目时容易出现内存不足（OOM）问题：
-
-- 系统本身占用：200-300MB
-- Docker 守护进程：100-200MB
-- MySQL 容器（如运行）：400-500MB
-- 构建进程需要：1GB+
-- **总需求超过 2GB 可用内存**
-
-**解决方案**：
-
-项目已经针对 2G 内存服务器进行了优化，包括：
-
-1. ✅ **降低 Node.js 堆内存**：限制为 1GB（`--max-old-space-size=1024`）
-2. ✅ **禁用内存密集型操作**：
-   - 禁用 source map 生成
-   - 禁用 gzip 大小计算
-   - 优化代码分割策略
-3. ✅ **构建前释放内存**：自动停止 MySQL 容器释放约 400-500MB 内存
-
-**如果仍然失败，可以尝试**：
-
-**方案 1：启用 Swap 交换空间（推荐）**
-
-```bash
-# 创建 2GB Swap 文件
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-
-# 验证 Swap 已启用
-free -h
-
-# 永久启用（重启后生效）
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-```
-
-**方案 2：手动停止所有容器后构建**
-
-```bash
-cd /opt/Person_Web
-
-# 停止所有容器释放内存
-docker compose down
-
-# 清理 Docker 缓存
-docker system prune -af
-
-# 重新部署
-bash deploy/scripts/deploy.sh
-```
-
-**方案 3：升级服务器配置**
-
-如果预算允许，建议升级到 4GB 内存配置，可以获得更稳定的构建体验。
 
 ---
 

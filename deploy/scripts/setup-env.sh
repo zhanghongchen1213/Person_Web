@@ -221,6 +221,12 @@ DATABASE_URL=mysql://root:${MYSQL_PASSWORD}@mysql:3306/personal_blog?charset=utf
 NODE_ENV=production
 
 # --------------------------------------------
+# 应用标识 (Application ID)
+# --------------------------------------------
+# 用于会话管理的应用唯一标识符
+VITE_APP_ID=person_web_blog
+
+# --------------------------------------------
 # JWT 认证配置 (JWT Authentication)
 # --------------------------------------------
 JWT_SECRET=${JWT_SECRET}
