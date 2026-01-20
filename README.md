@@ -360,6 +360,8 @@ sudo bash deploy/scripts/deploy.sh
 
 ### 5.3 预期输出
 
+[![yb11kx.md.png](https://i.imgs.ovh/2026/01/20/yb11kx.md.png)](https://imgloc.com/image/yb11kx)
+
 ### 5.4 验证部署
 
 #### 检查容器状态
@@ -664,6 +666,7 @@ docker exec -i person_web_mysql mysql -uroot -p你的数据库密码 personal_bl
 **原因分析**：
 
 2G 内存服务器在构建大型前端项目时容易出现内存不足（OOM）问题：
+
 - 系统本身占用：200-300MB
 - Docker 守护进程：100-200MB
 - MySQL 容器（如运行）：400-500MB
