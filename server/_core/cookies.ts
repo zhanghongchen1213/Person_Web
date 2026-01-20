@@ -28,11 +28,11 @@ export function getSessionCookieOptions(
   const isLocalhost = LOCAL_HOSTS.has(hostname) || hostname === "127.0.0.1";
 
   // For localhost, use lax sameSite to allow cookies to work in development
-  // For production, use none with secure
+  // For production, use lax with secure (works for same-site HTTPS)
   return {
     httpOnly: true,
     path: "/",
-    sameSite: isLocalhost ? "lax" : "none",
+    sameSite: "lax",
     secure: isLocalhost ? false : isSecureRequest(req),
   };
 }
