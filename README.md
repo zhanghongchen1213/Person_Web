@@ -1,10 +1,5 @@
 # 从零开始搭建、部署个人博客指南
 
-[![GitHub](https://img.shields.io/badge/GitHub-Person__Web-blue?logo=github)](https://github.com/zhanghongchen1213/Person_Web)
-[![在线演示](https://img.shields.io/badge/在线演示-zhcmqtt.top-green)](https://zhcmqtt.top)
-[![License](https://img.shields.io/badge/license-MIT-orange)](LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-支持-blue?logo=docker)](https://www.docker.com/)
-
 ## 📖 前言
 
 ### 项目简介
