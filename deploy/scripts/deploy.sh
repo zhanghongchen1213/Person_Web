@@ -190,47 +190,63 @@ fi
 log_step "5/9 预拉取基础镜像..."
 
 # 拉取 Node.js 基础镜像
-log_info "正在拉取 node:22-alpine 基础镜像..."
-if ! docker pull node:22-alpine 2>/dev/null; then
-    log_warn "从默认源拉取失败，尝试直接从 Docker Hub 拉取..."
-
-    # 临时禁用镜像加速器，直接从 Docker Hub 拉取
-    if docker pull docker.io/library/node:22-alpine; then
-        log_success "Node.js 基础镜像拉取成功"
-    else
-        log_error "无法拉取基础镜像 node:22-alpine"
-        log_info "可能的解决方案:"
-        log_info "  1. 检查网络连接"
-        log_info "  2. 检查 Docker 镜像加速器配置: /etc/docker/daemon.json"
-        log_info "  3. 重启 Docker 服务: sudo systemctl restart docker"
-        exit 1
-    fi
+log_info "检查 node:22-alpine 基础镜像..."
+if docker image inspect node:22-alpine >/dev/null 2>&1; then
+    log_success "Node.js 基础镜像已存在，跳过拉取"
 else
-    log_success "Node.js 基础镜像拉取成功"
+    log_info "本地未找到镜像，开始拉取 node:22-alpine..."
+    if ! docker pull node:22-alpine 2>/dev/null; then
+        log_warn "从默认源拉取失败，尝试直接从 Docker Hub 拉取..."
+
+        # 临时禁用镜像加速器，直接从 Docker Hub 拉取
+        if docker pull docker.io/library/node:22-alpine; then
+            log_success "Node.js 基础镜像拉取成功"
+        else
+            log_error "无法拉取基础镜像 node:22-alpine"
+            log_info "可能的解决方案:"
+            log_info "  1. 检查网络连接"
+            log_info "  2. 检查 Docker 镜像加速器配置: /etc/docker/daemon.json"
+            log_info "  3. 重启 Docker 服务: sudo systemctl restart docker"
+            exit 1
+        fi
+    else
+        log_success "Node.js 基础镜像拉取成功"
+    fi
 fi
 
 # 拉取 MySQL 镜像
-log_info "正在拉取 mysql:8.0 镜像..."
-if ! docker pull mysql:8.0 2>/dev/null; then
-    log_warn "从默认源拉取失败，尝试直接从 Docker Hub 拉取..."
-
-    if docker pull docker.io/library/mysql:8.0; then
-        log_success "MySQL 镜像拉取成功"
-    else
-        log_error "无法拉取 MySQL 镜像"
-        log_info "可能的解决方案:"
-        log_info "  1. 检查网络连接"
-        log_info "  2. 检查 Docker 镜像加速器配置"
-        exit 1
-    fi
+log_info "检查 mysql:8.0 镜像..."
+if docker image inspect mysql:8.0 >/dev/null 2>&1; then
+    log_success "MySQL 镜像已存在，跳过拉取"
 else
-    log_success "MySQL 镜像拉取成功"
+    log_info "本地未找到镜像，开始拉取 mysql:8.0..."
+    if ! docker pull mysql:8.0 2>/dev/null; then
+        log_warn "从默认源拉取失败，尝试直接从 Docker Hub 拉取..."
+
+        if docker pull docker.io/library/mysql:8.0; then
+            log_success "MySQL 镜像拉取成功"
+        else
+            log_error "无法拉取 MySQL 镜像"
+            log_info "可能的解决方案:"
+            log_info "  1. 检查网络连接"
+            log_info "  2. 检查 Docker 镜像加速器配置"
+            exit 1
+        fi
+    else
+        log_success "MySQL 镜像拉取成功"
+    fi
 fi
 
 # ============================================
 # Step 6: 构建新镜像
 # ============================================
 log_step "6/9 构建 Docker 镜像..."
+
+# 临时停止 MySQL 容器以释放内存（2GB 服务器优化）
+log_info "临时停止 MySQL 容器以释放内存用于构建..."
+docker compose stop mysql 2>/dev/null || true
+sleep 2
+
 log_info "开始构建镜像（这可能需要几分钟）..."
 echo ""
 
