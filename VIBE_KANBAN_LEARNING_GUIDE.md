@@ -1,85 +1,85 @@
-# 📚 Vibe-Kanban 系统学习指南
+# Vibe-Kanban System Learning Guide
 
-> 完整的 Vibe-Kanban 任务管理系统学习文档
+> Comprehensive documentation for the Vibe-Kanban task management system
 >
-> **文档版本**: v1.0.0
-> **创建日期**: 2026-01-24
-> **适用项目**: Person_Web
+> **Document Version**: v1.0.0
+> **Created**: 2026-01-24
+> **Target Project**: Person_Web
 
 ---
 
-## 目录
+## Table of Contents
 
-1. [Vibe-Kanban 简介](#1-vibe-kanban-简介)
-2. [核心概念](#2-核心概念)
-3. [MCP 工具详解](#3-mcp-工具详解)
-4. [仓库脚本配置](#4-仓库脚本配置)
-5. [工作空间会话](#5-工作空间会话)
-6. [实战示例](#6-实战示例)
-7. [最佳实践](#7-最佳实践)
-8. [常见问题](#8-常见问题)
+1. [Introduction to Vibe-Kanban](#1-introduction-to-vibe-kanban)
+2. [Core Concepts](#2-core-concepts)
+3. [MCP Tools Reference](#3-mcp-tools-reference)
+4. [Repository Script Configuration](#4-repository-script-configuration)
+5. [Workspace Sessions](#5-workspace-sessions)
+6. [Practical Examples](#6-practical-examples)
+7. [Best Practices](#7-best-practices)
+8. [Frequently Asked Questions](#8-frequently-asked-questions)
 
 ---
 
-## 1. Vibe-Kanban 简介
+## 1. Introduction to Vibe-Kanban
 
-### 1.1 什么是 Vibe-Kanban？
+### 1.1 What is Vibe-Kanban?
 
-**Vibe-Kanban** 是一个强大的**项目任务管理系统**，通过 MCP (Model Context Protocol) 工具集成到 Claude Code 中。它让你可以：
+**Vibe-Kanban** is a comprehensive project task management system integrated into Claude Code through MCP (Model Context Protocol) tools. It provides the following capabilities:
 
-- 📋 **管理项目和任务** - 创建、更新、删除任务
-- 🔄 **跟踪任务状态** - todo → in progress → in review → done
-- 🤖 **启动 AI 代理** - 让 AI 自动完成任务
-- 📦 **管理仓库脚本** - 配置初始化、清理、开发服务器脚本
-- 🎯 **多执行器支持** - Claude Code, Gemini, Cursor 等
+- **Project and Task Management** - Create, update, and delete tasks
+- **Task Status Tracking** - todo → in progress → in review → done
+- **AI Agent Automation** - Launch AI agents to automatically complete tasks
+- **Repository Script Management** - Configure setup, cleanup, and dev server scripts
+- **Multi-Executor Support** - Claude Code, Gemini, Cursor, and more
 
-### 1.2 系统架构
+### 1.2 System Architecture
 
 ```
-Vibe-Kanban 系统
-├── 项目 (Projects)
-│   ├── Person_Web (当前项目)
-│   └── 其他项目...
+Vibe-Kanban System
+├── Projects
+│   ├── Person_Web (current project)
+│   └── Other projects...
 │
-├── 任务 (Tasks)
-│   ├── 任务 1: vibe-kanban学习 (in progress)
-│   ├── 任务 2: 实现用户登录 (todo)
-│   └── 任务 3: 优化数据库查询 (done)
+├── Tasks
+│   ├── Task 1: vibe-kanban learning (in progress)
+│   ├── Task 2: Implement user login (todo)
+│   └── Task 3: Optimize database queries (done)
 │
-├── 仓库 (Repositories)
-│   ├── Person_Web 仓库
-│   │   ├── setup_script (初始化脚本)
-│   │   ├── cleanup_script (清理脚本)
-│   │   └── dev_server_script (开发服务器脚本)
-│   └── 其他仓库...
+├── Repositories
+│   ├── Person_Web Repository
+│   │   ├── setup_script (initialization script)
+│   │   ├── cleanup_script (cleanup script)
+│   │   └── dev_server_script (development server script)
+│   └── Other repositories...
 │
-└── 工作空间会话 (Workspace Sessions)
-    └── AI 代理自动执行任务
+└── Workspace Sessions
+    └── AI agents automatically execute tasks
 ```
 
-### 1.3 核心优势
+### 1.3 Key Advantages
 
-✅ **类型安全** - 所有 API 都有完整的 TypeScript 类型定义
-✅ **AI 驱动** - 支持多种 AI 代理自动完成任务
-✅ **灵活配置** - 可自定义仓库脚本和工作流
-✅ **状态追踪** - 清晰的任务状态流转机制
-✅ **多项目支持** - 可管理多个项目和仓库
+- **Type Safety** - All APIs have complete TypeScript type definitions
+- **AI-Driven** - Supports multiple AI agents for automated task completion
+- **Flexible Configuration** - Customizable repository scripts and workflows
+- **Status Tracking** - Clear task state transition mechanism
+- **Multi-Project Support** - Manage multiple projects and repositories
 
 ---
 
-## 2. 核心概念
+## 2. Core Concepts
 
-### 2.1 项目 (Project)
+### 2.1 Project
 
-**定义**: 项目是任务和仓库的容器。
+**Definition**: A project is a container for tasks and repositories.
 
-**属性**:
-- `id` (UUID) - 项目唯一标识
-- `name` (string) - 项目名称
-- `created_at` (timestamp) - 创建时间
-- `updated_at` (timestamp) - 更新时间
+**Properties**:
+- `id` (UUID) - Unique project identifier
+- `name` (string) - Project name
+- `created_at` (timestamp) - Creation timestamp
+- `updated_at` (timestamp) - Last update timestamp
 
-**示例**:
+**Example**:
 ```json
 {
   "id": "7d33ce59-3de8-4f9f-9dd5-475b0da575bd",
@@ -89,54 +89,54 @@ Vibe-Kanban 系统
 }
 ```
 
-### 2.2 任务 (Task)
+### 2.2 Task
 
-**定义**: 任务是需要完成的工作单元。
+**Definition**: A task is a unit of work that needs to be completed.
 
-**属性**:
-- `id` (UUID) - 任务唯一标识
-- `title` (string) - 任务标题
-- `description` (string) - 任务描述（可选）
-- `status` (enum) - 任务状态
-- `created_at` (timestamp) - 创建时间
-- `updated_at` (timestamp) - 更新时间
+**Properties**:
+- `id` (UUID) - Unique task identifier
+- `title` (string) - Task title
+- `description` (string) - Task description (optional)
+- `status` (enum) - Task status
+- `created_at` (timestamp) - Creation timestamp
+- `updated_at` (timestamp) - Last update timestamp
 
-**任务状态流转**:
+**Task Status Flow**:
 ```
-todo (待办)
+todo (pending)
   ↓
-inprogress (进行中)
+inprogress (in progress)
   ↓
-inreview (审查中)
+inreview (in review)
   ↓
-done (完成) / cancelled (取消)
+done (completed) / cancelled (cancelled)
 ```
 
-**示例**:
+**Example**:
 ```json
 {
   "id": "5c669fc1-836a-4f16-93c2-c94de3e57f8c",
-  "title": "vibe-kanban学习",
-  "description": "学习 Vibe-Kanban 系统的使用方法",
+  "title": "vibe-kanban learning",
+  "description": "Learn how to use the Vibe-Kanban system",
   "status": "inprogress",
   "created_at": "2026-01-24T07:40:58.796+00:00",
   "updated_at": "2026-01-24T07:42:58+00:00"
 }
 ```
 
-### 2.3 仓库 (Repository)
+### 2.3 Repository
 
-**定义**: 仓库是项目关联的 Git 代码仓库。
+**Definition**: A repository is a Git code repository associated with a project.
 
-**属性**:
-- `id` (UUID) - 仓库唯一标识
-- `name` (string) - 仓库名称
-- `display_name` (string) - 显示名称
-- `setup_script` (string) - 初始化脚本
-- `cleanup_script` (string) - 清理脚本
-- `dev_server_script` (string) - 开发服务器脚本
+**Properties**:
+- `id` (UUID) - Unique repository identifier
+- `name` (string) - Repository name
+- `display_name` (string) - Display name
+- `setup_script` (string) - Initialization script
+- `cleanup_script` (string) - Cleanup script
+- `dev_server_script` (string) - Development server script
 
-**示例**:
+**Example**:
 ```json
 {
   "id": "545d39de-35a1-4fcb-9281-007bda363b6f",
@@ -148,29 +148,29 @@ done (完成) / cancelled (取消)
 }
 ```
 
-### 2.4 工作空间会话 (Workspace Session)
+### 2.4 Workspace Session
 
-**定义**: 工作空间会话是 AI 代理执行任务的环境。
+**Definition**: A workspace session is the environment where AI agents execute tasks.
 
-**组成部分**:
-- 任务 ID
-- 执行器类型（Claude Code, Gemini 等）
-- 关联的仓库和分支
-- 执行脚本
+**Components**:
+- Task ID
+- Executor type (Claude Code, Gemini, etc.)
+- Associated repositories and branches
+- Execution scripts
 
 ---
 
-## 3. MCP 工具详解
+## 3. MCP Tools Reference
 
-### 3.1 项目管理工具
+### 3.1 Project Management Tools
 
-#### 3.1.1 list_projects - 列出所有项目
+#### 3.1.1 list_projects - List All Projects
 
-**功能**: 获取所有项目列表
+**Function**: Retrieve all project lists
 
-**参数**: 无
+**Parameters**: None
 
-**返回值**:
+**Return Value**:
 ```typescript
 {
   projects: Array<{
@@ -183,12 +183,12 @@ done (完成) / cancelled (取消)
 }
 ```
 
-**使用示例**:
+**Usage Example**:
 ```typescript
 mcp__vibe_kanban__list_projects()
 ```
 
-**返回示例**:
+**Return Example**:
 ```json
 {
   "projects": [
@@ -205,22 +205,22 @@ mcp__vibe_kanban__list_projects()
 
 ---
 
-### 3.2 任务管理工具
+### 3.2 Task Management Tools
 
-#### 3.2.1 list_tasks - 列出项目任务
+#### 3.2.1 list_tasks - List Project Tasks
 
-**功能**: 获取指定项目的任务列表
+**Function**: Retrieve task list for a specified project
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  project_id: string;      // 必需：项目 ID
-  status?: string;         // 可选：筛选状态 (todo/inprogress/inreview/done/cancelled)
-  limit?: number;          // 可选：限制数量 (默认 50)
+  project_id: string;      // Required: Project ID
+  status?: string;         // Optional: Filter by status (todo/inprogress/inreview/done/cancelled)
+  limit?: number;          // Optional: Limit quantity (default 50)
 }
 ```
 
-**返回值**:
+**Return Value**:
 ```typescript
 {
   tasks: Array<{
@@ -236,38 +236,38 @@ mcp__vibe_kanban__list_projects()
 }
 ```
 
-**使用示例**:
+**Usage Examples**:
 ```typescript
-// 获取所有任务
+// Get all tasks
 mcp__vibe_kanban__list_tasks({
   project_id: "7d33ce59-3de8-4f9f-9dd5-475b0da575bd"
 })
 
-// 只获取进行中的任务
+// Get only in-progress tasks
 mcp__vibe_kanban__list_tasks({
   project_id: "7d33ce59-3de8-4f9f-9dd5-475b0da575bd",
   status: "inprogress"
 })
 
-// 限制返回数量
+// Limit return quantity
 mcp__vibe_kanban__list_tasks({
   project_id: "7d33ce59-3de8-4f9f-9dd5-475b0da575bd",
   limit: 10
 })
 ```
 
-#### 3.2.2 get_task - 获取任务详情
+#### 3.2.2 get_task - Get Task Details
 
-**功能**: 获取指定任务的详细信息
+**Function**: Retrieve detailed information for a specified task
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  task_id: string;  // 必需：任务 ID
+  task_id: string;  // Required: Task ID
 }
 ```
 
-**返回值**:
+**Return Value**:
 ```typescript
 {
   task: {
@@ -283,34 +283,34 @@ mcp__vibe_kanban__list_tasks({
 }
 ```
 
-**使用示例**:
+**Usage Example**:
 ```typescript
 mcp__vibe_kanban__get_task({
   task_id: "5c669fc1-836a-4f16-93c2-c94de3e57f8c"
 })
 ```
 
-#### 3.2.3 create_task - 创建新任务
+#### 3.2.3 create_task - Create New Task
 
-**功能**: 在项目中创建新任务
+**Function**: Create a new task in a project
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  project_id: string;      // 必需：项目 ID
-  title: string;           // 必需：任务标题
-  description?: string;    // 可选：任务描述
+  project_id: string;      // Required: Project ID
+  title: string;           // Required: Task title
+  description?: string;    // Optional: Task description
 }
 ```
 
-**返回值**:
+**Return Value**:
 ```typescript
 {
   task_id: string;
 }
 ```
 
-**使用示例**:
+**Usage Example**:
 ```typescript
 mcp__vibe_kanban__create_task({
   project_id: "7d33ce59-3de8-4f9f-9dd5-475b0da575bd",
@@ -319,36 +319,36 @@ mcp__vibe_kanban__create_task({
 })
 ```
 
-#### 3.2.4 update_task - 更新任务
+#### 3.2.4 update_task - Update Task
 
-**功能**: 更新任务的标题、描述或状态
+**Function**: Update task title, description, or status
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  task_id: string;         // 必需：任务 ID
-  title?: string;          // 可选：新标题
-  description?: string;    // 可选：新描述
-  status?: string;         // 可选：新状态 (todo/inprogress/inreview/done/cancelled)
+  task_id: string;         // Required: Task ID
+  title?: string;          // Optional: New title
+  description?: string;    // Optional: New description
+  status?: string;         // Optional: New status (todo/inprogress/inreview/done/cancelled)
 }
 ```
 
-**返回值**:
+**Return Value**:
 ```typescript
 {
   success: boolean;
 }
 ```
 
-**使用示例**:
+**Usage Examples**:
 ```typescript
-// 更新任务状态
+// Update task status
 mcp__vibe_kanban__update_task({
   task_id: "5c669fc1-836a-4f16-93c2-c94de3e57f8c",
   status: "done"
 })
 
-// 更新任务标题和描述
+// Update task title and description
 mcp__vibe_kanban__update_task({
   task_id: "5c669fc1-836a-4f16-93c2-c94de3e57f8c",
   title: "完成 Vibe-Kanban 学习",
@@ -356,25 +356,25 @@ mcp__vibe_kanban__update_task({
 })
 ```
 
-#### 3.2.5 delete_task - 删除任务
+#### 3.2.5 delete_task - Delete Task
 
-**功能**: 删除指定任务
+**Function**: Delete a specified task
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  task_id: string;  // 必需：任务 ID
+  task_id: string;  // Required: Task ID
 }
 ```
 
-**返回值**:
+**Return Value**:
 ```typescript
 {
   success: boolean;
 }
 ```
 
-**使用示例**:
+**Usage Example**:
 ```typescript
 mcp__vibe_kanban__delete_task({
   task_id: "5c669fc1-836a-4f16-93c2-c94de3e57f8c"
@@ -383,20 +383,20 @@ mcp__vibe_kanban__delete_task({
 
 ---
 
-### 3.3 仓库管理工具
+### 3.3 Repository Management Tools
 
-#### 3.3.1 list_repos - 列出项目仓库
+#### 3.3.1 list_repos - List Project Repositories
 
-**功能**: 获取项目关联的所有仓库
+**Function**: Retrieve all repositories associated with a project
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  project_id: string;  // 必需：项目 ID
+  project_id: string;  // Required: Project ID
 }
 ```
 
-**返回值**:
+**Return Value**:
 ```typescript
 {
   repos: Array<{
@@ -408,25 +408,25 @@ mcp__vibe_kanban__delete_task({
 }
 ```
 
-**使用示例**:
+**Usage Example**:
 ```typescript
 mcp__vibe_kanban__list_repos({
   project_id: "7d33ce59-3de8-4f9f-9dd5-475b0da575bd"
 })
 ```
 
-#### 3.3.2 get_repo - 获取仓库详情
+#### 3.3.2 get_repo - Get Repository Details
 
-**功能**: 获取仓库的详细信息，包括脚本配置
+**Function**: Retrieve detailed repository information, including script configuration
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  repo_id: string;  // 必需：仓库 ID
+  repo_id: string;  // Required: Repository ID
 }
 ```
 
-**返回值**:
+**Return Value**:
 ```typescript
 {
   id: string;
@@ -438,26 +438,26 @@ mcp__vibe_kanban__list_repos({
 }
 ```
 
-**使用示例**:
+**Usage Example**:
 ```typescript
 mcp__vibe_kanban__get_repo({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f"
 })
 ```
 
-#### 3.3.3 update_setup_script - 更新初始化脚本
+#### 3.3.3 update_setup_script - Update Setup Script
 
-**功能**: 配置仓库的初始化脚本（在工作空间启动时执行）
+**Function**: Configure repository initialization script (executed when workspace starts)
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  repo_id: string;  // 必需：仓库 ID
-  script: string;   // 必需：脚本内容（使用空字符串清除）
+  repo_id: string;  // Required: Repository ID
+  script: string;   // Required: Script content (use empty string to clear)
 }
 ```
 
-**使用示例**:
+**Usage Example**:
 ```typescript
 mcp__vibe_kanban__update_setup_script({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f",
@@ -465,19 +465,19 @@ mcp__vibe_kanban__update_setup_script({
 })
 ```
 
-#### 3.3.4 update_cleanup_script - 更新清理脚本
+#### 3.3.4 update_cleanup_script - Update Cleanup Script
 
-**功能**: 配置仓库的清理脚本（在工作空间关闭时执行）
+**Function**: Configure repository cleanup script (executed when workspace closes)
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  repo_id: string;  // 必需：仓库 ID
-  script: string;   // 必需：脚本内容（使用空字符串清除）
+  repo_id: string;  // Required: Repository ID
+  script: string;   // Required: Script content (use empty string to clear)
 }
 ```
 
-**使用示例**:
+**Usage Example**:
 ```typescript
 mcp__vibe_kanban__update_cleanup_script({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f",
@@ -485,19 +485,19 @@ mcp__vibe_kanban__update_cleanup_script({
 })
 ```
 
-#### 3.3.5 update_dev_server_script - 更新开发服务器脚本
+#### 3.3.5 update_dev_server_script - Update Dev Server Script
 
-**功能**: 配置仓库的开发服务器启动脚本
+**Function**: Configure repository development server startup script
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  repo_id: string;  // 必需：仓库 ID
-  script: string;   // 必需：脚本内容（使用空字符串清除）
+  repo_id: string;  // Required: Repository ID
+  script: string;   // Required: Script content (use empty string to clear)
 }
 ```
 
-**使用示例**:
+**Usage Example**:
 ```typescript
 mcp__vibe_kanban__update_dev_server_script({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f",
@@ -507,80 +507,80 @@ mcp__vibe_kanban__update_dev_server_script({
 
 ---
 
-## 4. 仓库脚本配置
+## 4. Repository Script Configuration
 
-### 4.1 脚本类型说明
+### 4.1 Script Types
 
-#### 4.1.1 Setup Script（初始化脚本）
+#### 4.1.1 Setup Script (Initialization Script)
 
-**执行时机**: 工作空间启动时
+**Execution Timing**: When workspace starts
 
-**用途**:
-- 安装项目依赖
-- 配置环境变量
-- 初始化数据库
-- 准备开发环境
+**Purpose**:
+- Install project dependencies
+- Configure environment variables
+- Initialize database
+- Prepare development environment
 
-**示例脚本**:
+**Example Scripts**:
 ```bash
-# 基础示例
+# Basic example
 pnpm install
 
-# 完整示例
+# Complete example
 pnpm install && \
 cp .env.example .env.production && \
 pnpm db:push && \
-echo "环境初始化完成"
+echo "Environment initialization complete"
 ```
 
-#### 4.1.2 Cleanup Script（清理脚本）
+#### 4.1.2 Cleanup Script
 
-**执行时机**: 工作空间关闭时
+**Execution Timing**: When workspace closes
 
-**用途**:
-- 停止运行的服务
-- 清理临时文件
-- 释放系统资源
-- 保存工作状态
+**Purpose**:
+- Stop running services
+- Clean temporary files
+- Release system resources
+- Save work state
 
-**示例脚本**:
+**Example Scripts**:
 ```bash
-# 基础示例
+# Basic example
 docker compose down
 
-# 完整示例
+# Complete example
 docker compose down && \
 rm -rf node_modules/.cache && \
 rm -rf .vite && \
-echo "清理完成"
+echo "Cleanup complete"
 ```
 
-#### 4.1.3 Dev Server Script（开发服务器脚本）
+#### 4.1.3 Dev Server Script
 
-**执行时机**: 需要启动开发服务器时
+**Execution Timing**: When development server needs to start
 
-**用途**:
-- 启动前端开发服务器
-- 启动后端 API 服务
-- 启动数据库服务
-- 启动其他必要服务
+**Purpose**:
+- Start frontend development server
+- Start backend API service
+- Start database service
+- Start other necessary services
 
-**示例脚本**:
+**Example Scripts**:
 ```bash
-# 前端项目
+# Frontend project
 pnpm dev
 
-# 全栈项目
+# Full-stack project
 docker compose up -d mysql && \
 pnpm dev
 
-# 多服务项目
+# Multi-service project
 pnpm dev:client & pnpm dev:server
 ```
 
-### 4.2 配置最佳实践
+### 4.2 Configuration Best Practices
 
-#### 4.2.1 Person_Web 项目推荐配置
+#### 4.2.1 Recommended Configuration for Person_Web Project
 
 ```typescript
 // Setup Script
@@ -588,9 +588,9 @@ mcp__vibe_kanban__update_setup_script({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f",
   script: `
 pnpm install && \
-echo "依赖安装完成" && \
+echo "Dependencies installed" && \
 pnpm db:push && \
-echo "数据库初始化完成"
+echo "Database initialization complete"
   `.trim()
 })
 
@@ -605,81 +605,81 @@ mcp__vibe_kanban__update_cleanup_script({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f",
   script: `
 docker compose down && \
-echo "服务已停止"
+echo "Services stopped"
   `.trim()
 })
 ```
 
-#### 4.2.2 脚本编写注意事项
+#### 4.2.2 Script Writing Guidelines
 
-✅ **推荐做法**:
-- 使用 `&&` 连接多个命令，确保前一个命令成功后才执行下一个
-- 添加 `echo` 输出关键步骤信息，便于调试
-- 使用绝对路径或相对路径明确指定文件位置
-- 处理可能的错误情况
+**Recommended Practices**:
+- Use `&&` to connect multiple commands, ensuring the next command executes only after the previous one succeeds
+- Add `echo` output for key step information to facilitate debugging
+- Use absolute or relative paths to explicitly specify file locations
+- Handle potential error conditions
 
-❌ **避免做法**:
-- 不要使用交互式命令（如需要用户输入的命令）
-- 避免长时间运行的阻塞命令
-- 不要在脚本中硬编码敏感信息（密码、密钥等）
-- 避免使用 `sudo` 等需要特殊权限的命令
+**Practices to Avoid**:
+- Do not use interactive commands (commands requiring user input)
+- Avoid long-running blocking commands
+- Do not hard-code sensitive information in scripts (passwords, keys, etc.)
+- Avoid using `sudo` or other commands requiring special permissions
 
 ---
 
-## 5. 工作空间会话
+## 5. Workspace Sessions
 
-### 5.1 什么是工作空间会话？
+### 5.1 What is a Workspace Session?
 
-工作空间会话是 Vibe-Kanban 的核心功能，它允许你启动 AI 代理自动执行任务。
+A workspace session is a core feature of Vibe-Kanban that allows you to launch AI agents to automatically execute tasks.
 
-**工作流程**:
+**Workflow**:
 ```
-1. 创建任务
+1. Create task
    ↓
-2. 配置仓库脚本（可选）
+2. Configure repository scripts (optional)
    ↓
-3. 启动工作空间会话
+3. Start workspace session
    ↓
-4. AI 代理执行 setup_script
+4. AI agent executes setup_script
    ↓
-5. AI 代理自动完成任务
+5. AI agent automatically completes task
    ↓
-6. AI 代理执行 cleanup_script
+6. AI agent executes cleanup_script
    ↓
-7. 会话结束，任务完成
+7. Session ends, task complete
 ```
 
-### 5.2 start_workspace_session - 启动工作空间会话
+### 5.2 start_workspace_session - Start Workspace Session
 
-**功能**: 启动 AI 代理执行指定任务
+**Function**: Launch AI agent to execute specified task
 
-**参数**:
+**Parameters**:
 ```typescript
 {
-  task_id: string;              // 必需：任务 ID
-  executor: string;             // 必需：执行器类型
-  repos: Array<{                // 必需：仓库配置
-    repo_id: string;            // 仓库 ID
-    base_branch: string;        // 基础分支
+  task_id: string;              // Required: Task ID
+  executor: string;             // Required: Executor type
+  repos: Array<{                // Required: Repository configuration
+    repo_id: string;            // Repository ID
+    base_branch: string;        // Base branch
   }>;
-  variant?: string;             // 可选：执行器变体
+  variant?: string;             // Optional: Executor variant
 }
 ```
 
-**支持的执行器**:
-- `CLAUDE_CODE` - Claude Code 代理（推荐）
-- `AMP` - AMP 代理
-- `GEMINI` - Gemini 代理
-- `CODEX` - Codex 代理
-- `OPENCODE` - OpenCode 代理
-- `CURSOR_AGENT` - Cursor 代理
-- `QWEN_CODE` - Qwen 代理
-- `COPILOT` - GitHub Copilot 代理
-- `DROID` - Droid 代理
+**Supported Executors**:
+- `CLAUDE_CODE` - Claude Code agent (recommended)
+- `AMP` - AMP agent
+- `GEMINI` - Gemini agent
+- `CODEX` - Codex agent
+- `OPENCODE` - OpenCode agent
+- `CURSOR_AGENT` - Cursor agent
+- `QWEN_CODE` - Qwen agent
+- `COPILOT` - GitHub Copilot agent
+- `DROID` - Droid agent
 
-**使用示例**:
+**Usage Examples**:
 ```typescript
-// 使用 Claude Code 执行任务
+// Use Claude Code to execute task
 mcp__vibe_kanban__start_workspace_session({
   task_id: "5c669fc1-836a-4f16-93c2-c94de3e57f8c",
   executor: "CLAUDE_CODE",
@@ -691,7 +691,7 @@ mcp__vibe_kanban__start_workspace_session({
   ]
 })
 
-// 使用 Gemini 执行任务
+// Use Gemini to execute task
 mcp__vibe_kanban__start_workspace_session({
   task_id: "task-id-here",
   executor: "GEMINI",
@@ -704,29 +704,29 @@ mcp__vibe_kanban__start_workspace_session({
 })
 ```
 
-### 5.3 执行器选择指南
+### 5.3 Executor Selection Guide
 
-| 执行器 | 适用场景 | 优势 | 注意事项 |
+| Executor | Use Case | Advantages | Notes |
 |--------|---------|------|---------|
-| CLAUDE_CODE | 全栈开发、复杂任务 | 理解能力强、代码质量高 | 推荐首选 |
-| GEMINI | 多语言项目 | 多语言支持好 | - |
-| CURSOR_AGENT | IDE 集成开发 | 与 Cursor IDE 集成 | 需要 Cursor |
-| COPILOT | GitHub 项目 | GitHub 生态集成 | 需要 GitHub |
+| CLAUDE_CODE | Full-stack development, complex tasks | Strong comprehension, high code quality | Recommended first choice |
+| GEMINI | Multi-language projects | Good multi-language support | - |
+| CURSOR_AGENT | IDE integrated development | Integrates with Cursor IDE | Requires Cursor |
+| COPILOT | GitHub projects | GitHub ecosystem integration | Requires GitHub |
 
 ---
 
-## 6. 实战示例
+## 6. Practical Examples
 
-### 6.1 完整工作流示例
+### 6.1 Complete Workflow Example
 
-以下是一个完整的 Vibe-Kanban 使用流程示例。
+The following is a complete Vibe-Kanban usage workflow example.
 
-#### 场景：为 Person_Web 项目添加用户登录功能
+#### Scenario: Add User Login Feature to Person_Web Project
 
-**步骤 1: 创建任务**
+**Step 1: Create Task**
 
 ```typescript
-// 创建新任务
+// Create new task
 const result = await mcp__vibe_kanban__create_task({
   project_id: "7d33ce59-3de8-4f9f-9dd5-475b0da575bd",
   title: "实现 GitHub OAuth 用户登录",
@@ -745,35 +745,35 @@ const result = await mcp__vibe_kanban__create_task({
   `
 })
 
-console.log("任务已创建，ID:", result.task_id)
+console.log("Task created, ID:", result.task_id)
 ```
 
-**步骤 2: 配置仓库脚本**
+**Step 2: Configure Repository Scripts**
 
 ```typescript
-// 配置初始化脚本
+// Configure setup script
 await mcp__vibe_kanban__update_setup_script({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f",
   script: "pnpm install && pnpm db:push"
 })
 
-// 配置开发服务器脚本
+// Configure dev server script
 await mcp__vibe_kanban__update_dev_server_script({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f",
   script: "pnpm dev"
 })
 
-// 配置清理脚本
+// Configure cleanup script
 await mcp__vibe_kanban__update_cleanup_script({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f",
   script: "docker compose down"
 })
 ```
 
-**步骤 3: 启动工作空间会话**
+**Step 3: Start Workspace Session**
 
 ```typescript
-// 启动 AI 代理执行任务
+// Launch AI agent to execute task
 await mcp__vibe_kanban__start_workspace_session({
   task_id: result.task_id,
   executor: "CLAUDE_CODE",
@@ -785,41 +785,41 @@ await mcp__vibe_kanban__start_workspace_session({
   ]
 })
 
-console.log("工作空间会话已启动，AI 代理正在执行任务...")
+console.log("Workspace session started, AI agent is executing task...")
 ```
 
-**步骤 4: 监控任务进度**
+**Step 4: Monitor Task Progress**
 
 ```typescript
-// 查询任务状态
+// Query task status
 const task = await mcp__vibe_kanban__get_task({
   task_id: result.task_id
 })
 
-console.log("任务状态:", task.status)
-// 输出: inprogress
+console.log("Task status:", task.status)
+// Output: inprogress
 ```
 
-**步骤 5: 任务完成后更新状态**
+**Step 5: Update Status After Task Completion**
 
 ```typescript
-// 更新任务状态为已完成
+// Update task status to done
 await mcp__vibe_kanban__update_task({
   task_id: result.task_id,
   status: "done"
 })
 
-console.log("任务已完成！")
+console.log("Task completed!")
 ```
 
-### 6.2 批量任务管理示例
+### 6.2 Batch Task Management Example
 
-#### 场景：创建多个相关任务
+#### Scenario: Create Multiple Related Tasks
 
 ```typescript
 const projectId = "7d33ce59-3de8-4f9f-9dd5-475b0da575bd"
 
-// 创建一系列任务
+// Create a series of tasks
 const tasks = [
   {
     title: "优化数据库查询性能",
@@ -835,65 +835,65 @@ const tasks = [
   }
 ]
 
-// 批量创建任务
+// Batch create tasks
 for (const task of tasks) {
   const result = await mcp__vibe_kanban__create_task({
     project_id: projectId,
     title: task.title,
     description: task.description
   })
-  console.log(`✅ 已创建任务: ${task.title}`)
+  console.log(`Task created: ${task.title}`)
 }
 
-// 查看所有待办任务
+// View all todo tasks
 const todoTasks = await mcp__vibe_kanban__list_tasks({
   project_id: projectId,
   status: "todo"
 })
 
-console.log(`共有 ${todoTasks.count} 个待办任务`)
+console.log(`Total ${todoTasks.count} todo tasks`)
 ```
 
-### 6.3 任务状态管理示例
+### 6.3 Task Status Management Example
 
-#### 场景：管理任务生命周期
+#### Scenario: Manage Task Lifecycle
 
 ```typescript
 const taskId = "your-task-id-here"
 
-// 1. 开始任务
+// 1. Start task
 await mcp__vibe_kanban__update_task({
   task_id: taskId,
   status: "inprogress"
 })
-console.log("✅ 任务已开始")
+console.log("Task started")
 
-// 2. 提交审查
+// 2. Submit for review
 await mcp__vibe_kanban__update_task({
   task_id: taskId,
   status: "inreview",
   description: "已完成开发，等待代码审查"
 })
-console.log("✅ 任务已提交审查")
+console.log("Task submitted for review")
 
-// 3. 审查通过，标记完成
+// 3. Review passed, mark as done
 await mcp__vibe_kanban__update_task({
   task_id: taskId,
   status: "done"
 })
-console.log("✅ 任务已完成")
+console.log("Task completed")
 ```
 
-### 6.4 多仓库项目示例
+### 6.4 Multi-Repository Project Example
 
-#### 场景：管理前后端分离的项目
+#### Scenario: Manage Frontend-Backend Separated Project
 
 ```typescript
-// 假设有前端和后端两个仓库
+// Assume there are frontend and backend repositories
 const frontendRepoId = "frontend-repo-id"
 const backendRepoId = "backend-repo-id"
 
-// 配置前端仓库脚本
+// Configure frontend repository scripts
 await mcp__vibe_kanban__update_setup_script({
   repo_id: frontendRepoId,
   script: "npm install"
@@ -904,7 +904,7 @@ await mcp__vibe_kanban__update_dev_server_script({
   script: "npm run dev"
 })
 
-// 配置后端仓库脚本
+// Configure backend repository scripts
 await mcp__vibe_kanban__update_setup_script({
   repo_id: backendRepoId,
   script: "pip install -r requirements.txt"
@@ -915,7 +915,7 @@ await mcp__vibe_kanban__update_dev_server_script({
   script: "python manage.py runserver"
 })
 
-// 启动工作空间会话，同时处理两个仓库
+// Start workspace session, handling both repositories
 await mcp__vibe_kanban__start_workspace_session({
   task_id: "your-task-id",
   executor: "CLAUDE_CODE",
@@ -934,68 +934,68 @@ await mcp__vibe_kanban__start_workspace_session({
 
 ---
 
-## 7. 最佳实践
+## 7. Best Practices
 
-### 7.1 任务管理最佳实践
+### 7.1 Task Management Best Practices
 
-#### 7.1.1 任务命名规范
+#### 7.1.1 Task Naming Conventions
 
-✅ **推荐做法**:
-- 使用动词开头，明确任务目标
-- 保持简洁，控制在 50 字符以内
-- 使用具体的技术术语
+**Recommended Practices**:
+- Start with a verb, clearly define task objective
+- Keep it concise, within 50 characters
+- Use specific technical terminology
 
-**示例**:
+**Examples**:
 ```
-✅ 好的命名：
+Good naming examples:
 - "实现 GitHub OAuth 用户登录"
 - "优化文章列表查询性能"
 - "添加 Markdown 编辑器组件"
 
-❌ 不好的命名：
-- "登录功能"（不够具体）
-- "修复 bug"（没有说明是什么 bug）
-- "优化"（范围太广）
+Poor naming examples:
+- "登录功能" (not specific enough)
+- "修复 bug" (doesn't specify what bug)
+- "优化" (scope too broad)
 ```
 
-#### 7.1.2 任务描述规范
+#### 7.1.2 Task Description Standards
 
-**推荐格式**:
+**Recommended Format**:
 ```markdown
-任务目标：
-1. 具体目标 1
-2. 具体目标 2
-3. 具体目标 3
+Task Objectives:
+1. Specific objective 1
+2. Specific objective 2
+3. Specific objective 3
 
-技术要求：
-- 技术栈或框架
-- 性能要求
-- 安全要求
+Technical Requirements:
+- Technology stack or framework
+- Performance requirements
+- Security requirements
 
-验收标准：
-- [ ] 功能正常运行
-- [ ] 通过单元测试
-- [ ] 代码审查通过
+Acceptance Criteria:
+- [ ] Feature works properly
+- [ ] Passes unit tests
+- [ ] Code review passed
 ```
 
-#### 7.1.3 任务拆分原则
+#### 7.1.3 Task Breakdown Principles
 
-**SMART 原则**:
-- **S**pecific（具体的）- 任务目标明确
-- **M**easurable（可衡量的）- 有明确的完成标准
-- **A**chievable（可实现的）- 在合理时间内可完成
-- **R**elevant（相关的）- 与项目目标相关
-- **T**ime-bound（有时限的）- 有明确的时间预期
+**SMART Principles**:
+- **S**pecific - Task objectives are clear
+- **M**easurable - Has clear completion criteria
+- **A**chievable - Can be completed within reasonable time
+- **R**elevant - Related to project goals
+- **T**ime-bound - Has clear time expectations
 
-**示例**:
+**Examples**:
 ```typescript
-// ❌ 任务太大，难以完成
+// Poor example: Task too large, difficult to complete
 {
   title: "完成整个博客系统",
   description: "实现所有功能"
 }
 
-// ✅ 拆分为多个小任务
+// Good example: Split into multiple small tasks
 [
   {
     title: "实现用户认证模块",
@@ -1012,64 +1012,64 @@ await mcp__vibe_kanban__start_workspace_session({
 ]
 ```
 
-### 7.2 脚本配置最佳实践
+### 7.2 Script Configuration Best Practices
 
-#### 7.2.1 Setup Script 最佳实践
+#### 7.2.1 Setup Script Best Practices
 
 ```bash
-# ✅ 推荐：完整的初始化流程
+# Recommended: Complete initialization process
 pnpm install && \
-echo "✅ 依赖安装完成" && \
+echo "Dependencies installed" && \
 cp .env.example .env.production 2>/dev/null || true && \
-echo "✅ 环境变量配置完成" && \
+echo "Environment variables configured" && \
 pnpm db:push && \
-echo "✅ 数据库初始化完成" && \
-echo "🎉 环境准备就绪！"
+echo "Database initialization complete" && \
+echo "Environment ready!"
 
-# ❌ 避免：没有错误处理
+# Avoid: No error handling
 pnpm install
 pnpm db:push
 ```
 
-#### 7.2.2 错误处理技巧
+#### 7.2.2 Error Handling Techniques
 
 ```bash
-# 使用 || true 忽略非关键错误
+# Use || true to ignore non-critical errors
 cp .env.example .env.production 2>/dev/null || true
 
-# 使用条件判断
+# Use conditional judgment
 if [ -f .env.production ]; then
-  echo "环境变量已存在"
+  echo "Environment variables already exist"
 else
   cp .env.example .env.production
 fi
 
-# 使用 set -e 在错误时停止
+# Use set -e to stop on error
 set -e
 pnpm install
 pnpm db:push
 ```
 
-### 7.3 工作空间会话最佳实践
+### 7.3 Workspace Session Best Practices
 
-#### 7.3.1 选择合适的执行器
+#### 7.3.1 Choosing the Right Executor
 
-**决策树**:
+**Decision Tree**:
 ```
-需要处理复杂的全栈任务？
-├─ 是 → 使用 CLAUDE_CODE
-└─ 否 → 继续判断
-    ├─ 项目使用多种编程语言？
-    │   └─ 是 → 使用 GEMINI
-    └─ 否 → 使用 CLAUDE_CODE（默认推荐）
+Need to handle complex full-stack tasks?
+├─ Yes → Use CLAUDE_CODE
+└─ No → Continue evaluation
+    ├─ Project uses multiple programming languages?
+    │   └─ Yes → Use GEMINI
+    └─ No → Use CLAUDE_CODE (default recommendation)
 ```
 
-#### 7.3.2 任务描述优化
+#### 7.3.2 Task Description Optimization
 
-为 AI 代理提供清晰的上下文：
+Provide clear context for AI agents:
 
 ```typescript
-// ✅ 好的任务描述
+// Good task description
 {
   title: "实现文章搜索功能",
   description: `
@@ -1106,52 +1106,52 @@ pnpm db:push
   `
 }
 
-// ❌ 不好的任务描述
+// Poor task description
 {
   title: "搜索",
   description: "添加搜索功能"
 }
 ```
 
-### 7.4 项目组织最佳实践
+### 7.4 Project Organization Best Practices
 
-#### 7.4.1 任务优先级管理
+#### 7.4.1 Task Priority Management
 
-使用任务状态和命名前缀管理优先级：
+Use task status and naming prefixes to manage priorities:
 
 ```typescript
-// 高优先级任务
+// High priority task
 {
   title: "[P0] 修复生产环境登录失败问题",
   status: "inprogress"
 }
 
-// 中优先级任务
+// Medium priority task
 {
   title: "[P1] 实现文章搜索功能",
   status: "todo"
 }
 
-// 低优先级任务
+// Low priority task
 {
   title: "[P2] 优化首页加载速度",
   status: "todo"
 }
 ```
 
-#### 7.4.2 任务依赖管理
+#### 7.4.2 Task Dependency Management
 
-在任务描述中说明依赖关系：
+Specify dependencies in task description:
 
 ```typescript
 {
   title: "实现文章评论功能",
   description: `
-## 依赖任务
-- ✅ 用户认证模块（已完成）
-- ⏳ 文章详情页（进行中）
+## Dependent Tasks
+- Completed: User authentication module
+- In Progress: Article detail page
 
-## 实现内容
+## Implementation Content
 ...
   `
 }
@@ -1159,43 +1159,43 @@ pnpm db:push
 
 ---
 
-## 8. 常见问题
+## 8. Frequently Asked Questions
 
-### 8.1 任务管理相关
+### 8.1 Task Management Related
 
-#### Q1: 如何查看某个项目的所有任务？
+#### Q1: How to view all tasks for a project?
 
 ```typescript
 const tasks = await mcp__vibe_kanban__list_tasks({
   project_id: "7d33ce59-3de8-4f9f-9dd5-475b0da575bd"
 })
 
-console.log(`共有 ${tasks.count} 个任务`)
+console.log(`Total ${tasks.count} tasks`)
 tasks.tasks.forEach(task => {
   console.log(`- [${task.status}] ${task.title}`)
 })
 ```
 
-#### Q2: 如何筛选特定状态的任务？
+#### Q2: How to filter tasks by specific status?
 
 ```typescript
-// 只查看进行中的任务
+// View only in-progress tasks
 const inProgressTasks = await mcp__vibe_kanban__list_tasks({
   project_id: "7d33ce59-3de8-4f9f-9dd5-475b0da575bd",
   status: "inprogress"
 })
 
-// 只查看已完成的任务
+// View only completed tasks
 const doneTasks = await mcp__vibe_kanban__list_tasks({
   project_id: "7d33ce59-3de8-4f9f-9dd5-475b0da575bd",
   status: "done"
 })
 ```
 
-#### Q3: 任务创建后如何修改？
+#### Q3: How to modify a task after creation?
 
 ```typescript
-// 更新任务的任何属性
+// Update any task property
 await mcp__vibe_kanban__update_task({
   task_id: "your-task-id",
   title: "新标题",
@@ -1204,7 +1204,7 @@ await mcp__vibe_kanban__update_task({
 })
 ```
 
-#### Q4: 如何删除不需要的任务？
+#### Q4: How to delete unnecessary tasks?
 
 ```typescript
 await mcp__vibe_kanban__delete_task({
@@ -1212,9 +1212,9 @@ await mcp__vibe_kanban__delete_task({
 })
 ```
 
-### 8.2 仓库脚本相关
+### 8.2 Repository Script Related
 
-#### Q5: 如何查看仓库当前的脚本配置？
+#### Q5: How to view current repository script configuration?
 
 ```typescript
 const repo = await mcp__vibe_kanban__get_repo({
@@ -1226,76 +1226,76 @@ console.log("Dev Server Script:", repo.dev_server_script)
 console.log("Cleanup Script:", repo.cleanup_script)
 ```
 
-#### Q6: 如何清除已配置的脚本？
+#### Q6: How to clear configured scripts?
 
 ```typescript
-// 使用空字符串清除脚本
+// Use empty string to clear script
 await mcp__vibe_kanban__update_setup_script({
   repo_id: "545d39de-35a1-4fcb-9281-007bda363b6f",
   script: ""
 })
 ```
 
-#### Q7: 脚本执行失败怎么办？
+#### Q7: What to do if script execution fails?
 
-**排查步骤**:
-1. 检查脚本语法是否正确
-2. 确认命令在本地可以正常执行
-3. 检查是否有权限问题
-4. 查看工作空间会话的日志输出
+**Troubleshooting Steps**:
+1. Check if script syntax is correct
+2. Confirm commands execute properly locally
+3. Check for permission issues
+4. Review workspace session log output
 
-**调试技巧**:
+**Debugging Tips**:
 ```bash
-# 在脚本中添加调试输出
-echo "开始执行..." && \
+# Add debug output to script
+echo "Starting execution..." && \
 pnpm install && \
-echo "依赖安装完成" && \
+echo "Dependencies installed" && \
 pnpm db:push && \
-echo "数据库初始化完成"
+echo "Database initialization complete"
 ```
 
-### 8.3 工作空间会话相关
+### 8.3 Workspace Session Related
 
-#### Q8: 如何选择合适的执行器？
+#### Q8: How to choose the right executor?
 
-**推荐选择**:
-- 全栈项目 → `CLAUDE_CODE`（推荐）
-- 多语言项目 → `GEMINI`
-- 简单任务 → `CLAUDE_CODE`（默认）
+**Recommended Choices**:
+- Full-stack projects → `CLAUDE_CODE` (recommended)
+- Multi-language projects → `GEMINI`
+- Simple tasks → `CLAUDE_CODE` (default)
 
-#### Q9: 工作空间会话启动后可以取消吗？
+#### Q9: Can workspace session be cancelled after starting?
 
-工作空间会话一旦启动，会由 AI 代理自动执行。如果需要中断，可以：
-1. 等待任务完成
-2. 手动更新任务状态为 `cancelled`
+Once a workspace session is started, it will be automatically executed by the AI agent. If you need to interrupt:
+1. Wait for task completion
+2. Manually update task status to `cancelled`
 
-#### Q10: 如何监控工作空间会话的执行进度？
+#### Q10: How to monitor workspace session execution progress?
 
 ```typescript
-// 定期查询任务状态
+// Periodically query task status
 const task = await mcp__vibe_kanban__get_task({
   task_id: "your-task-id"
 })
 
-console.log("任务状态:", task.status)
-console.log("是否有进行中的尝试:", task.has_in_progress_attempt)
-console.log("上次尝试是否失败:", task.last_attempt_failed)
+console.log("Task status:", task.status)
+console.log("Has in-progress attempt:", task.has_in_progress_attempt)
+console.log("Last attempt failed:", task.last_attempt_failed)
 ```
 
-### 8.4 项目管理相关
+### 8.4 Project Management Related
 
-#### Q11: 如何查看所有项目？
+#### Q11: How to view all projects?
 
 ```typescript
 const projects = await mcp__vibe_kanban__list_projects()
 
-console.log(`共有 ${projects.count} 个项目`)
+console.log(`Total ${projects.count} projects`)
 projects.projects.forEach(project => {
   console.log(`- ${project.name} (ID: ${project.id})`)
 })
 ```
 
-#### Q12: 如何获取项目的所有仓库？
+#### Q12: How to get all repositories for a project?
 
 ```typescript
 const repos = await mcp__vibe_kanban__list_repos({
