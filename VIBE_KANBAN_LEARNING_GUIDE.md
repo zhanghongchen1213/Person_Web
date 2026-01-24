@@ -1,10 +1,10 @@
-# 📚 Vibe-Kanban 系统学习指南
+# Vibe-Kanban 系统学习指南
 
 > 完整的 Vibe-Kanban 任务管理系统学习文档
->
-> **文档版本**: v1.0.0
-> **创建日期**: 2026-01-24
-> **适用项目**: Person_Web
+
+**文档版本**: v1.0.0
+**创建日期**: 2026-01-24
+**适用项目**: Person_Web
 
 ---
 
@@ -27,11 +27,11 @@
 
 **Vibe-Kanban** 是一个强大的**项目任务管理系统**，通过 MCP (Model Context Protocol) 工具集成到 Claude Code 中。它让你可以：
 
-- 📋 **管理项目和任务** - 创建、更新、删除任务
-- 🔄 **跟踪任务状态** - todo → in progress → in review → done
-- 🤖 **启动 AI 代理** - 让 AI 自动完成任务
-- 📦 **管理仓库脚本** - 配置初始化、清理、开发服务器脚本
-- 🎯 **多执行器支持** - Claude Code, Gemini, Cursor 等
+- **管理项目和任务** - 创建、更新、删除任务
+- **跟踪任务状态** - todo → in progress → in review → done
+- **启动 AI 代理** - 让 AI 自动完成任务
+- **管理仓库脚本** - 配置初始化、清理、开发服务器脚本
+- **多执行器支持** - Claude Code, Gemini, Cursor 等
 
 ### 1.2 系统架构
 
@@ -59,11 +59,11 @@ Vibe-Kanban 系统
 
 ### 1.3 核心优势
 
-✅ **类型安全** - 所有 API 都有完整的 TypeScript 类型定义
-✅ **AI 驱动** - 支持多种 AI 代理自动完成任务
-✅ **灵活配置** - 可自定义仓库脚本和工作流
-✅ **状态追踪** - 清晰的任务状态流转机制
-✅ **多项目支持** - 可管理多个项目和仓库
+- **类型安全** - 所有 API 都有完整的 TypeScript 类型定义
+- **AI 驱动** - 支持多种 AI 代理自动完成任务
+- **灵活配置** - 可自定义仓库脚本和工作流
+- **状态追踪** - 清晰的任务状态流转机制
+- **多项目支持** - 可管理多个项目和仓库
 
 ---
 
@@ -842,7 +842,7 @@ for (const task of tasks) {
     title: task.title,
     description: task.description
   })
-  console.log(`✅ 已创建任务: ${task.title}`)
+  console.log(`已创建任务: ${task.title}`)
 }
 
 // 查看所有待办任务
@@ -866,7 +866,7 @@ await mcp__vibe_kanban__update_task({
   task_id: taskId,
   status: "inprogress"
 })
-console.log("✅ 任务已开始")
+console.log("任务已开始")
 
 // 2. 提交审查
 await mcp__vibe_kanban__update_task({
@@ -874,14 +874,14 @@ await mcp__vibe_kanban__update_task({
   status: "inreview",
   description: "已完成开发，等待代码审查"
 })
-console.log("✅ 任务已提交审查")
+console.log("任务已提交审查")
 
 // 3. 审查通过，标记完成
 await mcp__vibe_kanban__update_task({
   task_id: taskId,
   status: "done"
 })
-console.log("✅ 任务已完成")
+console.log("任务已完成")
 ```
 
 ### 6.4 多仓库项目示例
@@ -940,19 +940,19 @@ await mcp__vibe_kanban__start_workspace_session({
 
 #### 7.1.1 任务命名规范
 
-✅ **推荐做法**:
+**推荐做法**:
 - 使用动词开头，明确任务目标
 - 保持简洁，控制在 50 字符以内
 - 使用具体的技术术语
 
 **示例**:
 ```
-✅ 好的命名：
+好的命名：
 - "实现 GitHub OAuth 用户登录"
 - "优化文章列表查询性能"
 - "添加 Markdown 编辑器组件"
 
-❌ 不好的命名：
+不好的命名：
 - "登录功能"（不够具体）
 - "修复 bug"（没有说明是什么 bug）
 - "优化"（范围太广）
@@ -989,13 +989,13 @@ await mcp__vibe_kanban__start_workspace_session({
 
 **示例**:
 ```typescript
-// ❌ 任务太大，难以完成
+// 不推荐：任务太大，难以完成
 {
   title: "完成整个博客系统",
   description: "实现所有功能"
 }
 
-// ✅ 拆分为多个小任务
+// 推荐：拆分为多个小任务
 [
   {
     title: "实现用户认证模块",
@@ -1017,16 +1017,16 @@ await mcp__vibe_kanban__start_workspace_session({
 #### 7.2.1 Setup Script 最佳实践
 
 ```bash
-# ✅ 推荐：完整的初始化流程
+# 推荐：完整的初始化流程
 pnpm install && \
-echo "✅ 依赖安装完成" && \
+echo "依赖安装完成" && \
 cp .env.example .env.production 2>/dev/null || true && \
-echo "✅ 环境变量配置完成" && \
+echo "环境变量配置完成" && \
 pnpm db:push && \
-echo "✅ 数据库初始化完成" && \
-echo "🎉 环境准备就绪！"
+echo "数据库初始化完成" && \
+echo "环境准备就绪"
 
-# ❌ 避免：没有错误处理
+# 避免：没有错误处理
 pnpm install
 pnpm db:push
 ```
@@ -1069,7 +1069,7 @@ pnpm db:push
 为 AI 代理提供清晰的上下文：
 
 ```typescript
-// ✅ 好的任务描述
+// 推荐：好的任务描述
 {
   title: "实现文章搜索功能",
   description: `
@@ -1106,7 +1106,7 @@ pnpm db:push
   `
 }
 
-// ❌ 不好的任务描述
+// 不推荐：不好的任务描述
 {
   title: "搜索",
   description: "添加搜索功能"
@@ -1148,8 +1148,8 @@ pnpm db:push
   title: "实现文章评论功能",
   description: `
 ## 依赖任务
-- ✅ 用户认证模块（已完成）
-- ⏳ 文章详情页（进行中）
+- [已完成] 用户认证模块
+- [进行中] 文章详情页
 
 ## 实现内容
 ...
@@ -1324,9 +1324,9 @@ try {
     task_id: "your-task-id",
     status: "done"
   })
-  console.log("✅ 任务状态更新成功")
+  console.log("任务状态更新成功")
 } catch (error) {
-  console.error("❌ 更新失败:", error.message)
+  console.error("更新失败:", error.message)
   // 检查任务是否存在
   const task = await mcp__vibe_kanban__get_task({
     task_id: "your-task-id"
@@ -1338,10 +1338,10 @@ try {
 #### Q14: 脚本配置后不生效怎么办？
 
 **检查清单**:
-1. ✅ 确认脚本已成功保存
-2. ✅ 检查脚本语法是否正确
-3. ✅ 确认工作空间会话使用了正确的仓库 ID
-4. ✅ 查看执行日志确认脚本是否被调用
+1. 确认脚本已成功保存
+2. 检查脚本语法是否正确
+3. 确认工作空间会话使用了正确的仓库 ID
+4. 查看执行日志确认脚本是否被调用
 
 ---
 
@@ -1395,18 +1395,18 @@ const CLEANUP_SCRIPT = "docker compose down"
 
 ### 10.1 核心要点回顾
 
-✅ **Vibe-Kanban 是什么**
+**Vibe-Kanban 是什么**
 - 项目任务管理系统
 - 通过 MCP 工具集成到 Claude Code
 - 支持 AI 代理自动执行任务
 
-✅ **核心功能**
+**核心功能**
 - 项目和任务管理
 - 仓库脚本配置
 - 工作空间会话
 - 多执行器支持
 
-✅ **最佳实践**
+**最佳实践**
 - 使用 SMART 原则拆分任务
 - 为任务提供详细描述
 - 配置完整的仓库脚本
@@ -1468,4 +1468,4 @@ const CLEANUP_SCRIPT = "docker compose down"
 
 **文档结束**
 
-感谢你完成 Vibe-Kanban 系统的学习！祝你使用愉快！🎉
+感谢你完成 Vibe-Kanban 系统的学习！祝你使用愉快！
