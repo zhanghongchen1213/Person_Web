@@ -775,11 +775,16 @@ https://你的域名/api/auth/github/login
 
 **备份数据库**：
 
+> 💡 **密码查找**：数据库密码存储在 `.env.production` 文件中，查找 `MYSQL_ROOT_PASSWORD` 字段：
+> ```bash
+> grep MYSQL_ROOT_PASSWORD /opt/Person_Web/.env.production
+> ```
+
 ```bash
 # 创建备份目录
 mkdir -p /opt/backups
 
-# 备份数据库
+# 备份数据库（将"你的数据库密码"替换为 .env.production 中的 MYSQL_ROOT_PASSWORD 值）
 docker exec person_web_mysql mysqldump -uroot -p你的数据库密码 personal_blog > /opt/backups/blog-$(date +%Y%m%d).sql
 
 # 压缩备份文件
@@ -797,13 +802,69 @@ tar -czf /opt/backups/uploads-$(date +%Y%m%d).tar.gz -C /opt/Person_Web uploads/
 
 **恢复数据库**：
 
+> 💡 **密码查找**：数据库密码存储在 `.env.production` 文件中，查找 `MYSQL_ROOT_PASSWORD` 字段：
+> ```bash
+> grep MYSQL_ROOT_PASSWORD /opt/Person_Web/.env.production
+> ```
+
 ```bash
 # 解压备份文件
 gunzip /opt/backups/blog-20260119.sql.gz
 
-# 恢复数据库
+# 恢复数据库（将"你的数据库密码"替换为 .env.production 中的 MYSQL_ROOT_PASSWORD 值）
 docker exec -i person_web_mysql mysql -uroot -p你的数据库密码 personal_blog < /opt/backups/blog-20260119.sql
 ```
+
+### Q3: 如何升级项目代码（保留数据库数据）？
+
+当项目有新版本时，可以按以下步骤升级，**数据库数据会完整保留**：
+
+**步骤 1：备份当前数据（推荐）**
+
+```bash
+cd /opt/Person_Web
+
+# 备份数据库（以防万一）
+mkdir -p /opt/backups
+docker exec person_web_mysql mysqldump -uroot -p$(grep MYSQL_ROOT_PASSWORD .env.production | cut -d'=' -f2) personal_blog | gzip > /opt/backups/blog-before-upgrade-$(date +%Y%m%d).sql.gz
+
+# 备份环境配置文件
+cp .env.production /opt/backups/env-backup-$(date +%Y%m%d)
+```
+
+**步骤 2：拉取最新代码**
+
+```bash
+cd /opt/Person_Web
+
+# 拉取最新代码
+git pull origin main
+
+# 如果使用镜像加速，可以用：
+# git pull https://ghproxy.com/https://github.com/zhanghongchen1213/Person_Web main
+```
+
+**步骤 3：重新部署应用**
+
+```bash
+# 重新构建并启动（数据库容器不会被删除，数据保留）
+sudo bash deploy/scripts/deploy.sh
+```
+
+**步骤 4：验证升级**
+
+```bash
+# 检查容器状态
+docker compose ps
+
+# 查看应用日志确认正常启动
+docker compose logs --tail=20 app
+```
+
+> 💡 **原理说明**：
+> - 数据库数据存储在 Docker Volume 中，与应用容器分离
+> - `deploy.sh` 只会重建应用容器，不会删除数据库 Volume
+> - 即使执行 `docker compose down`，数据库数据也会保留（除非加 `-v` 参数）
 
 ---
 
