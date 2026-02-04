@@ -12,6 +12,7 @@ import About from "./pages/About";
 import WriteArticle from "./pages/WriteArticle";
 import DocReader from "./pages/DocReader";
 import AdminArticles from "./pages/AdminArticles";
+import AdminDatabase from "./pages/AdminDatabase";
 import Login from "./pages/Login";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/write" component={WriteArticle} />
       <Route path="/edit/:id" component={WriteArticle} />
       <Route path="/admin/articles" component={AdminArticles} />
+      <Route path="/admin/database" component={AdminDatabase} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

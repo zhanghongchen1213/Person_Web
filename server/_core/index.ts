@@ -10,6 +10,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { logCacheStats } from "../performance";
+import { initBackupScheduler } from "./backup-scheduler";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -76,6 +77,13 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+
+    // Initialize backup scheduler
+    initBackupScheduler().then(() => {
+      console.log('[Backup Scheduler] Initialized');
+    }).catch((err) => {
+      console.error('[Backup Scheduler] Failed to initialize:', err);
+    });
 
     // Start performance monitoring - log cache stats every 5 minutes
     const STATS_INTERVAL = 5 * 60 * 1000; // 5 minutes

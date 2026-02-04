@@ -13,6 +13,8 @@ import {
   invalidateArticleCache,
   invalidateCategoryCache,
 } from "./_core/cache";
+import { restartScheduler } from "./_core/backup-scheduler";
+import type { DatabaseExportData } from "./db";
 
 // Admin procedure - only allows admin users
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -394,6 +396,57 @@ export const appRouter = router({
         // Store in cache with 10 minutes TTL
         appCache.set(cacheKey, result, 10 * 60 * 1000);
 
+        return result;
+      }),
+  }),
+
+  // Database management routes (admin only)
+  database: router({
+    // Get database statistics
+    stats: adminProcedure.query(async () => {
+      return await db.getDatabaseStats();
+    }),
+
+    // Export all data
+    export: adminProcedure.query(async () => {
+      return await db.exportAllData();
+    }),
+
+    // Import data (replaces all existing data)
+    import: adminProcedure
+      .input(z.object({
+        version: z.string(),
+        exportedAt: z.string(),
+        data: z.object({
+          users: z.array(z.any()),
+          articles: z.array(z.any()),
+          categories: z.array(z.any()),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await db.importAllData(input as DatabaseExportData);
+
+        // Invalidate all caches after import
+        invalidateArticleCache();
+        invalidateCategoryCache();
+
+        return result;
+      }),
+
+    // Get backup settings
+    backupSettings: adminProcedure.query(async () => {
+      return await db.getBackupSettings();
+    }),
+
+    // Update backup settings
+    updateBackupSettings: adminProcedure
+      .input(z.object({
+        enabled: z.boolean(),
+        interval: z.enum(["weekly", "monthly", "quarterly"]),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await db.updateBackupSettings(input.enabled, input.interval);
+        await restartScheduler();
         return result;
       }),
   }),

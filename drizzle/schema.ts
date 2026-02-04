@@ -67,3 +67,22 @@ export const articles = mysqlTable("articles", {
 
 export type Article = typeof articles.$inferSelect;
 export type InsertArticle = typeof articles.$inferInsert;
+
+/**
+ * Backup settings table for automatic backup configuration
+ * Single-row configuration table
+ */
+export const backupIntervalEnum = ["weekly", "monthly", "quarterly"] as const;
+export type BackupInterval = (typeof backupIntervalEnum)[number];
+
+export const backupSettings = mysqlTable("backup_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  enabled: int("enabled").default(0).notNull(), // 0 = false, 1 = true
+  interval: mysqlEnum("interval", backupIntervalEnum).default("monthly").notNull(),
+  lastBackupAt: timestamp("lastBackupAt"),
+  nextBackupAt: timestamp("nextBackupAt"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BackupSettings = typeof backupSettings.$inferSelect;
+export type InsertBackupSettings = typeof backupSettings.$inferInsert;

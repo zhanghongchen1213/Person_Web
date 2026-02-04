@@ -1,8 +1,10 @@
 import { eq, desc, like, or, and, sql, ne, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import { InsertUser, users, articles, categories, Article, Category, ContentType } from "../drizzle/schema";
+import { InsertUser, users, articles, categories, Article, Category, ContentType, backupSettings, BackupInterval } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import * as fs from "fs";
+import * as path from "path";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -773,6 +775,151 @@ export interface CategoryWithArticles extends Category {
  * @param options - Query options
  * @returns CategoryWithArticles or null
  */
+// ============================================
+// Database Export/Import Functions
+// ============================================
+
+export interface DatabaseExportData {
+  version: string;
+  exportedAt: string;
+  data: {
+    users: Array<typeof users.$inferSelect>;
+    articles: Array<typeof articles.$inferSelect>;
+    categories: Array<typeof categories.$inferSelect>;
+  };
+}
+
+export interface DatabaseStats {
+  userCount: number;
+  articleCount: number;
+  categoryCount: number;
+}
+
+/**
+ * Get database statistics for preview
+ */
+export async function getDatabaseStats(): Promise<DatabaseStats> {
+  const db = await getDb();
+  if (!db) return { userCount: 0, articleCount: 0, categoryCount: 0 };
+
+  const [userResult, articleResult, categoryResult] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(users),
+    db.select({ count: sql<number>`count(*)` }).from(articles),
+    db.select({ count: sql<number>`count(*)` }).from(categories),
+  ]);
+
+  return {
+    userCount: Number(userResult[0]?.count || 0),
+    articleCount: Number(articleResult[0]?.count || 0),
+    categoryCount: Number(categoryResult[0]?.count || 0),
+  };
+}
+
+/**
+ * Export all data from database
+ */
+export async function exportAllData(): Promise<{ exportData: DatabaseExportData; stats: DatabaseStats }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [usersData, articlesData, categoriesData] = await Promise.all([
+    db.select().from(users),
+    db.select().from(articles),
+    db.select().from(categories),
+  ]);
+
+  const exportData: DatabaseExportData = {
+    version: "1.0",
+    exportedAt: new Date().toISOString(),
+    data: {
+      users: usersData,
+      articles: articlesData,
+      categories: categoriesData,
+    },
+  };
+
+  const stats: DatabaseStats = {
+    userCount: usersData.length,
+    articleCount: articlesData.length,
+    categoryCount: categoriesData.length,
+  };
+
+  return { exportData, stats };
+}
+
+/**
+ * Import all data to database (replaces existing data)
+ * Uses transaction to ensure atomicity
+ */
+export async function importAllData(data: DatabaseExportData): Promise<DatabaseStats> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Validate version
+  if (data.version !== "1.0") {
+    throw new Error(`Unsupported data version: ${data.version}. Expected: 1.0`);
+  }
+
+  // Use raw connection for transaction
+  const pool = (db as any).session?.client;
+  if (!pool) throw new Error("Cannot access database connection pool");
+
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // Delete in order: articles → categories → users (respect foreign key dependencies)
+    await connection.execute("DELETE FROM articles");
+    await connection.execute("DELETE FROM categories");
+    await connection.execute("DELETE FROM users");
+
+    // Insert in order: users → categories → articles
+    if (data.data.users.length > 0) {
+      for (const user of data.data.users) {
+        await connection.execute(
+          `INSERT INTO users (id, openId, name, email, avatar, bio, loginMethod, role, createdAt, updatedAt, lastSignedIn)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [user.id, user.openId, user.name, user.email, user.avatar, user.bio, user.loginMethod, user.role, user.createdAt, user.updatedAt, user.lastSignedIn]
+        );
+      }
+    }
+
+    if (data.data.categories.length > 0) {
+      for (const cat of data.data.categories) {
+        await connection.execute(
+          `INSERT INTO categories (id, name, slug, description, icon, sortOrder, type, createdAt)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [cat.id, cat.name, cat.slug, cat.description, cat.icon, cat.sortOrder, cat.type, cat.createdAt]
+        );
+      }
+    }
+
+    if (data.data.articles.length > 0) {
+      for (const article of data.data.articles) {
+        await connection.execute(
+          `INSERT INTO articles (id, title, slug, summary, content, coverImage, authorId, categoryId, status, type, \`order\`, publishedAt, createdAt, updatedAt)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [article.id, article.title, article.slug, article.summary, article.content, article.coverImage, article.authorId, article.categoryId, article.status, article.type, article.order, article.publishedAt, article.createdAt, article.updatedAt]
+        );
+      }
+    }
+
+    await connection.commit();
+
+    return {
+      userCount: data.data.users.length,
+      articleCount: data.data.articles.length,
+      categoryCount: data.data.categories.length,
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 export async function getCategoryWithArticles(
   slug: string,
   options?: {
@@ -853,4 +1000,140 @@ export async function getCategoryWithArticles(
     total,
     totalPages,
   };
+}
+
+// ============================================
+// Backup Settings Functions
+// ============================================
+
+const BACKUP_DIR = path.join(process.cwd(), "backups");
+const MAX_BACKUP_FILES = 10;
+
+export async function ensureBackupDir(): Promise<void> {
+  if (!fs.existsSync(BACKUP_DIR)) {
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  }
+}
+
+export interface BackupSettingsData {
+  enabled: boolean;
+  interval: BackupInterval;
+  lastBackupAt: Date | null;
+  nextBackupAt: Date | null;
+}
+
+export async function getBackupSettings(): Promise<BackupSettingsData> {
+  const db = await getDb();
+  if (!db) {
+    return { enabled: false, interval: "monthly", lastBackupAt: null, nextBackupAt: null };
+  }
+
+  const result = await db.select().from(backupSettings).limit(1);
+  if (result.length === 0) {
+    // Create default settings
+    await db.insert(backupSettings).values({ enabled: 0, interval: "monthly" });
+    return { enabled: false, interval: "monthly", lastBackupAt: null, nextBackupAt: null };
+  }
+
+  const settings = result[0];
+  return {
+    enabled: settings.enabled === 1,
+    interval: settings.interval,
+    lastBackupAt: settings.lastBackupAt,
+    nextBackupAt: settings.nextBackupAt,
+  };
+}
+
+export async function updateBackupSettings(
+  enabled: boolean,
+  interval: BackupInterval
+): Promise<BackupSettingsData> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const nextBackupAt = enabled ? calculateNextBackupTime(interval) : null;
+
+  const existing = await db.select().from(backupSettings).limit(1);
+  if (existing.length === 0) {
+    await db.insert(backupSettings).values({
+      enabled: enabled ? 1 : 0,
+      interval,
+      nextBackupAt,
+    });
+  } else {
+    await db.update(backupSettings).set({
+      enabled: enabled ? 1 : 0,
+      interval,
+      nextBackupAt,
+    }).where(eq(backupSettings.id, existing[0].id));
+  }
+
+  return { enabled, interval, lastBackupAt: existing[0]?.lastBackupAt || null, nextBackupAt };
+}
+
+export async function updateLastBackupTime(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const settings = await getBackupSettings();
+  const nextBackupAt = calculateNextBackupTime(settings.interval);
+
+  await db.update(backupSettings).set({
+    lastBackupAt: new Date(),
+    nextBackupAt,
+  });
+}
+
+function calculateNextBackupTime(interval: BackupInterval): Date {
+  const now = new Date();
+  const next = new Date(now);
+
+  switch (interval) {
+    case "weekly":
+      // Next Sunday at 00:00
+      next.setDate(now.getDate() + (7 - now.getDay()));
+      break;
+    case "monthly":
+      // First day of next month at 00:00
+      next.setMonth(now.getMonth() + 1, 1);
+      break;
+    case "quarterly":
+      // First day of next quarter at 00:00
+      const currentQuarter = Math.floor(now.getMonth() / 3);
+      next.setMonth((currentQuarter + 1) * 3, 1);
+      break;
+  }
+
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+export async function saveBackupFile(data: DatabaseExportData): Promise<string> {
+  await ensureBackupDir();
+
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const filename = `auto-backup-${timestamp}.json`;
+  const filepath = path.join(BACKUP_DIR, filename);
+
+  fs.writeFileSync(filepath, JSON.stringify(data, null, 2), "utf-8");
+
+  // Clean up old backups
+  await cleanupOldBackups();
+
+  return filepath;
+}
+
+async function cleanupOldBackups(): Promise<void> {
+  const files = fs.readdirSync(BACKUP_DIR)
+    .filter(f => f.startsWith("auto-backup-") && f.endsWith(".json"))
+    .map(f => ({ name: f, path: path.join(BACKUP_DIR, f), mtime: fs.statSync(path.join(BACKUP_DIR, f)).mtime }))
+    .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+
+  if (files.length > MAX_BACKUP_FILES) {
+    const toDelete = files.slice(MAX_BACKUP_FILES);
+    for (const file of toDelete) {
+      fs.unlinkSync(file.path);
+    }
+  }
 }
