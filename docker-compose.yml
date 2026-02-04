@@ -14,13 +14,17 @@ services:
     container_name: person_web_mysql
     restart: unless-stopped
 
-    # Port mapping (only for local access)
+    # Port mapping (only for local access, NOT exposed to public)
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
+
+    # Environment variables from file
+    env_file:
+      - .env.production
 
     # Environment variables
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-personal_blog}
       MYSQL_CHARACTER_SET_SERVER: utf8mb4
       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
@@ -40,7 +44,7 @@ services:
 
     # Health check
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -67,7 +71,7 @@ services:
     # Additional environment variables
     environment:
       NODE_ENV: production
-      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-rootpassword}@mysql:3306/${MYSQL_DATABASE:-personal_blog}?charset=utf8mb4
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-personal_blog}?charset=utf8mb4
 
     # Resource limits (512MB for app)
     mem_limit: 512m

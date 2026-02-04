@@ -133,6 +133,13 @@ log_info "环境配置文件已找到: ${ENV_FILE}"
 # 检查必需的环境变量
 log_info "验证环境变量..."
 source "$ENV_FILE"
+
+# 导出环境变量供 docker compose 使用
+log_info "导出环境变量供 Docker Compose 使用..."
+set -a  # 自动导出所有变量
+source "$ENV_FILE"
+set +a
+
 MISSING_VARS=()
 
 if [ -z "$JWT_SECRET" ]; then
@@ -141,6 +148,10 @@ fi
 
 if [ -z "$OWNER_OPEN_ID" ]; then
     MISSING_VARS+=("OWNER_OPEN_ID")
+fi
+
+if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
+    MISSING_VARS+=("MYSQL_ROOT_PASSWORD")
 fi
 
 if [ ${#MISSING_VARS[@]} -gt 0 ]; then

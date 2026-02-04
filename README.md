@@ -323,6 +323,8 @@ sudo bash deploy/scripts/setup-server.sh
    - 端口 80（HTTP）
    - 端口 443（HTTPS）
 
+⚠️ **安全警告**：**绝对不要开放 3306 端口（MySQL）到公网！** 数据库端口暴露会导致被黑客扫描攻击，造成数据丢失。本项目已配置 MySQL 仅监听本地地址（127.0.0.1），无需在安全组开放 3306 端口。
+
 💡 **小贴士**：不同云服务商的界面略有不同，但操作逻辑相同。
 
 ---
@@ -486,7 +488,7 @@ docker compose ps
 ```
 NAME                IMAGE               STATUS              PORTS
 person_web_app      person-web:latest   Up 2 minutes (healthy)   0.0.0.0:3000->3000/tcp
-person_web_mysql    mysql:8.0           Up 2 minutes (healthy)   0.0.0.0:3306->3306/tcp
+person_web_mysql    mysql:8.0           Up 2 minutes (healthy)   127.0.0.1:3306->3306/tcp
 ```
 
 两个容器的状态都应该是 `Up` 且显示 `(healthy)`。
