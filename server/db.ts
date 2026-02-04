@@ -7,23 +7,29 @@ import * as fs from "fs";
 import * as path from "path";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: mysql.Pool | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
       // Create mysql2 connection pool with proper charset configuration
-      const pool = mysql.createPool({
+      _pool = mysql.createPool({
         uri: process.env.DATABASE_URL,
         charset: 'utf8mb4',
         connectionLimit: 10,
       });
-      _db = drizzle(pool) as unknown as ReturnType<typeof drizzle>;
+      _db = drizzle(_pool) as unknown as ReturnType<typeof drizzle>;
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
+      _pool = null;
     }
   }
   return _db;
+}
+
+export function getPool() {
+  return _pool;
 }
 
 // User functions
@@ -861,7 +867,7 @@ export async function importAllData(data: DatabaseExportData): Promise<DatabaseS
   }
 
   // Use raw connection for transaction
-  const pool = (db as any).session?.client;
+  const pool = getPool();
   if (!pool) throw new Error("Cannot access database connection pool");
 
   const connection = await pool.getConnection();
