@@ -111,7 +111,8 @@ graph TD
 - [第七步：一键部署应用](#第七步一键部署应用)
 - [第八步：访问你的博客](#第八步访问你的博客)
 - [第九步：配置域名和 HTTPS（可选）](#第九步配置域名和-https可选)
-- [常见问题解答](#常见问题解答)
+- [数据库自动备份和迁移](#九数据库自动备份和迁移)
+- [项目升级](#十项目升级)
 - [日常维护指南](#日常维护指南)
 
 ---
@@ -762,7 +763,6 @@ https://你的域名/api/auth/github/login
 - ✅ 删除文章
 - ✅ 管理分类
 - ✅ 修改文章发布状态（草稿/已发布/归档）
-- ✅ 上传图片
 
 ✅ **成功标志**：
 
@@ -771,62 +771,114 @@ https://你的域名/api/auth/github/login
 
 ---
 
-## 常见问题解答
+## 九、数据库自动备份和迁移
 
-### Q1: 如何备份数据？
+本项目提供了完整的数据库备份和迁移功能，包括自动定时备份和管理员手动导入导出。
+
+### 9.1 自动备份功能
+
+系统支持自动定时备份数据库，备份文件保存在服务器的 `backups/` 目录中。
+
+#### 自动备份原理
+
+自动备份功能基于 **node-cron** 实现，在应用启动时根据配置的备份间隔自动执行：
+
+- **每周备份**：每周日凌晨 00:00 执行
+- **每月备份**：每月 1 日凌晨 00:00 执行
+- **每季度备份**：每季度第一天凌晨 00:00 执行
+
+#### 配置自动备份
+
+1. 以管理员身份登录博客
+2. 访问 `https://你的域名/admin/database`
+3. 在"自动备份"区域：
+   - 开启"启用自动备份"开关
+   - 选择备份间隔（每周/每月/每季度）
+   - 点击"保存设置"
+
+#### 备份文件说明
+
+- **存储位置**：`/opt/Person_Web/Person_Web-main/backups/`
+- **文件格式**：`auto-backup-YYYY-MM-DDTHH-mm-ss.json`
+- **文件内容**：包含所有用户、文章、分类数据的 JSON 文件
+
+### 9.2 手动导出数据
+
+管理员可以随时手动导出数据库数据：
+
+1. 访问 `https://你的域名/admin/database`
+2. 点击"导出数据"按钮
+3. 确认弹窗中显示的数据统计
+4. 点击"确认导出"下载 JSON 文件
+
+### 9.3 导入数据（数据迁移）
+
+当需要迁移数据或恢复备份时：
+
+1. 访问 `https://你的域名/admin/database`
+2. 点击"选择文件"上传 JSON 备份文件
+3. 预览导入数据的统计信息
+4. 确认后系统会：
+   - 自动创建当前数据的备份（防止数据丢失）
+   - 清空现有数据
+   - 导入新数据
+
+⚠️ **注意**：导入操作会覆盖现有数据，请确保已备份重要数据。
+
+### 9.4 命令行备份（传统方式）
+
+除了管理界面，你也可以使用命令行进行备份：
 
 **备份数据库**：
-
-> 💡 **密码查找**：数据库密码存储在 `.env.production` 文件中，查找 `MYSQL_ROOT_PASSWORD` 字段：
-> ```bash
-> grep MYSQL_ROOT_PASSWORD /opt/Person_Web/.env.production
-> ```
 
 ```bash
 # 创建备份目录
 mkdir -p /opt/backups
 
-# 备份数据库（将"你的数据库密码"替换为 .env.production 中的 MYSQL_ROOT_PASSWORD 值）
-docker exec person_web_mysql mysqldump -uroot -p你的数据库密码 personal_blog > /opt/backups/blog-$(date +%Y%m%d).sql
-
-# 压缩备份文件
-gzip /opt/backups/blog-$(date +%Y%m%d).sql
+# 备份数据库
+docker exec person_web_mysql mysqldump -uroot -p$(grep MYSQL_ROOT_PASSWORD .env.production | cut -d'=' -f2) personal_blog | gzip > /opt/backups/blog-$(date +%Y%m%d).sql.gz
 ```
-
-**备份上传的文件**：
-
-```bash
-# 备份 uploads 目录
-tar -czf /opt/backups/uploads-$(date +%Y%m%d).tar.gz -C /opt/Person_Web uploads/
-```
-
-### Q2: 如何恢复数据？
 
 **恢复数据库**：
 
-> 💡 **密码查找**：数据库密码存储在 `.env.production` 文件中，查找 `MYSQL_ROOT_PASSWORD` 字段：
-> ```bash
-> grep MYSQL_ROOT_PASSWORD /opt/Person_Web/.env.production
-> ```
-
 ```bash
-# 解压备份文件
-gunzip /opt/backups/blog-20260119.sql.gz
-
-# 恢复数据库（将"你的数据库密码"替换为 .env.production 中的 MYSQL_ROOT_PASSWORD 值）
-docker exec -i person_web_mysql mysql -uroot -p你的数据库密码 personal_blog < /opt/backups/blog-20260119.sql
+# 解压并恢复
+gunzip -c /opt/backups/blog-20260204.sql.gz | docker exec -i person_web_mysql mysql -uroot -p$(grep MYSQL_ROOT_PASSWORD .env.production | cut -d'=' -f2) personal_blog
 ```
 
-### Q3: 如何升级项目代码（保留数据库数据）？
+---
 
-当项目有新版本时，可以按以下步骤升级，**数据库数据会完整保留**：
+## 十、项目升级
 
-**步骤 1：备份当前数据（推荐）**
+当项目有新版本时，可以使用一键升级脚本快速更新，**数据库数据会完整保留**。
+
+### 10.1 一键升级（推荐）
+
+项目提供了一键升级脚本，自动完成所有升级步骤：
 
 ```bash
-cd /opt/Person_Web
+cd /opt/Person_Web/Person_Web-main
+sudo bash deploy/scripts/upgrade.sh
+```
 
-# 备份数据库（以防万一）
+脚本会自动执行以下操作：
+
+1. ✅ **备份当前数据** - 自动备份数据库和配置文件
+2. ✅ **拉取最新代码** - 从 GitHub 获取最新版本
+3. ✅ **重新构建镜像** - 构建包含新代码的 Docker 镜像
+4. ✅ **重启应用** - 启动新版本应用
+5. ✅ **验证部署** - 检查应用是否正常运行
+
+### 10.2 手动升级步骤
+
+如果你想手动控制升级过程：
+
+**步骤 1：备份当前数据**
+
+```bash
+cd /opt/Person_Web/Person_Web-main
+
+# 备份数据库
 mkdir -p /opt/backups
 docker exec person_web_mysql mysqldump -uroot -p$(grep MYSQL_ROOT_PASSWORD .env.production | cut -d'=' -f2) personal_blog | gzip > /opt/backups/blog-before-upgrade-$(date +%Y%m%d).sql.gz
 
@@ -837,36 +889,29 @@ cp .env.production /opt/backups/env-backup-$(date +%Y%m%d)
 **步骤 2：拉取最新代码**
 
 ```bash
-cd /opt/Person_Web
-
-# 拉取最新代码
 git pull origin main
-
-# 如果使用镜像加速，可以用：
-# git pull https://ghproxy.com/https://github.com/zhanghongchen1213/Person_Web main
 ```
 
 **步骤 3：重新部署应用**
 
 ```bash
-# 重新构建并启动（数据库容器不会被删除，数据保留）
 sudo bash deploy/scripts/deploy.sh
 ```
 
 **步骤 4：验证升级**
 
 ```bash
-# 检查容器状态
 docker compose ps
-
-# 查看应用日志确认正常启动
 docker compose logs --tail=20 app
 ```
 
-> 💡 **原理说明**：
-> - 数据库数据存储在 Docker Volume 中，与应用容器分离
-> - `deploy.sh` 只会重建应用容器，不会删除数据库 Volume
-> - 即使执行 `docker compose down`，数据库数据也会保留（除非加 `-v` 参数）
+### 10.3 数据安全说明
+
+> 💡 **为什么升级不会丢失数据？**
+> - 数据库数据存储在 Docker Volume `person_web_mysql_data` 中
+> - Volume 与应用容器完全分离，重建应用不影响数据
+> - 即使执行 `docker compose down`，数据也会保留（除非加 `-v` 参数）
+> - 升级脚本会自动备份，即使出现问题也可以恢复
 
 ---
 
