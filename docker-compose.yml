@@ -78,9 +78,10 @@ services:
     memswap_limit: 512m
     cpus: 1.0
 
-    # Data persistence for uploads
+    # Data persistence
     volumes:
       - ./uploads:/app/uploads
+      - ./backups:/app/backups
 
     # Network configuration
     networks:
