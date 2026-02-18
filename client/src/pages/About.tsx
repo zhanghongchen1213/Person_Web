@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Link } from "wouter";
-import { Github, Mail, MessageCircle, ArrowRight } from "lucide-react";
+import { Github, Mail, MessageCircle, ArrowRight, BookOpen, Video } from "lucide-react";
 
 export default function About() {
   const scrollToContact = () => {
@@ -424,6 +424,24 @@ export default function About() {
                   aria-label="Email"
                 >
                   <Mail className="w-6 h-6" />
+                </a>
+                <a
+                  href="https://blog.csdn.net/weixin_46477159?spm=1000.2115.3001.5343"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 border-2 border-primary-foreground hover:bg-primary-foreground hover:text-primary transition-colors"
+                  aria-label="CSDN"
+                >
+                  <BookOpen className="w-6 h-6" />
+                </a>
+                <a
+                  href="https://space.bilibili.com/3690998351792801"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 border-2 border-primary-foreground hover:bg-primary-foreground hover:text-primary transition-colors"
+                  aria-label="Bilibili"
+                >
+                  <Video className="w-6 h-6" />
                 </a>
               </div>
             </div>

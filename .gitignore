@@ -110,7 +110,6 @@ nul
 .env.example
 
 # AI Tools Configuration (Claude Code, Trae, etc.)
-.claude/
 .trae/
 .mcp.json
 

@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Github, MessageCircle, Mail } from "lucide-react";
+import { Github, MessageCircle, Mail, BookOpen, Video } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -71,6 +71,24 @@ export default function Footer() {
                 aria-label="Email"
               >
                 <Mail className="w-5 h-5" />
+              </a>
+              <a
+                href="https://blog.csdn.net/weixin_46477159?spm=1000.2115.3001.5343"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 border-2 border-border hover:bg-primary hover:text-primary-foreground transition-colors"
+                aria-label="CSDN"
+              >
+                <BookOpen className="w-5 h-5" />
+              </a>
+              <a
+                href="https://space.bilibili.com/3690998351792801"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 border-2 border-border hover:bg-primary hover:text-primary-foreground transition-colors"
+                aria-label="Bilibili"
+              >
+                <Video className="w-5 h-5" />
               </a>
             </div>
           </div>
