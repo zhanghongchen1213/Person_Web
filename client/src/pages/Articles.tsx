@@ -1,3 +1,4 @@
+import SEOHead from "@/components/SEOHead";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ArticleCard from "@/components/ArticleCard";
@@ -12,9 +13,15 @@ export default function Articles() {
   const params = new URLSearchParams(search);
   
   const [selectedCategory, setSelectedCategory] = useState(params.get("category") || "");
+  const [searchInput, setSearchInput] = useState(params.get("search") || "");
   const [searchQuery, setSearchQuery] = useState(params.get("search") || "");
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const { data: articlesData, isLoading } = trpc.article.list.useQuery({
     limit: 10,
@@ -39,6 +46,7 @@ export default function Articles() {
 
   const clearFilters = () => {
     setSelectedCategory("");
+    setSearchInput("");
     setSearchQuery("");
     setPage(1);
   };
@@ -47,6 +55,7 @@ export default function Articles() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <SEOHead title="文章" description="所有文章" />
       <Navbar />
 
       <main className="flex-1 pt-16 md:pt-20">
@@ -95,9 +104,9 @@ export default function Articles() {
                   </label>
                   <input
                     type="text"
-                    value={searchQuery}
+                    value={searchInput}
                     onChange={(e) => {
-                      setSearchQuery(e.target.value);
+                      setSearchInput(e.target.value);
                       setPage(1);
                     }}
                     placeholder="搜索文章标题或内容..."

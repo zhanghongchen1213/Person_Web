@@ -1,3 +1,4 @@
+import SEOHead from "@/components/SEOHead";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ArticleCard from "@/components/ArticleCard";
@@ -15,6 +16,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <SEOHead title="首页" description="个人博客" />
       <Navbar />
 
       <main className="flex-1 pt-16 md:pt-20">

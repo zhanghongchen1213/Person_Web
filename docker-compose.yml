@@ -13,6 +13,7 @@ services:
     image: mysql:8.0
     container_name: person_web_mysql
     restart: unless-stopped
+    command: --ngram-token-size=2
 
     # Port mapping (only for local access, NOT exposed to public)
     ports:

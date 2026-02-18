@@ -38,7 +38,10 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
       );
-      const page = await vite.transformIndexHtml(url, template);
+      let page = await vite.transformIndexHtml(url, template);
+      if (res.locals.seoTags) {
+        page = page.replace("</head>", `${res.locals.seoTags}\n</head>`);
+      }
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
@@ -62,6 +65,12 @@ export function serveStatic(app: Express) {
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    if (res.locals.seoTags) {
+      let html = fs.readFileSync(path.resolve(distPath, "index.html"), "utf-8");
+      html = html.replace("</head>", `${res.locals.seoTags}\n</head>`);
+      res.status(200).set({ "Content-Type": "text/html" }).end(html);
+    } else {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    }
   });
 }

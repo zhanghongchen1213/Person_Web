@@ -32,6 +32,23 @@ export function getPool() {
   return _pool;
 }
 
+export async function ensureFulltextIndex() {
+  const pool = getPool();
+  if (!pool) return;
+  try {
+    const [rows] = await pool.execute(
+      "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'articles' AND INDEX_NAME = 'ft_title_content'"
+    );
+    if ((rows as any[]).length === 0) {
+      await pool.execute(
+        "ALTER TABLE articles ADD FULLTEXT INDEX ft_title_content (title, content) WITH PARSER ngram"
+      );
+    }
+  } catch (e) {
+    console.warn("[Database] Failed to create fulltext index:", e);
+  }
+}
+
 // User functions
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
@@ -125,37 +142,48 @@ export async function getArticles(options: {
   const offset = (page - 1) * limit;
 
   // Build conditions
-  const conditions = [];
-  if (status) conditions.push(eq(articles.status, status));
-  if (type) conditions.push(eq(articles.type, type));
-  if (authorId) conditions.push(eq(articles.authorId, authorId));
-  if (search) {
-    conditions.push(
-      or(
-        like(articles.title, `%${search}%`),
-        like(articles.content, `%${search}%`)
-      )
-    );
-  }
+  const baseConditions = [];
+  if (status) baseConditions.push(eq(articles.status, status));
+  if (type) baseConditions.push(eq(articles.type, type));
+  if (authorId) baseConditions.push(eq(articles.authorId, authorId));
 
-  // Get category ID if slug provided
   if (categorySlug) {
     const cat = await db.select().from(categories).where(eq(categories.slug, categorySlug)).limit(1);
-    if (cat.length > 0) {
-      conditions.push(eq(articles.categoryId, cat[0].id));
+    if (cat.length > 0) baseConditions.push(eq(articles.categoryId, cat[0].id));
+  }
+
+  const escapedSearch = search?.replace(/[+\-*~<>()@"]/g, " ").trim();
+  const ftCondition = escapedSearch
+    ? sql`MATCH(${articles.title}, ${articles.content}) AGAINST(${escapedSearch} IN BOOLEAN MODE)`
+    : null;
+  const likeCondition = search
+    ? or(like(articles.title, `%${search}%`), like(articles.content, `%${search}%`))
+    : null;
+
+  let conditions = [...baseConditions];
+  let total = 0;
+
+  if (ftCondition) {
+    try {
+      const ftWhere = and(...conditions, ftCondition);
+      const countResult = await db.select({ count: sql<number>`count(*)` }).from(articles).where(ftWhere);
+      total = Number(countResult[0]?.count || 0);
+      if (total > 0) conditions.push(ftCondition);
+    } catch {
+      // FULLTEXT index missing or query failed
     }
   }
 
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  if (total === 0 && likeCondition) {
+    conditions = [...baseConditions, likeCondition];
+    const countResult = await db.select({ count: sql<number>`count(*)` }).from(articles).where(and(...conditions));
+    total = Number(countResult[0]?.count || 0);
+  }
 
-  // Get total count
-  const countResult = await db.select({ count: sql<number>`count(*)` })
-    .from(articles)
-    .where(whereClause);
-  const total = Number(countResult[0]?.count || 0);
+  let whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
   const totalPages = Math.ceil(total / limit);
 
-  // Get articles
   const articleList = await db.select()
     .from(articles)
     .where(whereClause)

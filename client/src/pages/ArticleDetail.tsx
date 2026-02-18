@@ -1,3 +1,4 @@
+import SEOHead from "@/components/SEOHead";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
@@ -5,6 +6,7 @@ import { useParams, Link } from "wouter";
 import { Loader2, Calendar, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Streamdown } from "streamdown";
+import TableOfContents from "@/components/TableOfContents";
 
 export default function ArticleDetail() {
   const params = useParams<{ slug: string }>();
@@ -67,6 +69,12 @@ export default function ArticleDetail() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <SEOHead
+        title={article.title}
+        description={article.summary || article.title}
+        image={article.coverImage || undefined}
+        type="article"
+      />
       <Navbar />
 
       <main className="flex-1 pt-16 md:pt-20">
@@ -145,8 +153,11 @@ export default function ArticleDetail() {
         {/* Article Content */}
         <article className="border-b-2 border-border">
           <div className="container py-12 md:py-16">
-            <div className="max-w-3xl mx-auto prose-brutalist">
-              <Streamdown>{article.content}</Streamdown>
+            <div className="flex gap-8 justify-center">
+              <div className="max-w-3xl w-full prose-brutalist">
+                <Streamdown>{article.content}</Streamdown>
+              </div>
+              <TableOfContents />
             </div>
           </div>
         </article>

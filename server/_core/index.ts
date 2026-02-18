@@ -11,6 +11,9 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { logCacheStats } from "../performance";
 import { initBackupScheduler } from "./backup-scheduler";
+import { ensureFulltextIndex } from "../db";
+import { seoMiddleware } from "./seo";
+import { generateSitemap } from "./sitemap";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -53,6 +56,21 @@ async function startServer() {
 
   // GitHub OAuth routes
   registerGitHubOAuthRoutes(app);
+  // Sitemap and robots.txt
+  app.get("/sitemap.xml", async (req, res) => {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const xml = await generateSitemap(baseUrl);
+    res.set("Content-Type", "application/xml").send(xml);
+  });
+
+  app.get("/robots.txt", (req, res) => {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    res.set("Content-Type", "text/plain").send(`User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml`);
+  });
+
+  // SEO crawler middleware
+  app.use(seoMiddleware);
+
   // tRPC API
   app.use(
     "/api/trpc",
@@ -83,6 +101,11 @@ async function startServer() {
       console.log('[Backup Scheduler] Initialized');
     }).catch((err) => {
       console.error('[Backup Scheduler] Failed to initialize:', err);
+    });
+
+    // Ensure fulltext index for search
+    ensureFulltextIndex().catch((err) => {
+      console.warn('[Fulltext Index] Failed:', err);
     });
 
     // Start performance monitoring - log cache stats every 5 minutes

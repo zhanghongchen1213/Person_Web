@@ -225,6 +225,7 @@ export function generateDocTreeKey(categorySlug?: string): string {
 export function invalidateArticleCache(): void {
   appCache.deletePattern(/^article:/);
   appCache.deletePattern(/^doc:tree:/);
+  appCache.delete("sitemap:xml");
 }
 
 /**
