@@ -31,7 +31,11 @@
       "Bash(/opt/homebrew/opt/mysql@8.0/bin/mysql:*)",
       "Bash(node:*)",
       "Bash(pnpm install:*)",
-      "Bash(pnpm approve-builds:*)"
+      "Bash(pnpm approve-builds:*)",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__take_snapshot"
     ]
   }
 }

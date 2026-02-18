@@ -112,6 +112,7 @@ nul
 # AI Tools Configuration (Claude Code, Trae, etc.)
 .claude/
 .trae/
+.mcp.json
 
 # Development Planning Documents
 plan.md
