@@ -15,7 +15,23 @@
       "mcp__chrome_devtools__click",
       "mcp__chrome_devtools__upload_file",
       "mcp__chrome_devtools__list_console_messages",
-      "mcp__chrome_devtools__take_screenshot"
+      "mcp__chrome_devtools__take_screenshot",
+      "Bash(node --version:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(mysql --version:*)",
+      "Bash(brew --version:*)",
+      "Bash(nvm --version:*)",
+      "Bash(ls:*)",
+      "Bash(corepack enable:*)",
+      "Bash(corepack prepare:*)",
+      "Bash(brew list:*)",
+      "Bash(npm install:*)",
+      "Bash(brew install:*)",
+      "Bash(brew services start:*)",
+      "Bash(/opt/homebrew/opt/mysql@8.0/bin/mysql:*)",
+      "Bash(node:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm approve-builds:*)"
     ]
   }
 }
