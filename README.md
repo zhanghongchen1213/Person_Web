@@ -735,6 +735,7 @@ https://你的域名/api/auth/github/login
 ```
 
 例如：`https://zhcmqtt.top/api/auth/github/login`
+开发过程中使用`http://localhost:3000/api/dev/login-admin`即可进入管理员后台页面
 
 **登录流程：**
 
@@ -751,9 +752,9 @@ https://你的域名/api/auth/github/login
 
 登录成功后，你可以访问以下管理页面：
 
-| 功能 | 访问地址 | 说明 |
-| --- | --- | --- |
-| 写文章 | `https://你的域名/write` | 创建新的博客文章或文档 |
+| 功能     | 访问地址                          | 说明                     |
+| -------- | --------------------------------- | ------------------------ |
+| 写文章   | `https://你的域名/write`          | 创建新的博客文章或文档   |
 | 文章管理 | `https://你的域名/admin/articles` | 编辑、删除、管理所有文章 |
 
 💡 **管理员可以做什么**：
@@ -908,6 +909,7 @@ docker compose logs --tail=20 app
 ### 10.3 数据安全说明
 
 > 💡 **为什么升级不会丢失数据？**
+>
 > - 数据库数据存储在 Docker Volume `person_web_mysql_data` 中
 > - Volume 与应用容器完全分离，重建应用不影响数据
 > - 即使执行 `docker compose down`，数据也会保留（除非加 `-v` 参数）
