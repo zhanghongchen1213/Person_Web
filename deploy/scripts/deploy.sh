@@ -189,7 +189,7 @@ log_info "环境变量验证通过"
 log_step "4/8 停止旧容器..."
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_APP}$"; then
     log_info "发现运行中的容器，正在停止..."
-    $COMPOSE_CMD down
+    $COMPOSE_CMD --env-file "$ENV_FILE" down
     log_info "旧容器已停止"
 else
     log_info "未发现运行中的容器，跳过停止步骤"
@@ -255,13 +255,13 @@ log_step "6/9 构建 Docker 镜像..."
 
 # 临时停止 MySQL 容器以释放内存（2GB 服务器优化）
 log_info "临时停止 MySQL 容器以释放内存用于构建..."
-docker compose stop mysql 2>/dev/null || true
+$COMPOSE_CMD --env-file "$ENV_FILE" stop mysql 2>/dev/null || true
 sleep 2
 
 log_info "开始构建镜像（这可能需要几分钟）..."
 echo ""
 
-if $COMPOSE_CMD build --no-cache; then
+if $COMPOSE_CMD --env-file "$ENV_FILE" build --no-cache; then
     echo ""
     log_success "镜像构建成功"
 
@@ -284,7 +284,7 @@ log_step "7/9 启动容器..."
 log_info "启动 MySQL 和应用容器..."
 echo ""
 
-if $COMPOSE_CMD up -d; then
+if $COMPOSE_CMD --env-file "$ENV_FILE" up -d; then
     echo ""
     log_success "容器启动成功"
 else
@@ -394,17 +394,17 @@ echo ""
 
 # 显示容器状态
 log_info "容器状态:"
-$COMPOSE_CMD ps
+$COMPOSE_CMD --env-file "$ENV_FILE" ps
 echo ""
 
 # 显示有用的命令
 log_info "常用命令:"
-echo "  查看应用日志:   ${COMPOSE_CMD} logs -f app"
-echo "  查看数据库日志: ${COMPOSE_CMD} logs -f mysql"
-echo "  查看所有日志:   ${COMPOSE_CMD} logs -f"
-echo "  重启应用:       ${COMPOSE_CMD} restart app"
-echo "  停止服务:       ${COMPOSE_CMD} down"
-echo "  查看容器状态:   ${COMPOSE_CMD} ps"
+echo "  查看应用日志:   ${COMPOSE_CMD} --env-file ${ENV_FILE} logs -f app"
+echo "  查看数据库日志: ${COMPOSE_CMD} --env-file ${ENV_FILE} logs -f mysql"
+echo "  查看所有日志:   ${COMPOSE_CMD} --env-file ${ENV_FILE} logs -f"
+echo "  重启应用:       ${COMPOSE_CMD} --env-file ${ENV_FILE} restart app"
+echo "  停止服务:       ${COMPOSE_CMD} --env-file ${ENV_FILE} down"
+echo "  查看容器状态:   ${COMPOSE_CMD} --env-file ${ENV_FILE} ps"
 echo "  进入应用容器:   docker exec -it ${CONTAINER_APP} sh"
 echo ""
 

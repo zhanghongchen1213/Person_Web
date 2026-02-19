@@ -173,7 +173,7 @@ sleep 5
 
 # 检查容器状态
 log_info "检查容器状态..."
-docker compose ps
+docker compose --env-file "$ENV_FILE" ps
 
 # 检查应用健康状态
 APP_STATUS=$(docker inspect --format='{{.State.Health.Status}}' person_web_app 2>/dev/null || echo "unknown")
@@ -183,7 +183,7 @@ if [ "$APP_STATUS" = "healthy" ] && [ "$MYSQL_STATUS" = "healthy" ]; then
     log_success "所有容器运行正常"
 else
     log_warn "容器状态: app=$APP_STATUS, mysql=$MYSQL_STATUS"
-    log_info "请等待几秒后再次检查: docker compose ps"
+    log_info "请等待几秒后再次检查: docker compose --env-file $ENV_FILE ps"
 fi
 
 # ============================================
@@ -198,7 +198,7 @@ log_info "升级时间: $(date '+%Y-%m-%d %H:%M:%S')"
 log_info "备份位置: $BACKUP_DIR"
 echo ""
 log_info "常用命令:"
-echo "  查看容器状态:  docker compose ps"
-echo "  查看应用日志:  docker compose logs -f app"
+echo "  查看容器状态:  docker compose --env-file $ENV_FILE ps"
+echo "  查看应用日志:  docker compose --env-file $ENV_FILE logs -f app"
 echo "  回滚数据库:    gunzip -c $BACKUP_DIR/upgrade-backup-$DATE_STAMP.sql.gz | docker exec -i person_web_mysql mysql -uroot -p\$DB_PASSWORD personal_blog"
 echo ""
