@@ -14,7 +14,7 @@ export default function Footer() {
               [BLOG]
             </span>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              一个极简主义的个人博客，专注于技术分享与思考。
+              鸿尘客的个人博客，专注于技术分享与思考。
             </p>
           </div>
 

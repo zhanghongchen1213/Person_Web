@@ -28,8 +28,8 @@ export default function About() {
                   <span className="brutalist-underline">我</span>
                 </h1>
                 <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8">
-                  你好！我是一名热爱技术的开发者!<br/>
-                  这个博客是我记录学习历程、分享技术心得的地方。
+                  你终于发现我了！我是鸿尘客，一名热爱技术的开发者!<br/>
+                  在这里分享项目实践、技术教程和学习笔记！<br/>
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <button
@@ -84,22 +84,26 @@ export default function About() {
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    STM32 / ESP32 / GD32 / SF32 / HC32 
+                    STM32 / ESP32 / GD32
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    FreeRTOS / RT-Thread
+                    ARM / RISCV
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    C / C++ / Embedded Linux
+                    FreeRTOS / RT-Thread 
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-foreground" />
+                    TCP/IP / MQTT / CAN / Ethercat
                   </li>
                 </ul>
               </div>
 
               {/* ROS机器人 */}
               <div className="p-6 border-2 border-border bg-background">
-                <h3 className="text-xl font-bold mb-4 uppercase tracking-wider">ROS机器人</h3>
+                <h3 className="text-xl font-bold mb-4 uppercase tracking-wider">ROS系统开发</h3>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
@@ -107,11 +111,11 @@ export default function About() {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    导航 / SLAM
+                    TF / SLAM / Navigation / Webots
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    Gazebo / RViz
+                    Gazebo / RViz / RQT / ROS Bridge
                   </li>
                 </ul>
               </div>
@@ -122,15 +126,15 @@ export default function About() {
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    PyTorch / TensorFlow
+                    PyTorch / TensorFlow / Keras / ONNX Runtime / TFLite
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    计算机视觉 / NLP
+                    CV / NLP / ASR / TTS / YOLO
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    模型部署 / ONNX
+                    模型轻量化 / 模型部署 / 硬件加速
                   </li>
                 </ul>
               </div>
@@ -141,15 +145,15 @@ export default function About() {
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    硬件设计 / PCB
+                    工业设计 / SW建模 / 3D打印
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    3D打印 / 建模
+                    原理图设计 / PCB Layout / 硬件调试
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    树莓派 / 香橙派 / Jetson orin 
+                    软件开发 / 文档编写 / 视频制作 / 产品宣发
                   </li>
                 </ul>
               </div>
@@ -160,7 +164,7 @@ export default function About() {
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    Python / C++
+                    Python / C / C++ 
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
@@ -168,7 +172,7 @@ export default function About() {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    Rust / Go
+                    Shell / Rust / Go
                   </li>
                 </ul>
               </div>
@@ -179,15 +183,15 @@ export default function About() {
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    Linux / Docker
+                    Linux / SSH / NPM / Docker
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    Git / VSCode
+                    Git / SourceTree / Git LFS
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-foreground" />
-                    CI/CD / Nginx
+                    CI/CD / Nginx / GDB / Valgrind
                   </li>
                 </ul>
               </div>
@@ -203,7 +207,7 @@ export default function About() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Project 1 */}
               <div className="p-6 border-2 border-border bg-background">
-                <h3 className="text-xl font-bold mb-3">智能机器人导航系统</h3>
+                <h3 className="text-xl font-bold mb-3">桌面级机器人自主导航系统</h3>
 
                 {/* Tech Stack Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -348,7 +352,9 @@ export default function About() {
                 </div>
                 <h3 className="text-xl font-bold mb-2">嵌入式开发工程师</h3>
                 <p className="text-muted-foreground">
-                  负责核心业务系统的架构设计与开发，带领团队完成多个重要项目。
+                  完成深度学习模型（YOLO/TFLite）在嵌入式端的轻量化部署，推理速度提升40%；<br/>
+                  主导外骨骼机器人算法开发与ROS2系统集成，保障机器人关节控制的实时性与稳定性；<br />
+                  落地一款商用外骨骼助力产品
                 </p>
               </div>
 
@@ -361,7 +367,8 @@ export default function About() {
                 </div>
                 <h3 className="text-xl font-bold mb-2">机械电子工程硕士</h3>
                 <p className="text-muted-foreground">
-                  参与多个嵌入式项目的开发，积累了丰富的项目经验。
+                  搭建Gazebo+Webots仿真平台，完成多场景自主导航验证；<br />
+                  参与校企合作项目，开发基于FreeRTOS的嵌入式视觉识别模块，落地于工业巡检机器人
                 </p>
               </div>
 
@@ -374,7 +381,7 @@ export default function About() {
                 </div>
                 <h3 className="text-xl font-bold mb-2">机械电子工程学士</h3>
                 <p className="text-muted-foreground">
-                  系统学习计算机基础知识，培养了扎实的编程能力。
+                  系统学习机械设计、嵌入式系统、自动控制原理、C/C++/Python编程，GPA专业前10%
                 </p>
               </div>
             </div>
