@@ -41,7 +41,7 @@ export function registerGitHubOAuthRoutes(app: Express) {
 
   // 1. 发起 GitHub OAuth 登录
   app.get("/api/auth/github/login", (req: Request, res: Response) => {
-    const state = req.query.state as string || Math.random().toString(36).substring(7);
+    const state = req.query.state as string || crypto.randomUUID();
 
     const params = new URLSearchParams({
       client_id: GITHUB_CLIENT_ID,
@@ -51,7 +51,7 @@ export function registerGitHubOAuthRoutes(app: Express) {
     });
 
     const authUrl = `${GITHUB_AUTHORIZE_URL}?${params.toString()}`;
-    console.log(`[GitHubOAuth] Redirecting to GitHub: ${authUrl}`);
+    console.log("[GitHubOAuth] Redirecting to GitHub OAuth");
 
     res.redirect(authUrl);
   });
@@ -59,8 +59,6 @@ export function registerGitHubOAuthRoutes(app: Express) {
   // 2. GitHub OAuth 回调处理
   app.get("/api/auth/github/callback", async (req: Request, res: Response) => {
     const code = req.query.code as string;
-    const state = req.query.state as string;
-
     if (!code) {
       console.error("[GitHubOAuth] Missing authorization code");
       res.status(400).json({ error: "Missing authorization code" });
@@ -134,7 +132,6 @@ export function registerGitHubOAuthRoutes(app: Express) {
 
       // 设置 cookie
       const cookieOptions = getSessionCookieOptions(req);
-      console.log(`[GitHubOAuth] Cookie options:`, cookieOptions);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
       console.log("[GitHubOAuth] Session created, redirecting to home");

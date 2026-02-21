@@ -45,7 +45,7 @@ export default function WriteArticle() {
   const utils = trpc.useUtils();
 
   const createMutation = trpc.article.create.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       toast.success("文章创建成功");
       utils.article.list.invalidate();
       utils.article.adminList.invalidate();
@@ -84,15 +84,15 @@ export default function WriteArticle() {
   // Load existing article data
   useEffect(() => {
     if (existingArticle) {
-      setTitle(existingArticle.title);
-      setSlug(existingArticle.slug);
-      setSummary(existingArticle.summary || "");
-      setContent(existingArticle.content);
-      setCoverImage(existingArticle.coverImage || "");
-      setCategoryId(existingArticle.categoryId || undefined);
-      setStatus(existingArticle.status === "published" ? "published" : "draft");
-      setArticleType(existingArticle.type || "blog");
-      setOrder(existingArticle.order || 0);
+      setTitle(existingArticle.title); // eslint-disable-line react-hooks/set-state-in-effect
+      setSlug(existingArticle.slug);  
+      setSummary(existingArticle.summary || "");  
+      setContent(existingArticle.content);  
+      setCoverImage(existingArticle.coverImage || "");  
+      setCategoryId(existingArticle.categoryId || undefined);  
+      setStatus(existingArticle.status === "published" ? "published" : "draft");  
+      setArticleType(existingArticle.type || "blog");  
+      setOrder(existingArticle.order || 0);  
     }
   }, [existingArticle]);
 
@@ -103,7 +103,7 @@ export default function WriteArticle() {
         .toLowerCase()
         .replace(/[^\w\u4e00-\u9fa5]+/g, "-")
         .replace(/^-+|-+$/g, "");
-      setSlug(generatedSlug);
+      setSlug(generatedSlug); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [title, isEditing]);
 

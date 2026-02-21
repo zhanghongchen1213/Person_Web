@@ -23,17 +23,6 @@ import { toast } from "sonner";
 /**
  * Category type from the API
  */
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  description: string | null;
-  icon: string | null;
-  sortOrder: number;
-  type: "blog" | "doc";
-  createdAt: Date;
-}
-
 interface CategoryComboboxProps {
   /** Currently selected category ID */
   value: number | undefined;

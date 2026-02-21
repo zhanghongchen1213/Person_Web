@@ -7,7 +7,6 @@ vi.mock("./db", () => ({
   getArticles: vi.fn(),
   getArticleBySlug: vi.fn(),
   getArticleById: vi.fn(),
-  incrementViewCount: vi.fn(),
   getStats: vi.fn(),
   getArchive: vi.fn(),
   createArticle: vi.fn(),
@@ -17,18 +16,9 @@ vi.mock("./db", () => ({
   createCategory: vi.fn(),
   updateCategory: vi.fn(),
   deleteCategory: vi.fn(),
-  getTags: vi.fn(),
-  createTag: vi.fn(),
-  updateTag: vi.fn(),
-  deleteTag: vi.fn(),
 }));
 
 import * as db from "./db";
-
-type CookieCall = {
-  name: string;
-  options: Record<string, unknown>;
-};
 
 function createPublicContext(): TrpcContext {
   return {
@@ -39,7 +29,7 @@ function createPublicContext(): TrpcContext {
     } as TrpcContext["req"],
     res: {
       clearCookie: () => {},
-    } as TrpcContext["res"],
+    } as unknown as TrpcContext["res"],
   };
 }
 
@@ -64,7 +54,7 @@ function createAdminContext(): TrpcContext {
     } as TrpcContext["req"],
     res: {
       clearCookie: () => {},
-    } as TrpcContext["res"],
+    } as unknown as TrpcContext["res"],
   };
 }
 
@@ -89,7 +79,7 @@ function createUserContext(): TrpcContext {
     } as TrpcContext["req"],
     res: {
       clearCookie: () => {},
-    } as TrpcContext["res"],
+    } as unknown as TrpcContext["res"],
   };
 }
 
@@ -110,14 +100,14 @@ describe("article.list", () => {
           coverImage: null,
           authorId: 1,
           categoryId: null,
-          status: "published",
-          viewCount: 100,
+          status: "published" as const,
+          type: "blog" as const,
+          order: 0,
           publishedAt: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
           author: { id: 1, name: "Author", avatar: null },
           category: null,
-          tags: [],
         },
       ],
       total: 1,
@@ -155,17 +145,16 @@ describe("article.bySlug", () => {
       authorId: 1,
       categoryId: null,
       status: "published" as const,
-      viewCount: 100,
+      type: "blog" as const,
+      order: 0,
       publishedAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
       author: { id: 1, name: "Author", avatar: null },
       category: null,
-      tags: [],
     };
 
     vi.mocked(db.getArticleBySlug).mockResolvedValue(mockArticle);
-    vi.mocked(db.incrementViewCount).mockResolvedValue();
 
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
@@ -173,7 +162,6 @@ describe("article.bySlug", () => {
     const result = await caller.article.bySlug({ slug: "test-article" });
 
     expect(result.title).toBe("Test Article");
-    expect(db.incrementViewCount).toHaveBeenCalledWith(1);
   });
 
   it("throws NOT_FOUND for non-existent article", async () => {
@@ -239,8 +227,6 @@ describe("article.stats", () => {
     const mockStats = {
       articleCount: 10,
       categoryCount: 5,
-      tagCount: 15,
-      totalViews: 1000,
     };
 
     vi.mocked(db.getStats).mockResolvedValue(mockStats);
@@ -251,7 +237,7 @@ describe("article.stats", () => {
     const result = await caller.article.stats();
 
     expect(result.articleCount).toBe(10);
-    expect(result.totalViews).toBe(1000);
+    expect(result.categoryCount).toBe(5);
   });
 });
 
@@ -262,8 +248,8 @@ describe("category.list", () => {
 
   it("returns all categories", async () => {
     const mockCategories = [
-      { id: 1, name: "Tech", slug: "tech", description: null, createdAt: new Date() },
-      { id: 2, name: "Life", slug: "life", description: null, createdAt: new Date() },
+      { id: 1, name: "Tech", slug: "tech", description: null, icon: null, sortOrder: 0, type: "blog" as const, createdAt: new Date() },
+      { id: 2, name: "Life", slug: "life", description: null, icon: null, sortOrder: 1, type: "blog" as const, createdAt: new Date() },
     ];
 
     vi.mocked(db.getCategories).mockResolvedValue(mockCategories);
@@ -278,25 +264,3 @@ describe("category.list", () => {
   });
 });
 
-describe("tag.list", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns all tags", async () => {
-    const mockTags = [
-      { id: 1, name: "JavaScript", slug: "javascript", createdAt: new Date() },
-      { id: 2, name: "React", slug: "react", createdAt: new Date() },
-    ];
-
-    vi.mocked(db.getTags).mockResolvedValue(mockTags);
-
-    const ctx = createPublicContext();
-    const caller = appRouter.createCaller(ctx);
-
-    const result = await caller.tag.list();
-
-    expect(result).toHaveLength(2);
-    expect(result[0].name).toBe("JavaScript");
-  });
-});

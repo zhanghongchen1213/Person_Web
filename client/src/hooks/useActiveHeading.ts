@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import type { TocItem } from "@/types/doc";
 
 /**
@@ -14,9 +14,9 @@ export function useActiveHeading(headings: TocItem[]): string {
     // Set initial active heading from URL hash or first heading
     const hash = window.location.hash.slice(1);
     if (hash && headings.some((h) => h.id === hash)) {
-      setActiveId(hash);
+      setActiveId(hash); // eslint-disable-line react-hooks/set-state-in-effect
     } else if (headings.length > 0) {
-      setActiveId(headings[0].id);
+      setActiveId(headings[0].id);  
     }
 
     const observer = new IntersectionObserver(

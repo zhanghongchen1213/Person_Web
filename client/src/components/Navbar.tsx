@@ -16,7 +16,7 @@ interface NavbarProps {
   onSearch?: (query: string) => void;
 }
 
-export default function Navbar({ onSearch }: NavbarProps) {
+export default function Navbar({ onSearch: _onSearch }: NavbarProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

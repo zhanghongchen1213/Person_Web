@@ -20,7 +20,7 @@ import type { TocItem, DocNavItem } from "@/types/doc";
  */
 export default function DocReader() {
   const params = useParams<{ category: string; slug: string }>();
-  const categorySlug = params.category || "";
+  const _categorySlug = params.category || ""; // eslint-disable-line @typescript-eslint/no-unused-vars
   const articleSlug = params.slug || "";
 
   // State for TOC headings

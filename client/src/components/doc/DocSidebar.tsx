@@ -25,20 +25,17 @@ export function DocSidebar({ currentSlug, onNavigate }: DocSidebarProps) {
   );
 
   // Auto-expand category containing current article
+   
   useEffect(() => {
     if (docTree && currentSlug) {
-      const categoryWithCurrentArticle = docTree.find((tree) =>
+      const match = docTree.find((tree) =>
         tree.articles.some((article) => article.slug === currentSlug)
       );
-      if (categoryWithCurrentArticle) {
-        setExpandedCategories((prev) => {
-          const next = new Set(prev);
-          next.add(categoryWithCurrentArticle.category.id);
-          return next;
-        });
+      if (match && !expandedCategories.has(match.category.id)) {
+        setExpandedCategories((prev) => new Set(prev).add(match.category.id)); // eslint-disable-line react-hooks/set-state-in-effect
       }
     }
-  }, [docTree, currentSlug]);
+  }, [docTree, currentSlug, expandedCategories]);
 
   const toggleCategory = (categoryId: number) => {
     setExpandedCategories((prev) => {

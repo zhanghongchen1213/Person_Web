@@ -209,7 +209,7 @@ export const appRouter = router({
         id: z.number(),
         publishedAt: z.date(),
       }))
-      .mutation(async ({ input, ctx }) => {
+      .mutation(async ({ input, ctx: _ctx }) => {
         // Verify article exists and belongs to current admin
         const article = await db.getArticleById(input.id);
         if (!article) {
@@ -418,9 +418,9 @@ export const appRouter = router({
         version: z.string(),
         exportedAt: z.string(),
         data: z.object({
-          users: z.array(z.any()),
-          articles: z.array(z.any()),
-          categories: z.array(z.any()),
+          users: z.array(z.record(z.string(), z.unknown())),
+          articles: z.array(z.record(z.string(), z.unknown())),
+          categories: z.array(z.record(z.string(), z.unknown())),
         }),
       }))
       .mutation(async ({ input }) => {

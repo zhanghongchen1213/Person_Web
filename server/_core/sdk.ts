@@ -135,11 +135,11 @@ class SDKServer {
       accessToken,
     } as ExchangeTokenResponse);
     const loginMethod = this.deriveLoginMethod(
-      (data as any)?.platforms,
-      (data as any)?.platform ?? data.platform ?? null
+      (data as any)?.platforms, // eslint-disable-line @typescript-eslint/no-explicit-any
+      (data as any)?.platform ?? data.platform ?? null // eslint-disable-line @typescript-eslint/no-explicit-any
     );
     return {
-      ...(data as any),
+      ...(data as any), // eslint-disable-line @typescript-eslint/no-explicit-any
       platform: loginMethod,
       loginMethod,
     } as GetUserInfoResponse;
@@ -246,11 +246,11 @@ class SDKServer {
     );
 
     const loginMethod = this.deriveLoginMethod(
-      (data as any)?.platforms,
-      (data as any)?.platform ?? data.platform ?? null
+      (data as any)?.platforms, // eslint-disable-line @typescript-eslint/no-explicit-any
+      (data as any)?.platform ?? data.platform ?? null // eslint-disable-line @typescript-eslint/no-explicit-any
     );
     return {
-      ...(data as any),
+      ...(data as any), // eslint-disable-line @typescript-eslint/no-explicit-any
       platform: loginMethod,
       loginMethod,
     } as GetUserInfoWithJwtResponse;

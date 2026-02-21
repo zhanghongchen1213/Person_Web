@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,14 +28,11 @@ export function ManusDialog({
 }: ManusDialogProps) {
   const [internalOpen, setInternalOpen] = useState(open);
 
-  useEffect(() => {
-    if (!onOpenChange) {
-      setInternalOpen(open);
-    }
-  }, [open, onOpenChange]);
+  const isControlled = !!onOpenChange;
+  const effectiveOpen = isControlled ? open : internalOpen;
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (onOpenChange) {
+    if (isControlled) {
       onOpenChange(nextOpen);
     } else {
       setInternalOpen(nextOpen);
@@ -48,7 +45,7 @@ export function ManusDialog({
 
   return (
     <Dialog
-      open={onOpenChange ? open : internalOpen}
+      open={effectiveOpen}
       onOpenChange={handleOpenChange}
     >
       <DialogContent className="py-5 bg-[#f8f8f7] rounded-[20px] w-[400px] shadow-[0px_4px_11px_0px_rgba(0,0,0,0.08)] border border-[rgba(0,0,0,0.08)] backdrop-blur-2xl p-0 gap-0 text-center">

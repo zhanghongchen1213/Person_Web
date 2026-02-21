@@ -1,6 +1,6 @@
 import { Express, Request, Response } from "express";
 import { ExchangeTokenResponse, GetUserInfoResponse } from "./types/manusTypes";
-import { ENV } from "./env";
+
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
@@ -24,9 +24,13 @@ export function registerMockOAuthRoutes(app: Express) {
       return;
     }
 
-    console.log(`[MockOAuth] /app-auth called. Redirecting to ${redirectUri}`);
-
-    const callbackUrl = new URL(redirectUri);
+    // Validate redirect URI is same-origin to prevent open redirect
+    const callbackUrl = new URL(redirectUri, `${req.protocol}://${req.get("host")}`);
+    const allowedHost = req.get("host") || "localhost";
+    if (callbackUrl.host !== allowedHost) {
+      res.status(400).send("Invalid redirectUri: must be same-origin");
+      return;
+    }
     // 生成一个模拟的 Authorization Code
     callbackUrl.searchParams.set("code", "mock-auth-code-" + Date.now());
     callbackUrl.searchParams.set("state", state);

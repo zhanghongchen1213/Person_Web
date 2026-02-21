@@ -126,7 +126,7 @@ export default function AdminArticles() {
   });
 
   // 处理删除
-  const handleDelete = (id: number, title: string) => {
+  const handleDelete = (id: number, _title: string) => {
     deleteMutation.mutate({ id });
   };
 

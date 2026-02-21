@@ -20,7 +20,7 @@ export const getLoginUrl = () => {
     url.searchParams.set("state", state);
     url.searchParams.set("type", "signIn");
     return url.toString();
-  } catch (e) {
+  } catch {
     console.error("Invalid OAuth Portal URL:", oauthPortalUrl);
     return "#";
   }

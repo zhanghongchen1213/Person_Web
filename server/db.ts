@@ -39,7 +39,7 @@ export async function ensureFulltextIndex() {
     const [rows] = await pool.execute(
       "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'articles' AND INDEX_NAME = 'ft_title_content'"
     );
-    if ((rows as any[]).length === 0) {
+    if ((rows as Record<string, unknown>[]).length === 0) {
       await pool.execute(
         "ALTER TABLE articles ADD FULLTEXT INDEX ft_title_content (title, content) WITH PARSER ngram"
       );
@@ -180,7 +180,7 @@ export async function getArticles(options: {
     total = Number(countResult[0]?.count || 0);
   }
 
-  let whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   const totalPages = Math.ceil(total / limit);
 
@@ -1131,11 +1131,12 @@ function calculateNextBackupTime(interval: BackupInterval): Date {
       // First day of next month at 00:00
       next.setMonth(now.getMonth() + 1, 1);
       break;
-    case "quarterly":
+    case "quarterly": {
       // First day of next quarter at 00:00
       const currentQuarter = Math.floor(now.getMonth() / 3);
       next.setMonth((currentQuarter + 1) * 3, 1);
       break;
+    }
   }
 
   next.setHours(0, 0, 0, 0);

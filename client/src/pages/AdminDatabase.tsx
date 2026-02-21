@@ -66,7 +66,7 @@ export default function AdminDatabase() {
     version: string;
     exportedAt: string;
   } | null>(null);
-  const [importData, setImportData] = useState<any>(null);
+  const [importData, setImportData] = useState<Record<string, unknown>>(null);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -121,7 +121,7 @@ export default function AdminDatabase() {
         setExportStats(result.data);
         setShowExportDialog(true);
       }
-    } catch (error) {
+    } catch {
       toast.error("获取数据统计失败");
     }
   };
@@ -146,7 +146,7 @@ export default function AdminDatabase() {
         URL.revokeObjectURL(url);
         toast.success("数据导出成功！");
       }
-    } catch (error) {
+    } catch {
       toast.error("导出失败");
     } finally {
       setIsExporting(false);
@@ -235,15 +235,7 @@ export default function AdminDatabase() {
     return new Date(date).toLocaleString("zh-CN");
   };
 
-  // Get interval label
-  const getIntervalLabel = (interval: string) => {
-    switch (interval) {
-      case "weekly": return "每周";
-      case "monthly": return "每月";
-      case "quarterly": return "每季度";
-      default: return interval;
-    }
-  };
+
 
   // Permission check
   if (authLoading) {

@@ -1,10 +1,5 @@
-/**
- * Performance Monitoring Tests
- *
- * Tests for the performance monitoring system
- */
-
-import { performanceMonitor, formatDuration, logRequestPerformance } from '../performance';
+import { describe, it, expect, beforeEach } from "vitest";
+import { performanceMonitor, formatDuration } from '../performance';
 
 describe('Performance Monitor', () => {
   beforeEach(() => {
