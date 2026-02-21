@@ -1,5 +1,8 @@
 import "dotenv/config";
+import compression from "compression";
 import express from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -36,17 +39,17 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
+  app.use(compression());
+  app.use(helmet({
+    contentSecurityPolicy: false, // CSP handled by Nginx in production
+  }));
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // Register Mock OAuth routes for local development and Docker testing
-  // Enable when OAUTH_SERVER_URL points to localhost (indicating local testing)
-  const oauthServerUrl = process.env.OAUTH_SERVER_URL || "";
-  const isLocalOAuth = oauthServerUrl.includes("localhost") || oauthServerUrl.includes("127.0.0.1");
-
-  if (process.env.NODE_ENV === "development" || isLocalOAuth) {
+  // Register Mock OAuth routes for local development only
+  if (process.env.NODE_ENV === "development") {
     registerMockOAuthRoutes(app);
     console.log("[MockOAuth] Mock OAuth routes registered for local testing");
   }
@@ -70,6 +73,15 @@ async function startServer() {
 
   // SEO crawler middleware
   app.use(seoMiddleware);
+
+  // API rate limiting
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use("/api/", apiLimiter);
 
   // tRPC API
   app.use(

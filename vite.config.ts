@@ -29,6 +29,15 @@ export default defineConfig({
     reportCompressedSize: false, // Disable gzip size reporting (memory intensive)
     chunkSizeWarningLimit: 1000,
     minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'ui-vendor': ['framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs', '@radix-ui/react-tooltip', '@radix-ui/react-popover'],
+          'editor': ['react-markdown', 'rehype-highlight', 'rehype-slug'],
+        },
+      },
+    },
   },
   server: {
     host: true,

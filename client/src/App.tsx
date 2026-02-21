@@ -1,19 +1,21 @@
+import React, { Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
-import Articles from "./pages/Articles";
-import ArticleDetail from "./pages/ArticleDetail";
-import Archive from "./pages/Archive";
-import About from "./pages/About";
-import WriteArticle from "./pages/WriteArticle";
-import DocReader from "./pages/DocReader";
-import AdminArticles from "./pages/AdminArticles";
-import AdminDatabase from "./pages/AdminDatabase";
-import Login from "./pages/Login";
+
+const Home = React.lazy(() => import("./pages/Home"));
+const Articles = React.lazy(() => import("./pages/Articles"));
+const ArticleDetail = React.lazy(() => import("./pages/ArticleDetail"));
+const Archive = React.lazy(() => import("./pages/Archive"));
+const About = React.lazy(() => import("./pages/About"));
+const WriteArticle = React.lazy(() => import("./pages/WriteArticle"));
+const DocReader = React.lazy(() => import("./pages/DocReader"));
+const AdminArticles = React.lazy(() => import("./pages/AdminArticles"));
+const AdminDatabase = React.lazy(() => import("./pages/AdminDatabase"));
+const Login = React.lazy(() => import("./pages/Login"));
+const NotFound = React.lazy(() => import("@/pages/NotFound"));
 
 function Router() {
   return (
@@ -41,7 +43,9 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <Suspense fallback={<div />}>
+            <Router />
+          </Suspense>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

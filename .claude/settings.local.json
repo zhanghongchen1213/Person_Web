@@ -38,5 +38,9 @@
       "mcp__chrome-devtools__take_snapshot",
       "WebFetch(domain:zhcmqtt.top)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "chrome-devtools"
+  ],
+  "enableAllProjectMcpServers": true
 }
