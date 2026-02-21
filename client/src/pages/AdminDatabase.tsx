@@ -66,7 +66,7 @@ export default function AdminDatabase() {
     version: string;
     exportedAt: string;
   } | null>(null);
-  const [importData, setImportData] = useState<Record<string, unknown>>(null);
+  const [importData, setImportData] = useState<Record<string, unknown> | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -217,7 +217,7 @@ export default function AdminDatabase() {
     }
 
     // Then import
-    importMutation.mutate(importData);
+    importMutation.mutate(importData as Parameters<typeof importMutation.mutate>[0]);
   };
 
   // Handle save backup settings

@@ -39,11 +39,11 @@ export default function ArticleCard({
   };
 
   return (
-    <article className="group border-b-4 border-black pb-8 mb-8">
+    <article className="group border-b-2 border-border pb-8 mb-8">
       {/* Cover Image */}
       {coverImage && (
         <Link href={`/article/${slug}`} className="block mb-4">
-          <div className="aspect-video overflow-hidden border-2 border-black">
+          <div className="aspect-video overflow-hidden border-2 border-border">
             <img
               src={coverImage}
               alt={title}
@@ -72,7 +72,7 @@ export default function ArticleCard({
 
       {/* Summary */}
       {summary && (
-        <p className="text-gray-600 text-base md:text-lg leading-relaxed mb-6 line-clamp-2">
+        <p className="text-muted-foreground text-base md:text-lg leading-relaxed mb-6 line-clamp-2">
           {summary}
         </p>
       )}
@@ -80,7 +80,7 @@ export default function ArticleCard({
       {/* Meta Info */}
       <div className="flex flex-wrap items-center gap-6 text-sm">
         {/* Date */}
-        <div className="flex items-center gap-2 text-gray-500">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <Calendar className="w-4 h-4" />
           <time>{formatDate(publishedAt)}</time>
         </div>

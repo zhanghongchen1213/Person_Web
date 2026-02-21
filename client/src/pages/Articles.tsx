@@ -6,8 +6,10 @@ import { trpc } from "@/lib/trpc";
 import { useLocation, useSearch } from "wouter";
 import { Loader2, Filter, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { usePageView } from "@/_core/hooks/usePageView";
 
 export default function Articles() {
+  usePageView("/articles");
   const search = useSearch();
   const [, setLocation] = useLocation();
   const params = new URLSearchParams(search);
@@ -120,7 +122,7 @@ export default function Articles() {
                     <label className="block text-xs font-bold uppercase tracking-wider mb-2">
                       分类
                     </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                       <button
                         onClick={() => {
                           setSelectedCategory("");

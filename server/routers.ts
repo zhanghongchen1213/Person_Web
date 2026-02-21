@@ -138,7 +138,6 @@ export const appRouter = router({
           page: input?.page ?? 1,
           status: input?.status,
           type: input?.type,
-          authorId: ctx.user.id,
         });
       }),
 
@@ -403,11 +402,24 @@ export const appRouter = router({
   // Analytics routes
   analytics: router({
     overview: adminProcedure.query(async () => {
-      return await db.getAnalyticsOverview();
+      const cacheKey = "analytics:overview";
+      const cached = appCache.get(cacheKey);
+      if (cached) return cached as Awaited<ReturnType<typeof db.getAnalyticsOverview>>;
+      const result = await db.getAnalyticsOverview();
+      appCache.set(cacheKey, result, 60 * 1000);
+      return result;
     }),
-    pageViewStats: adminProcedure.query(async () => {
-      return await db.getPageViewStats();
-    }),
+    pageViewStats: adminProcedure
+      .input(z.object({ days: z.number().min(1).max(365).default(30) }).optional())
+      .query(async ({ input }) => {
+        const days = input?.days ?? 30;
+        const cacheKey = `analytics:pageViewStats:${days}`;
+        const cached = appCache.get(cacheKey);
+        if (cached) return cached as Awaited<ReturnType<typeof db.getPageViewStats>>;
+        const result = await db.getPageViewStats(days);
+        appCache.set(cacheKey, result, 60 * 1000);
+        return result;
+      }),
     recordView: publicProcedure
       .input(z.object({
         articleId: z.number().optional(),

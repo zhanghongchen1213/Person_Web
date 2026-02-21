@@ -526,12 +526,13 @@ export async function getAnalyticsOverview(): Promise<{
     };
   }
 
-  const [totalResult, publishedResult, draftResult, userResult, categoryResult] = await Promise.all([
+  const [totalResult, publishedResult, draftResult, userResult, categoryResult, viewsResult] = await Promise.all([
     db.select({ count: sql<number>`count(*)` }).from(articles),
     db.select({ count: sql<number>`count(*)` }).from(articles).where(eq(articles.status, "published")),
     db.select({ count: sql<number>`count(*)` }).from(articles).where(eq(articles.status, "draft")),
     db.select({ count: sql<number>`count(*)` }).from(users),
     db.select({ count: sql<number>`count(*)` }).from(categories),
+    db.select({ count: sql<number>`count(*)` }).from(pageViews),
   ]);
 
   // Articles by category (published only)
@@ -571,7 +572,7 @@ export async function getAnalyticsOverview(): Promise<{
     totalArticles: Number(totalResult[0]?.count || 0),
     publishedArticles: Number(publishedResult[0]?.count || 0),
     draftArticles: Number(draftResult[0]?.count || 0),
-    totalViews: 0, // viewCount column was removed from schema
+    totalViews: Number(viewsResult[0]?.count || 0),
     totalUsers: Number(userResult[0]?.count || 0),
     totalCategories: Number(categoryResult[0]?.count || 0),
     articlesByCategory: byCategoryResult.map(r => ({ name: r.name, count: Number(r.count) })),
@@ -1283,7 +1284,7 @@ export async function recordPageView(data: {
   }
 }
 
-export async function getPageViewStats(): Promise<{
+export async function getPageViewStats(days: number = 30): Promise<{
   totalViews: number;
   todayViews: number;
   dailyViews: Array<{ date: string; views: number; uniqueVisitors: number }>;
@@ -1301,14 +1302,14 @@ export async function getPageViewStats(): Promise<{
       .where(sql`DATE(${pageViews.viewedAt}) = CURDATE()`),
   ]);
 
-  // Daily views for last 30 days
+  // Daily views for last N days
   const dailyResult = await db.select({
     date: sql<string>`DATE(${pageViews.viewedAt})`,
     views: sql<number>`count(*)`,
     uniqueVisitors: sql<number>`count(DISTINCT ${pageViews.ip})`,
   })
     .from(pageViews)
-    .where(sql`${pageViews.viewedAt} >= DATE_SUB(NOW(), INTERVAL 30 DAY)`)
+    .where(sql`${pageViews.viewedAt} >= DATE_SUB(NOW(), INTERVAL ${sql.raw(String(days))} DAY)`)
     .groupBy(sql`DATE(${pageViews.viewedAt})`)
     .orderBy(sql`DATE(${pageViews.viewedAt})`);
 

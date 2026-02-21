@@ -3,8 +3,10 @@ import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Loader2, Calendar } from "lucide-react";
+import { usePageView } from "@/_core/hooks/usePageView";
 
 export default function Archive() {
+  usePageView("/archive");
   const { data: archiveData, isLoading } = trpc.article.archive.useQuery();
 
   const getMonthName = (month: number) => {

@@ -5,8 +5,10 @@ import ArticleCard from "@/components/ArticleCard";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { usePageView } from "@/_core/hooks/usePageView";
 
 export default function Home() {
+  usePageView("/");
   const { data: articlesData, isLoading } = trpc.article.list.useQuery({
     limit: 5,
     status: "published",
@@ -66,7 +68,6 @@ export default function Home() {
           </div>
         </section>
 
-
         {/* Latest Articles */}
         <section className="border-b-2 border-border">
           <div className="container py-16 md:py-24">
@@ -116,7 +117,7 @@ export default function Home() {
           </div>
         </section>
 
-         {/* Stats Section */}
+        {/* Stats Section */}
         {statsData && (
           <section className="border-b-2 border-border bg-muted">
             <div className="container py-12 md:py-16">

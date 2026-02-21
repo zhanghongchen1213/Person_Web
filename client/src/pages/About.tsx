@@ -2,8 +2,10 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Link } from "wouter";
 import { Github, Mail, MessageCircle, ArrowRight, BookOpen, Video } from "lucide-react";
+import { usePageView } from "@/_core/hooks/usePageView";
 
 export default function About() {
+  usePageView("/about");
   const scrollToContact = () => {
     const contactSection = document.getElementById('contact-section');
     if (contactSection) {

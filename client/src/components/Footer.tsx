@@ -40,7 +40,7 @@ export default function Footer() {
           {/* Social */}
           <div className="space-y-4">
             <h4 className="text-sm font-bold uppercase tracking-wider">联系</h4>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-3">
               <a
                 href="https://github.com/zhanghongchen1213"
                 target="_blank"

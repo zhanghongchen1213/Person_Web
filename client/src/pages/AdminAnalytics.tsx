@@ -3,14 +3,15 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { useState, useEffect, useCallback } from "react";
 import {
-  Loader2,
   BarChart3,
   Eye,
   Users,
   FileText,
   FolderOpen,
   TrendingUp,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AreaChart,
   Area,
@@ -44,29 +46,48 @@ const COLORS = [
   "hsl(47, 96%, 53%)",
 ];
 
+const DATE_RANGES = [
+  { label: "7天", days: 7 },
+  { label: "30天", days: 30 },
+  { label: "90天", days: 90 },
+] as const;
+
 export default function AdminAnalytics() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const [days, setDays] = useState(30);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: overview, isLoading: overviewLoading } =
-    trpc.analytics.overview.useQuery(undefined, {
-      enabled: isAuthenticated && user?.role === "admin",
-    });
+  const isAdmin = isAuthenticated && user?.role === "admin";
 
-  const { data: viewStats, isLoading: viewStatsLoading } =
-    trpc.analytics.pageViewStats.useQuery(undefined, {
-      enabled: isAuthenticated && user?.role === "admin",
-    });
+  const { data: overview, isLoading: overviewLoading, refetch: refetchOverview } =
+    trpc.analytics.overview.useQuery(undefined, { enabled: isAdmin });
+
+  const { data: viewStats, isLoading: viewStatsLoading, refetch: refetchViewStats } =
+    trpc.analytics.pageViewStats.useQuery({ days }, { enabled: isAdmin });
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchOverview(), refetchViewStats()]);
+    setRefreshing(false);
+  }, [refetchOverview, refetchViewStats]);
+
+  // Auto-refresh every 60s
+  useEffect(() => {
+    if (!isAdmin) return;
+    const timer = setInterval(handleRefresh, 60_000);
+    return () => clearInterval(timer);
+  }, [isAdmin, handleRefresh]);
 
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin" />
+        <Skeleton className="w-8 h-8 rounded-full" />
       </div>
     );
   }
 
-  if (!isAuthenticated || user?.role !== "admin") {
+  if (!isAdmin) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -91,20 +112,42 @@ export default function AdminAnalytics() {
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <BarChart3 className="w-8 h-8" />
-            <h1 className="text-3xl font-bold">数据分析</h1>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <BarChart3 className="w-8 h-8" />
+              <h1 className="text-3xl font-bold">数据分析</h1>
+            </div>
+            <p className="text-muted-foreground">
+              博客访问数据统计与可视化
+            </p>
           </div>
-          <p className="text-muted-foreground">
-            博客访问数据统计与可视化
-          </p>
+          <div className="flex items-center gap-2">
+            {DATE_RANGES.map((r) => (
+              <button
+                key={r.days}
+                onClick={() => setDays(r.days)}
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider border-2 border-border transition-colors ${
+                  days === r.days ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="border-2 border-border"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
+          <SkeletonDashboard />
         ) : (
           <div className="space-y-6">
             {/* Stat Cards */}
@@ -112,7 +155,7 @@ export default function AdminAnalytics() {
 
             {/* Charts Row 1 */}
             <div className="grid gap-6 lg:grid-cols-2">
-              <DailyViewsChart data={viewStats?.dailyViews ?? []} />
+              <DailyViewsChart data={viewStats?.dailyViews ?? []} days={days} />
               <ArticlesByMonthChart data={overview?.articlesByMonth ?? []} />
             </div>
 
@@ -129,7 +172,31 @@ export default function AdminAnalytics() {
   );
 }
 
-/* ---- Stat Cards ---- */
+/* ---- Skeleton Dashboard ---- */
+function SkeletonDashboard() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-4">
+              <Skeleton className="h-4 w-16 mb-3" />
+              <Skeleton className="h-8 w-20" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+            <CardContent><Skeleton className="h-[280px] w-full" /></CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
 interface OverviewData {
   totalArticles: number;
   publishedArticles: number;
@@ -216,14 +283,16 @@ function StatCards({
 /* ---- Daily Views Area Chart ---- */
 function DailyViewsChart({
   data,
+  days,
 }: {
   data: Array<{ date: string; views: number; uniqueVisitors: number }>;
+  days: number;
 }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">每日浏览趋势</CardTitle>
-        <CardDescription>近30天浏览量与独立访客</CardDescription>
+        <CardDescription>近{days}天浏览量与独立访客</CardDescription>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (

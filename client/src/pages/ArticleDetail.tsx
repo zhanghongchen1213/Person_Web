@@ -3,11 +3,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { useParams, Link } from "wouter";
-import { useEffect, useRef } from "react";
 import { Loader2, Calendar, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Streamdown } from "streamdown";
 import TableOfContents from "@/components/TableOfContents";
+import { usePageView } from "@/_core/hooks/usePageView";
 
 export default function ArticleDetail() {
   const params = useParams<{ slug: string }>();
@@ -18,15 +18,7 @@ export default function ArticleDetail() {
     { enabled: !!slug }
   );
 
-  // Record page view
-  const recordView = trpc.analytics.recordView.useMutation();
-  const viewRecorded = useRef(false);
-  useEffect(() => {
-    if (article && !viewRecorded.current) {
-      viewRecorded.current = true;
-      recordView.mutate({ articleId: article.id, path: `/article/${slug}` });
-    }
-  }, [article]);
+  usePageView(`/article/${slug}`, article?.id, true);
 
   // Get related articles
   const { data: relatedArticles } = trpc.article.related.useQuery(
