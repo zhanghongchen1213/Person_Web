@@ -74,6 +74,17 @@ export default function ArticleDetail() {
         description={article.summary || article.title}
         image={article.coverImage || undefined}
         type="article"
+        canonical={`${window.location.origin}/article/${article.slug}`}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          headline: article.title,
+          description: article.summary || article.title,
+          image: article.coverImage || undefined,
+          datePublished: article.publishedAt || undefined,
+          dateModified: article.updatedAt || article.publishedAt || undefined,
+          author: { "@type": "Person", name: article.author.name || "匿名" },
+        }}
       />
       <Navbar />
 

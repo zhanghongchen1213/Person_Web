@@ -180,6 +180,12 @@ export async function getArticles(options: {
     total = Number(countResult[0]?.count || 0);
   }
 
+  if (total === 0 && !search) {
+    const whereForCount = baseConditions.length > 0 ? and(...baseConditions) : undefined;
+    const countResult = await db.select({ count: sql<number>`count(*)` }).from(articles).where(whereForCount);
+    total = Number(countResult[0]?.count || 0);
+  }
+
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   const totalPages = Math.ceil(total / limit);

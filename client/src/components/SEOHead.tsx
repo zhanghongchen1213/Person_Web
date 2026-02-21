@@ -6,12 +6,16 @@ export default function SEOHead({
   image,
   url,
   type = "website",
+  canonical,
+  jsonLd,
 }: {
   title: string;
   description: string;
   image?: string;
   url?: string;
   type?: string;
+  canonical?: string;
+  jsonLd?: Record<string, unknown>;
 }) {
   return (
     <Helmet>
@@ -23,6 +27,10 @@ export default function SEOHead({
       {image && <meta property="og:image" content={image} />}
       {url && <meta property="og:url" content={url} />}
       <meta name="twitter:card" content={image ? "summary_large_image" : "summary"} />
+      {canonical && <link rel="canonical" href={canonical} />}
+      {jsonLd && (
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      )}
     </Helmet>
   );
 }
