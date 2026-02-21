@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { Menu, Search, X, User, LogOut, PenSquare, LayoutList } from "lucide-react";
+import { Menu, Search, X, User, LogOut, PenSquare, LayoutList, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
@@ -107,6 +107,12 @@ export default function Navbar({ onSearch: _onSearch }: NavbarProps) {
                           文章管理
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/analytics" className="flex items-center gap-2 cursor-pointer">
+                          <BarChart3 className="w-4 h-4" />
+                          数据分析
+                        </Link>
+                      </DropdownMenuItem>
                     </>
                   )}
                   <DropdownMenuItem asChild>
@@ -199,6 +205,14 @@ export default function Navbar({ onSearch: _onSearch }: NavbarProps) {
                       >
                         <LayoutList className="w-5 h-5" />
                         文章管理
+                      </Link>
+                      <Link
+                        href="/admin/analytics"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="py-3 px-4 text-lg font-bold uppercase tracking-wider transition-colors hover:bg-muted flex items-center gap-2"
+                      >
+                        <BarChart3 className="w-5 h-5" />
+                        数据分析
                       </Link>
                     </>
                   )}

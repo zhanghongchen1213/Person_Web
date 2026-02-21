@@ -14,6 +14,7 @@ const WriteArticle = React.lazy(() => import("./pages/WriteArticle"));
 const DocReader = React.lazy(() => import("./pages/DocReader"));
 const AdminArticles = React.lazy(() => import("./pages/AdminArticles"));
 const AdminDatabase = React.lazy(() => import("./pages/AdminDatabase"));
+const AdminAnalytics = React.lazy(() => import("./pages/AdminAnalytics"));
 const Login = React.lazy(() => import("./pages/Login"));
 const NotFound = React.lazy(() => import("@/pages/NotFound"));
 
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/edit/:id" component={WriteArticle} />
       <Route path="/admin/articles" component={AdminArticles} />
       <Route path="/admin/database" component={AdminDatabase} />
+      <Route path="/admin/analytics" component={AdminAnalytics} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

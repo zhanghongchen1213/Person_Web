@@ -14,7 +14,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { logCacheStats } from "../performance";
 import { initBackupScheduler } from "./backup-scheduler";
-import { ensureFulltextIndex } from "../db";
+import { ensureFulltextIndex, ensurePageViewsTable } from "../db";
 import { seoMiddleware } from "./seo";
 import { generateSitemap } from "./sitemap";
 
@@ -118,6 +118,11 @@ async function startServer() {
     // Ensure fulltext index for search
     ensureFulltextIndex().catch((err) => {
       console.warn('[Fulltext Index] Failed:', err);
+    });
+
+    // Ensure page_views table exists
+    ensurePageViewsTable().catch((err) => {
+      console.warn('[Page Views Table] Failed:', err);
     });
 
     // Start performance monitoring - log cache stats every 5 minutes

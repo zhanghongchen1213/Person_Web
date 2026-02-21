@@ -1,7 +1,7 @@
 import { eq, desc, like, or, and, sql, ne, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import { InsertUser, users, articles, categories, Article, Category, ContentType, backupSettings, BackupInterval } from "../drizzle/schema";
+import { InsertUser, users, articles, categories, Article, Category, ContentType, backupSettings, BackupInterval, pageViews } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import * as fs from "fs";
 import * as path from "path";
@@ -503,6 +503,81 @@ export async function deleteCategory(id: number): Promise<void> {
   }
 
   await db.delete(categories).where(eq(categories.id, id));
+}
+
+// Analytics overview for admin dashboard
+export async function getAnalyticsOverview(): Promise<{
+  totalArticles: number;
+  publishedArticles: number;
+  draftArticles: number;
+  totalViews: number;
+  totalUsers: number;
+  totalCategories: number;
+  articlesByCategory: Array<{ name: string; count: number }>;
+  articlesByMonth: Array<{ month: string; count: number }>;
+  topArticles: Array<{ title: string; slug: string; viewCount: number }>;
+}> {
+  const db = await getDb();
+  if (!db) {
+    return {
+      totalArticles: 0, publishedArticles: 0, draftArticles: 0,
+      totalViews: 0, totalUsers: 0, totalCategories: 0,
+      articlesByCategory: [], articlesByMonth: [], topArticles: [],
+    };
+  }
+
+  const [totalResult, publishedResult, draftResult, userResult, categoryResult] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(articles),
+    db.select({ count: sql<number>`count(*)` }).from(articles).where(eq(articles.status, "published")),
+    db.select({ count: sql<number>`count(*)` }).from(articles).where(eq(articles.status, "draft")),
+    db.select({ count: sql<number>`count(*)` }).from(users),
+    db.select({ count: sql<number>`count(*)` }).from(categories),
+  ]);
+
+  // Articles by category (published only)
+  const byCategoryResult = await db.select({
+    name: categories.name,
+    count: sql<number>`count(*)`,
+  })
+    .from(articles)
+    .innerJoin(categories, eq(articles.categoryId, categories.id))
+    .where(eq(articles.status, "published"))
+    .groupBy(categories.name);
+
+  // Articles by month (last 12 months, published only)
+  const byMonthResult = await db.select({
+    month: sql<string>`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`,
+    count: sql<number>`count(*)`,
+  })
+    .from(articles)
+    .where(and(
+      eq(articles.status, "published"),
+      sql`${articles.publishedAt} >= DATE_SUB(NOW(), INTERVAL 12 MONTH)`,
+    ))
+    .groupBy(sql`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`)
+    .orderBy(sql`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`);
+
+  // Top 10 published articles (by recency since viewCount was removed)
+  const topResult = await db.select({
+    title: articles.title,
+    slug: articles.slug,
+  })
+    .from(articles)
+    .where(eq(articles.status, "published"))
+    .orderBy(desc(articles.publishedAt))
+    .limit(10);
+
+  return {
+    totalArticles: Number(totalResult[0]?.count || 0),
+    publishedArticles: Number(publishedResult[0]?.count || 0),
+    draftArticles: Number(draftResult[0]?.count || 0),
+    totalViews: 0, // viewCount column was removed from schema
+    totalUsers: Number(userResult[0]?.count || 0),
+    totalCategories: Number(categoryResult[0]?.count || 0),
+    articlesByCategory: byCategoryResult.map(r => ({ name: r.name, count: Number(r.count) })),
+    articlesByMonth: byMonthResult.map(r => ({ month: r.month, count: Number(r.count) })),
+    topArticles: topResult.map(r => ({ title: r.title, slug: r.slug, viewCount: 0 })),
+  };
 }
 
 // Stats - simplified without view count
@@ -1163,6 +1238,134 @@ export async function saveBackupFile(data: DatabaseExportData): Promise<string> 
   await cleanupOldBackups();
 
   return filepath;
+}
+
+// ============================================
+// Page View Tracking Functions
+// ============================================
+
+export async function ensurePageViewsTable(): Promise<void> {
+  const pool = getPool();
+  if (!pool) return;
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS page_views (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        articleId INT,
+        ip VARCHAR(45),
+        userAgent VARCHAR(512),
+        path VARCHAR(500),
+        viewedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (e) {
+    console.warn("[Database] Failed to ensure page_views table:", e);
+  }
+}
+
+export async function recordPageView(data: {
+  articleId?: number | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  path?: string | null;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(pageViews).values({
+      articleId: data.articleId ?? null,
+      ip: data.ip ?? null,
+      userAgent: data.userAgent?.slice(0, 512) ?? null,
+      path: data.path ?? null,
+    });
+  } catch {
+    // silently fail - don't break user experience for analytics
+  }
+}
+
+export async function getPageViewStats(): Promise<{
+  totalViews: number;
+  todayViews: number;
+  dailyViews: Array<{ date: string; views: number; uniqueVisitors: number }>;
+  articleViews: Array<{ articleId: number; title: string; slug: string; views: number }>;
+  topPaths: Array<{ path: string; views: number }>;
+}> {
+  const db = await getDb();
+  if (!db) {
+    return { totalViews: 0, todayViews: 0, dailyViews: [], articleViews: [], topPaths: [] };
+  }
+
+  const [totalResult, todayResult] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(pageViews),
+    db.select({ count: sql<number>`count(*)` }).from(pageViews)
+      .where(sql`DATE(${pageViews.viewedAt}) = CURDATE()`),
+  ]);
+
+  // Daily views for last 30 days
+  const dailyResult = await db.select({
+    date: sql<string>`DATE(${pageViews.viewedAt})`,
+    views: sql<number>`count(*)`,
+    uniqueVisitors: sql<number>`count(DISTINCT ${pageViews.ip})`,
+  })
+    .from(pageViews)
+    .where(sql`${pageViews.viewedAt} >= DATE_SUB(NOW(), INTERVAL 30 DAY)`)
+    .groupBy(sql`DATE(${pageViews.viewedAt})`)
+    .orderBy(sql`DATE(${pageViews.viewedAt})`);
+
+  // Article view counts
+  const articleViewResult = await db.select({
+    articleId: pageViews.articleId,
+    views: sql<number>`count(*)`,
+  })
+    .from(pageViews)
+    .where(sql`${pageViews.articleId} IS NOT NULL`)
+    .groupBy(pageViews.articleId)
+    .orderBy(sql`count(*) DESC`)
+    .limit(20);
+
+  // Enrich with article titles
+  let articleViews: Array<{ articleId: number; title: string; slug: string; views: number }> = [];
+  if (articleViewResult.length > 0) {
+    const ids = articleViewResult.map(r => r.articleId!);
+    const articleData = await db.select({ id: articles.id, title: articles.title, slug: articles.slug })
+      .from(articles)
+      .where(sql`${articles.id} IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`);
+    const articleMap = new Map(articleData.map(a => [a.id, a]));
+    articleViews = articleViewResult
+      .filter(r => r.articleId && articleMap.has(r.articleId))
+      .map(r => ({
+        articleId: r.articleId!,
+        title: articleMap.get(r.articleId!)!.title,
+        slug: articleMap.get(r.articleId!)!.slug,
+        views: Number(r.views),
+      }));
+  }
+
+  // Top paths
+  const topPathsResult = await db.select({
+    path: pageViews.path,
+    views: sql<number>`count(*)`,
+  })
+    .from(pageViews)
+    .where(sql`${pageViews.path} IS NOT NULL`)
+    .groupBy(pageViews.path)
+    .orderBy(sql`count(*) DESC`)
+    .limit(10);
+
+  return {
+    totalViews: Number(totalResult[0]?.count || 0),
+    todayViews: Number(todayResult[0]?.count || 0),
+    dailyViews: dailyResult.map(r => ({
+      date: String(r.date),
+      views: Number(r.views),
+      uniqueVisitors: Number(r.uniqueVisitors),
+    })),
+    articleViews,
+    topPaths: topPathsResult.map(r => ({
+      path: String(r.path),
+      views: Number(r.views),
+    })),
+  };
 }
 
 async function cleanupOldBackups(): Promise<void> {

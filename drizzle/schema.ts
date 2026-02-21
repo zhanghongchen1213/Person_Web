@@ -86,3 +86,18 @@ export const backupSettings = mysqlTable("backup_settings", {
 
 export type BackupSettings = typeof backupSettings.$inferSelect;
 export type InsertBackupSettings = typeof backupSettings.$inferInsert;
+
+/**
+ * Page views table for tracking article and page visits
+ */
+export const pageViews = mysqlTable("page_views", {
+  id: int("id").autoincrement().primaryKey(),
+  articleId: int("articleId"), // nullable: null = general page view
+  ip: varchar("ip", { length: 45 }),
+  userAgent: varchar("userAgent", { length: 512 }),
+  path: varchar("path", { length: 500 }),
+  viewedAt: timestamp("viewedAt").defaultNow().notNull(),
+});
+
+export type PageView = typeof pageViews.$inferSelect;
+export type InsertPageView = typeof pageViews.$inferInsert;

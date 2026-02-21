@@ -400,6 +400,32 @@ export const appRouter = router({
       }),
   }),
 
+  // Analytics routes
+  analytics: router({
+    overview: adminProcedure.query(async () => {
+      return await db.getAnalyticsOverview();
+    }),
+    pageViewStats: adminProcedure.query(async () => {
+      return await db.getPageViewStats();
+    }),
+    recordView: publicProcedure
+      .input(z.object({
+        articleId: z.number().optional(),
+        path: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const ip = ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString() || null;
+        const userAgent = ctx.req.headers["user-agent"] || null;
+        await db.recordPageView({
+          articleId: input.articleId,
+          ip,
+          userAgent,
+          path: input.path,
+        });
+        return { success: true };
+      }),
+  }),
+
   // Database management routes (admin only)
   database: router({
     // Get database statistics
