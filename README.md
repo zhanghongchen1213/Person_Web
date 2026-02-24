@@ -10,7 +10,7 @@ Person_Web 是一个基于 **React 19 + Express + tRPC + MySQL** 的现代化全
 
 > **📝 开源地址**：[Person_Web](https://github.com/zhanghongchen1213/Person_Web)
 > **🎯 在线演示**：[zhcmqtt.top](https://zhcmqtt.top)
-> **📅 最后更新**：2026-01-20
+> **📅 最后更新**：2026-02-24
 > **🚀 部署目标**：将个人博客部署到云服务器（华为云、阿里云、腾讯云等）
 > **⏱️ 预计耗时**：首次部署约 30-60 分钟（含服务器配置）
 
@@ -48,6 +48,8 @@ Person_Web 是一个基于 **React 19 + Express + tRPC + MySQL** 的现代化全
 - **前端**：React 19 + TypeScript + Vite + TailwindCSS
 - **后端**：Express + tRPC
 - **数据库**：MySQL 8.0 + Drizzle ORM
+- **数据可视化**：Recharts（图表统计）
+- **SEO**：React Helmet + JSON-LD + Open Graph + XML Sitemap
 - **部署**：Docker + Docker Compose + Nginx + Let's Encrypt
 
 #### 🎨 功能完整
@@ -59,7 +61,11 @@ Person_Web 是一个基于 **React 19 + Express + tRPC + MySQL** 的现代化全
 - ✅ GitHub OAuth 认证，安全可靠
 - ✅ 图片上传和管理
 - ✅ 文档系统（支持技术文档编写）
-- ✅ SEO 友好
+- ✅ SEO 优化（Open Graph、JSON-LD 结构化数据、XML Sitemap）
+- ✅ 数据分析仪表盘（页面浏览量、访客统计、趋势图表）
+- ✅ 文章目录导航（自动生成、滚动高亮、平滑跳转）
+- ✅ 页面浏览追踪与文章阅读统计
+- ✅ 数据库自动备份与数据导入导出
 
 #### 🛠️ 部署简单
 
@@ -84,8 +90,10 @@ Person_Web 是一个基于 **React 19 + Express + tRPC + MySQL** 的现代化全
 - 🔒 HTTPS 加密连接，绿色安全锁标识
 - 📝 功能完整的后台管理系统
 - 📱 完美适配 PC、平板、手机的响应式界面
-- ⚡ 快速的页面加载速度
+- ⚡ 快速的页面加载速度（内置缓存优化）
 - 🔐 安全的 GitHub OAuth 认证
+- 📊 数据分析仪表盘，实时掌握访问数据
+- 🔍 SEO 优化，搜索引擎友好
 
 ### 部署架构简介
 
@@ -111,6 +119,7 @@ graph TD
 - [第七步：一键部署应用](#第七步一键部署应用)
 - [第八步：访问你的博客](#第八步访问你的博客)
 - [第九步：配置域名和 HTTPS（可选）](#第九步配置域名和-https可选)
+- [新增功能说明（数据分析、SEO、目录导航）](#八附新增功能说明)
 - [数据库自动备份和迁移](#九数据库自动备份和迁移)
 - [项目升级](#十项目升级)
 - [日常维护指南](#日常维护指南)
@@ -756,6 +765,8 @@ https://你的域名/api/auth/github/login
 | -------- | --------------------------------- | ------------------------ |
 | 写文章   | `https://你的域名/write`          | 创建新的博客文章或文档   |
 | 文章管理 | `https://你的域名/admin/articles` | 编辑、删除、管理所有文章 |
+| 数据分析 | `https://你的域名/admin/analytics` | 查看访问统计和文章阅读数据 |
+| 数据库管理 | `https://你的域名/admin/database` | 数据导出、导入和备份设置 |
 
 💡 **管理员可以做什么**：
 
@@ -764,11 +775,46 @@ https://你的域名/api/auth/github/login
 - ✅ 删除文章
 - ✅ 管理分类
 - ✅ 修改文章发布状态（草稿/已发布/归档）
+- ✅ 查看数据分析（访问量、文章阅读统计、趋势图表）
+- ✅ 数据库管理（导出、导入、自动备份配置）
 
 ✅ **成功标志**：
 
 - 访客模式：可以浏览文章，但无法编辑
 - 管理员模式：右上角显示你的 GitHub 头像，导航栏出现"写文章"按钮，可以创建和编辑文章
+
+---
+
+## 八（附）、新增功能说明
+
+### 数据分析仪表盘
+
+管理员登录后，可以通过导航栏进入数据分析页面（`/admin/analytics`），查看博客的访问数据：
+
+- **总览统计**：总浏览量、今日浏览量、独立访客数
+- **趋势图表**：每日访问量趋势（支持 1-365 天范围选择）
+- **文章排行**：按阅读量排序的热门文章 Top 20
+- **页面统计**：各页面的访问量分布
+
+数据分析基于 `pageViews` 表自动记录，访客浏览页面时会静默记录访问数据（IP、路径、时间），不影响用户体验。分析数据使用 1 分钟缓存，兼顾实时性和性能。
+
+### SEO 优化
+
+项目内置了完整的搜索引擎优化方案：
+
+- **XML Sitemap**：自动生成站点地图（`/sitemap.xml`），包含所有已发布文章
+- **Open Graph 标签**：文章分享到社交平台时自动展示标题、描述和封面图
+- **JSON-LD 结构化数据**：帮助搜索引擎更好地理解文章内容
+- **爬虫检测**：自动识别搜索引擎爬虫并返回预渲染内容
+- **Canonical URL**：避免重复内容问题
+
+### 文章目录导航
+
+文章详情页右侧自动生成目录导航（桌面端可见）：
+
+- 自动提取文章中的 h1、h2、h3 标题
+- 滚动时高亮当前阅读位置
+- 点击目录项平滑跳转到对应章节
 
 ---
 
@@ -1061,21 +1107,34 @@ Person_Web/
 ├── client/                 # 前端代码
 │   ├── src/
 │   │   ├── pages/         # 页面组件
+│   │   │   ├── AdminAnalytics.tsx  # 数据分析仪表盘
+│   │   │   ├── AdminArticles.tsx   # 文章管理
+│   │   │   ├── AdminDatabase.tsx   # 数据库管理
+│   │   │   └── ArticleDetail.tsx   # 文章详情（含目录导航）
 │   │   ├── components/    # UI 组件
+│   │   │   ├── SEOHead.tsx         # SEO 元数据组件
+│   │   │   └── TableOfContents.tsx # 文章目录导航
+│   │   ├── _core/
+│   │   │   └── hooks/
+│   │   │       └── usePageView.ts  # 页面浏览追踪 Hook
 │   │   └── lib/           # 工具函数
 │   └── index.html
 ├── server/                # 后端代码
 │   ├── _core/            # 核心功能
-│   ├── routers.ts        # tRPC 路由
+│   │   ├── cache.ts      # 缓存层（性能优化）
+│   │   ├── seo.ts        # SEO 中间件（爬虫检测、结构化数据）
+│   │   └── sitemap.ts    # XML Sitemap 生成
+│   ├── routers.ts        # tRPC 路由（含数据分析 API）
 │   ├── db.ts             # 数据库操作
 │   └── index.ts          # 服务器入口
 ├── drizzle/              # 数据库相关
-│   ├── schema.ts         # 表结构定义
+│   ├── schema.ts         # 表结构定义（含 pageViews、backupSettings）
 │   └── migrations/       # 迁移文件
 ├── deploy/               # 部署相关
 │   ├── nginx/           # Nginx 配置
 │   └── scripts/         # 部署脚本
 ├── uploads/              # 上传文件目录
+├── backups/              # 数据库备份目录
 ├── .env.production       # 生产环境变量
 ├── docker-compose.yml    # Docker Compose 配置
 ├── Dockerfile            # Docker 镜像构建
@@ -1084,10 +1143,12 @@ Person_Web/
 
 ### 技术栈说明
 
-- **前端**: React 19 + TypeScript + Vite
+- **前端**: React 19 + TypeScript + Vite + TailwindCSS
 - **后端**: Express + tRPC + TypeScript
 - **数据库**: MySQL 8.0
 - **ORM**: Drizzle ORM
+- **数据可视化**: Recharts
+- **SEO**: React Helmet + JSON-LD + Open Graph + XML Sitemap
 - **容器化**: Docker + Docker Compose
 - **Web 服务器**: Nginx
 - **SSL 证书**: Let's Encrypt (Certbot)
