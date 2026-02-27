@@ -19,14 +19,17 @@ import type { DatabaseExportData } from "./db";
 // Admin procedure - only allows admin users
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin access required",
+    });
   }
   return next({ ctx });
 });
 
 export const appRouter = router({
   system: systemRouter,
-  
+
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -40,14 +43,18 @@ export const appRouter = router({
   article: router({
     // List articles (public) - with cache (TTL: 5 minutes)
     list: publicProcedure
-      .input(z.object({
-        limit: z.number().min(1).max(50).default(10),
-        page: z.number().min(1).default(1),
-        status: z.enum(["draft", "published", "archived"]).optional(),
-        type: z.enum(["blog", "doc"]).optional(),
-        categorySlug: z.string().optional(),
-        search: z.string().optional(),
-      }).optional())
+      .input(
+        z
+          .object({
+            limit: z.number().min(1).max(50).default(10),
+            page: z.number().min(1).default(1),
+            status: z.enum(["draft", "published", "archived"]).optional(),
+            type: z.enum(["blog", "doc"]).optional(),
+            categorySlug: z.string().optional(),
+            search: z.string().optional(),
+          })
+          .optional()
+      )
       .query(async ({ input }) => {
         const params = {
           limit: input?.limit ?? 10,
@@ -82,7 +89,10 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const article = await db.getArticleBySlug(input.slug);
         if (!article) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Article not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Article not found",
+          });
         }
         return article;
       }),
@@ -93,7 +103,10 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const article = await db.getArticleById(input.id);
         if (!article) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Article not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Article not found",
+          });
         }
         return article;
       }),
@@ -115,23 +128,33 @@ export const appRouter = router({
 
     // Get related articles (public)
     related: publicProcedure
-      .input(z.object({
-        articleId: z.number(),
-        categoryId: z.number().nullable(),
-        limit: z.number().min(1).max(10).default(4),
-      }))
+      .input(
+        z.object({
+          articleId: z.number(),
+          categoryId: z.number().nullable(),
+          limit: z.number().min(1).max(10).default(4),
+        })
+      )
       .query(async ({ input }) => {
-        return await db.getRelatedArticles(input.articleId, input.categoryId, input.limit);
+        return await db.getRelatedArticles(
+          input.articleId,
+          input.categoryId,
+          input.limit
+        );
       }),
 
     // Admin: list all articles including drafts
     adminList: adminProcedure
-      .input(z.object({
-        limit: z.number().min(1).max(50).default(10),
-        page: z.number().min(1).default(1),
-        status: z.enum(["draft", "published", "archived"]).optional(),
-        type: z.enum(["blog", "doc"]).optional(),
-      }).optional())
+      .input(
+        z
+          .object({
+            limit: z.number().min(1).max(50).default(10),
+            page: z.number().min(1).default(1),
+            status: z.enum(["draft", "published", "archived"]).optional(),
+            type: z.enum(["blog", "doc"]).optional(),
+          })
+          .optional()
+      )
       .query(async ({ input, ctx }) => {
         return await db.getArticles({
           limit: input?.limit ?? 10,
@@ -143,17 +166,19 @@ export const appRouter = router({
 
     // Create article (admin)
     create: adminProcedure
-      .input(z.object({
-        title: z.string().min(1).max(255),
-        slug: z.string().min(1).max(255),
-        summary: z.string().optional(),
-        content: z.string().min(1),
-        coverImage: z.string().optional(),
-        categoryId: z.number().optional(), // 分类（建议填写）
-        status: z.enum(["draft", "published", "archived"]).default("draft"),
-        type: z.enum(["blog", "doc"]).default("blog"),
-        order: z.number().default(0),
-      }))
+      .input(
+        z.object({
+          title: z.string().min(1).max(255),
+          slug: z.string().min(1).max(255),
+          summary: z.string().optional(),
+          content: z.string().min(1),
+          coverImage: z.string().optional(),
+          categoryId: z.number().optional(), // 分类（建议填写）
+          status: z.enum(["draft", "published", "archived"]).default("draft"),
+          type: z.enum(["blog", "doc"]).default("blog"),
+          order: z.number().default(0),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const articleId = await db.createArticle({
           ...input,
@@ -168,18 +193,20 @@ export const appRouter = router({
 
     // Update article (admin)
     update: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        title: z.string().min(1).max(255).optional(),
-        slug: z.string().min(1).max(255).optional(),
-        summary: z.string().optional(),
-        content: z.string().min(1).optional(),
-        coverImage: z.string().optional(),
-        categoryId: z.number().optional(),
-        status: z.enum(["draft", "published", "archived"]).optional(),
-        type: z.enum(["blog", "doc"]).optional(),
-        order: z.number().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          title: z.string().min(1).max(255).optional(),
+          slug: z.string().min(1).max(255).optional(),
+          summary: z.string().optional(),
+          content: z.string().min(1).optional(),
+          coverImage: z.string().optional(),
+          categoryId: z.number().optional(),
+          status: z.enum(["draft", "published", "archived"]).optional(),
+          type: z.enum(["blog", "doc"]).optional(),
+          order: z.number().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         await db.updateArticle(id, data);
@@ -204,15 +231,20 @@ export const appRouter = router({
 
     // Update article published date (admin)
     updatePublishedAt: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        publishedAt: z.date(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          publishedAt: z.date(),
+        })
+      )
       .mutation(async ({ input, ctx: _ctx }) => {
         // Verify article exists and belongs to current admin
         const article = await db.getArticleById(input.id);
         if (!article) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Article not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Article not found",
+          });
         }
 
         // Only admin can update any article
@@ -236,9 +268,13 @@ export const appRouter = router({
   category: router({
     // List categories (public) - with cache (TTL: 10 minutes)
     list: publicProcedure
-      .input(z.object({
-        type: z.enum(["blog", "doc"]).optional(),
-      }).optional())
+      .input(
+        z
+          .object({
+            type: z.enum(["blog", "doc"]).optional(),
+          })
+          .optional()
+      )
       .query(async ({ input }) => {
         // Generate cache key
         const cacheKey = generateCategoryListKey({ type: input?.type });
@@ -264,21 +300,26 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const category = await db.getCategoryBySlug(input.slug);
         if (!category) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Category not found",
+          });
         }
         return category;
       }),
 
     // Create category (admin)
     create: adminProcedure
-      .input(z.object({
-        name: z.string().min(1).max(100),
-        slug: z.string().min(1).max(100),
-        description: z.string().optional(),
-        icon: z.string().optional(),
-        sortOrder: z.number().optional(),
-        type: z.enum(["blog", "doc"]).default("blog"),
-      }))
+      .input(
+        z.object({
+          name: z.string().min(1).max(100),
+          slug: z.string().min(1).max(100),
+          description: z.string().optional(),
+          icon: z.string().optional(),
+          sortOrder: z.number().optional(),
+          type: z.enum(["blog", "doc"]).default("blog"),
+        })
+      )
       .mutation(async ({ input }) => {
         const id = await db.createCategory(input);
 
@@ -290,15 +331,17 @@ export const appRouter = router({
 
     // Update category (admin)
     update: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        name: z.string().min(1).max(100).optional(),
-        slug: z.string().min(1).max(100).optional(),
-        description: z.string().optional(),
-        icon: z.string().optional(),
-        sortOrder: z.number().optional(),
-        type: z.enum(["blog", "doc"]).optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().min(1).max(100).optional(),
+          slug: z.string().min(1).max(100).optional(),
+          description: z.string().optional(),
+          icon: z.string().optional(),
+          sortOrder: z.number().optional(),
+          type: z.enum(["blog", "doc"]).optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         await db.updateCategory(id, data);
@@ -334,12 +377,17 @@ export const appRouter = router({
      * Used for the Write page Combobox to support creating new categories on the fly.
      */
     findOrCreate: adminProcedure
-      .input(z.object({
-        name: z.string().min(1).max(100),
-        type: z.enum(["blog", "doc"]).default("blog"),
-      }))
+      .input(
+        z.object({
+          name: z.string().min(1).max(100),
+          type: z.enum(["blog", "doc"]).default("blog"),
+        })
+      )
       .mutation(async ({ input }) => {
-        const category = await db.findOrCreateCategory({ name: input.name, type: input.type });
+        const category = await db.findOrCreateCategory({
+          name: input.name,
+          type: input.type,
+        });
 
         // Invalidate category cache (in case a new category was created)
         invalidateCategoryCache();
@@ -349,12 +397,16 @@ export const appRouter = router({
 
     // Get category with articles (public) - enhanced query with N+1 optimization
     withArticles: publicProcedure
-      .input(z.object({
-        slug: z.string(),
-        limit: z.number().min(1).max(50).default(10),
-        page: z.number().min(1).default(1),
-        status: z.enum(["draft", "published", "archived"]).default("published"),
-      }))
+      .input(
+        z.object({
+          slug: z.string(),
+          limit: z.number().min(1).max(50).default(10),
+          page: z.number().min(1).default(1),
+          status: z
+            .enum(["draft", "published", "archived"])
+            .default("published"),
+        })
+      )
       .query(async ({ input }) => {
         const result = await db.getCategoryWithArticles(input.slug, {
           limit: input.limit,
@@ -362,7 +414,10 @@ export const appRouter = router({
           status: input.status,
         });
         if (!result) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Category not found",
+          });
         }
         return result;
       }),
@@ -376,9 +431,13 @@ export const appRouter = router({
      * Cached with 10 minutes TTL.
      */
     tree: publicProcedure
-      .input(z.object({
-        categorySlug: z.string().optional(),
-      }).optional())
+      .input(
+        z
+          .object({
+            categorySlug: z.string().optional(),
+          })
+          .optional()
+      )
       .query(async ({ input }) => {
         // Generate cache key
         const cacheKey = generateDocTreeKey(input?.categorySlug);
@@ -404,29 +463,36 @@ export const appRouter = router({
     overview: adminProcedure.query(async () => {
       const cacheKey = "analytics:overview";
       const cached = appCache.get(cacheKey);
-      if (cached) return cached as Awaited<ReturnType<typeof db.getAnalyticsOverview>>;
+      if (cached)
+        return cached as Awaited<ReturnType<typeof db.getAnalyticsOverview>>;
       const result = await db.getAnalyticsOverview();
       appCache.set(cacheKey, result, 60 * 1000);
       return result;
     }),
     pageViewStats: adminProcedure
-      .input(z.object({ days: z.number().min(1).max(365).default(30) }).optional())
+      .input(
+        z.object({ days: z.number().min(1).max(365).default(30) }).optional()
+      )
       .query(async ({ input }) => {
         const days = input?.days ?? 30;
         const cacheKey = `analytics:pageViewStats:${days}`;
         const cached = appCache.get(cacheKey);
-        if (cached) return cached as Awaited<ReturnType<typeof db.getPageViewStats>>;
+        if (cached)
+          return cached as Awaited<ReturnType<typeof db.getPageViewStats>>;
         const result = await db.getPageViewStats(days);
         appCache.set(cacheKey, result, 60 * 1000);
         return result;
       }),
     recordView: publicProcedure
-      .input(z.object({
-        articleId: z.number().optional(),
-        path: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          articleId: z.number().optional(),
+          path: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
-        const ip = ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString() || null;
+        const ip =
+          ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString() || null;
         const userAgent = ctx.req.headers["user-agent"] || null;
         await db.recordPageView({
           articleId: input.articleId,
@@ -452,15 +518,21 @@ export const appRouter = router({
 
     // Import data (replaces all existing data)
     import: adminProcedure
-      .input(z.object({
-        version: z.string(),
-        exportedAt: z.string(),
-        data: z.object({
-          users: z.array(z.record(z.string(), z.unknown())),
-          articles: z.array(z.record(z.string(), z.unknown())),
-          categories: z.array(z.record(z.string(), z.unknown())),
-        }),
-      }))
+      .input(
+        z.object({
+          version: z.string(),
+          exportedAt: z.string(),
+          data: z.object({
+            users: z.array(z.record(z.string(), z.unknown())),
+            articles: z.array(z.record(z.string(), z.unknown())),
+            categories: z.array(z.record(z.string(), z.unknown())),
+            pageViews: z.array(z.record(z.string(), z.unknown())).optional(),
+            backupSettings: z
+              .array(z.record(z.string(), z.unknown()))
+              .optional(),
+          }),
+        })
+      )
       .mutation(async ({ input }) => {
         const result = await db.importAllData(input as DatabaseExportData);
 
@@ -478,12 +550,17 @@ export const appRouter = router({
 
     // Update backup settings
     updateBackupSettings: adminProcedure
-      .input(z.object({
-        enabled: z.boolean(),
-        interval: z.enum(["weekly", "monthly", "quarterly"]),
-      }))
+      .input(
+        z.object({
+          enabled: z.boolean(),
+          interval: z.enum(["weekly", "monthly", "quarterly"]),
+        })
+      )
       .mutation(async ({ input }) => {
-        const result = await db.updateBackupSettings(input.enabled, input.interval);
+        const result = await db.updateBackupSettings(
+          input.enabled,
+          input.interval
+        );
         await restartScheduler();
         return result;
       }),

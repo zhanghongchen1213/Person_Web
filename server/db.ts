@@ -1,8 +1,19 @@
 import { eq, desc, like, or, and, sql, ne, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import { InsertUser, users, articles, categories, Article, Category, ContentType, backupSettings, BackupInterval, pageViews } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import {
+  InsertUser,
+  users,
+  articles,
+  categories,
+  Article,
+  Category,
+  ContentType,
+  backupSettings,
+  BackupInterval,
+  pageViews,
+} from "../drizzle/schema";
+import { ENV } from "./_core/env";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -15,7 +26,7 @@ export async function getDb() {
       // Create mysql2 connection pool with proper charset configuration
       _pool = mysql.createPool({
         uri: process.env.DATABASE_URL,
-        charset: 'utf8mb4',
+        charset: "utf8mb4",
         connectionLimit: 10,
       });
       _db = drizzle(_pool) as unknown as ReturnType<typeof drizzle>;
@@ -67,7 +78,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     };
     const updateSet: Record<string, unknown> = {};
 
-    const textFields = ["name", "email", "loginMethod", "avatar", "bio"] as const;
+    const textFields = [
+      "name",
+      "email",
+      "loginMethod",
+      "avatar",
+      "bio",
+    ] as const;
     type TextField = (typeof textFields)[number];
 
     const assignNullable = (field: TextField) => {
@@ -88,8 +105,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
+      values.role = "admin";
+      updateSet.role = "admin";
     }
 
     if (!values.lastSignedIn) {
@@ -116,7 +133,11 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -134,11 +155,23 @@ export async function getArticles(options: {
   categorySlug?: string;
   search?: string;
   authorId?: number;
-}): Promise<{ articles: ArticleWithRelations[]; total: number; totalPages: number }> {
+}): Promise<{
+  articles: ArticleWithRelations[];
+  total: number;
+  totalPages: number;
+}> {
   const db = await getDb();
   if (!db) return { articles: [], total: 0, totalPages: 0 };
 
-  const { limit = 10, page = 1, status, type, categorySlug, search, authorId } = options;
+  const {
+    limit = 10,
+    page = 1,
+    status,
+    type,
+    categorySlug,
+    search,
+    authorId,
+  } = options;
   const offset = (page - 1) * limit;
 
   // Build conditions
@@ -148,7 +181,11 @@ export async function getArticles(options: {
   if (authorId) baseConditions.push(eq(articles.authorId, authorId));
 
   if (categorySlug) {
-    const cat = await db.select().from(categories).where(eq(categories.slug, categorySlug)).limit(1);
+    const cat = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.slug, categorySlug))
+      .limit(1);
     if (cat.length > 0) baseConditions.push(eq(articles.categoryId, cat[0].id));
   }
 
@@ -157,7 +194,10 @@ export async function getArticles(options: {
     ? sql`MATCH(${articles.title}, ${articles.content}) AGAINST(${escapedSearch} IN BOOLEAN MODE)`
     : null;
   const likeCondition = search
-    ? or(like(articles.title, `%${search}%`), like(articles.content, `%${search}%`))
+    ? or(
+        like(articles.title, `%${search}%`),
+        like(articles.content, `%${search}%`)
+      )
     : null;
 
   let conditions = [...baseConditions];
@@ -166,7 +206,10 @@ export async function getArticles(options: {
   if (ftCondition) {
     try {
       const ftWhere = and(...conditions, ftCondition);
-      const countResult = await db.select({ count: sql<number>`count(*)` }).from(articles).where(ftWhere);
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(articles)
+        .where(ftWhere);
       total = Number(countResult[0]?.count || 0);
       if (total > 0) conditions.push(ftCondition);
     } catch {
@@ -176,13 +219,20 @@ export async function getArticles(options: {
 
   if (total === 0 && likeCondition) {
     conditions = [...baseConditions, likeCondition];
-    const countResult = await db.select({ count: sql<number>`count(*)` }).from(articles).where(and(...conditions));
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(articles)
+      .where(and(...conditions));
     total = Number(countResult[0]?.count || 0);
   }
 
   if (total === 0 && !search) {
-    const whereForCount = baseConditions.length > 0 ? and(...baseConditions) : undefined;
-    const countResult = await db.select({ count: sql<number>`count(*)` }).from(articles).where(whereForCount);
+    const whereForCount =
+      baseConditions.length > 0 ? and(...baseConditions) : undefined;
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(articles)
+      .where(whereForCount);
     total = Number(countResult[0]?.count || 0);
   }
 
@@ -190,7 +240,8 @@ export async function getArticles(options: {
 
   const totalPages = Math.ceil(total / limit);
 
-  const articleList = await db.select()
+  const articleList = await db
+    .select()
     .from(articles)
     .where(whereClause)
     .orderBy(desc(articles.publishedAt), desc(articles.createdAt))
@@ -203,81 +254,137 @@ export async function getArticles(options: {
 
   // Batch fetch authors (avoid N+1)
   const authorIds = Array.from(new Set(articleList.map(a => a.authorId)));
-  const authorsResult = await db.select({
-    id: users.id,
-    name: users.name,
-    avatar: users.avatar,
-  })
+  const authorsResult = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      avatar: users.avatar,
+    })
     .from(users)
-    .where(sql`${users.id} IN (${sql.join(authorIds.map(id => sql`${id}`), sql`, `)})`);
+    .where(
+      sql`${users.id} IN (${sql.join(
+        authorIds.map(id => sql`${id}`),
+        sql`, `
+      )})`
+    );
   const authorMap = new Map(authorsResult.map(a => [a.id, a]));
 
   // Batch fetch categories (avoid N+1)
-  const categoryIds = Array.from(new Set(articleList.map(a => a.categoryId).filter((id): id is number => id !== null)));
+  const categoryIds = Array.from(
+    new Set(
+      articleList
+        .map(a => a.categoryId)
+        .filter((id): id is number => id !== null)
+    )
+  );
   let categoryMap = new Map<number, Category>();
   if (categoryIds.length > 0) {
-    const categoriesResult = await db.select()
+    const categoriesResult = await db
+      .select()
       .from(categories)
-      .where(sql`${categories.id} IN (${sql.join(categoryIds.map(id => sql`${id}`), sql`, `)})`);
+      .where(
+        sql`${categories.id} IN (${sql.join(
+          categoryIds.map(id => sql`${id}`),
+          sql`, `
+        )})`
+      );
     categoryMap = new Map(categoriesResult.map(c => [c.id, c]));
   }
 
   // Build articles with relations (in-memory, no additional queries)
-  const articlesWithRelations: ArticleWithRelations[] = articleList.map(article => ({
-    ...article,
-    author: authorMap.get(article.authorId) || { id: article.authorId, name: null, avatar: null },
-    category: article.categoryId ? categoryMap.get(article.categoryId) || null : null,
-  }));
+  const articlesWithRelations: ArticleWithRelations[] = articleList.map(
+    article => ({
+      ...article,
+      author: authorMap.get(article.authorId) || {
+        id: article.authorId,
+        name: null,
+        avatar: null,
+      },
+      category: article.categoryId
+        ? categoryMap.get(article.categoryId) || null
+        : null,
+    })
+  );
 
   return { articles: articlesWithRelations, total, totalPages };
 }
 
-export async function getArticleBySlug(slug: string): Promise<ArticleWithRelations | null> {
+export async function getArticleBySlug(
+  slug: string
+): Promise<ArticleWithRelations | null> {
   const db = await getDb();
   if (!db) return null;
 
-  const result = await db.select().from(articles).where(eq(articles.slug, slug)).limit(1);
+  const result = await db
+    .select()
+    .from(articles)
+    .where(eq(articles.slug, slug))
+    .limit(1);
   if (result.length === 0) return null;
 
   const article = result[0];
 
   // Get author
-  const authorResult = await db.select({ id: users.id, name: users.name, avatar: users.avatar })
+  const authorResult = await db
+    .select({ id: users.id, name: users.name, avatar: users.avatar })
     .from(users)
     .where(eq(users.id, article.authorId))
     .limit(1);
-  const author = authorResult[0] || { id: article.authorId, name: null, avatar: null };
+  const author = authorResult[0] || {
+    id: article.authorId,
+    name: null,
+    avatar: null,
+  };
 
   // Get category
   let category: Category | null = null;
   if (article.categoryId) {
-    const catResult = await db.select().from(categories).where(eq(categories.id, article.categoryId)).limit(1);
+    const catResult = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, article.categoryId))
+      .limit(1);
     category = catResult[0] || null;
   }
 
   return { ...article, author, category };
 }
 
-export async function getArticleById(id: number): Promise<ArticleWithRelations | null> {
+export async function getArticleById(
+  id: number
+): Promise<ArticleWithRelations | null> {
   const db = await getDb();
   if (!db) return null;
 
-  const result = await db.select().from(articles).where(eq(articles.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(articles)
+    .where(eq(articles.id, id))
+    .limit(1);
   if (result.length === 0) return null;
 
   const article = result[0];
 
   // Get author
-  const authorResult = await db.select({ id: users.id, name: users.name, avatar: users.avatar })
+  const authorResult = await db
+    .select({ id: users.id, name: users.name, avatar: users.avatar })
     .from(users)
     .where(eq(users.id, article.authorId))
     .limit(1);
-  const author = authorResult[0] || { id: article.authorId, name: null, avatar: null };
+  const author = authorResult[0] || {
+    id: article.authorId,
+    name: null,
+    avatar: null,
+  };
 
   // Get category
   let category: Category | null = null;
   if (article.categoryId) {
-    const catResult = await db.select().from(categories).where(eq(categories.id, article.categoryId)).limit(1);
+    const catResult = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, article.categoryId))
+      .limit(1);
     category = catResult[0] || null;
   }
 
@@ -309,25 +416,29 @@ export async function createArticle(data: {
   return Number(result[0].insertId);
 }
 
-export async function updateArticle(id: number, data: {
-  title?: string;
-  slug?: string;
-  summary?: string;
-  content?: string;
-  coverImage?: string;
-  categoryId?: number;
-  status?: "draft" | "published" | "archived";
-  type?: ContentType;
-  order?: number;
-}): Promise<void> {
+export async function updateArticle(
+  id: number,
+  data: {
+    title?: string;
+    slug?: string;
+    summary?: string;
+    content?: string;
+    coverImage?: string;
+    categoryId?: number;
+    status?: "draft" | "published" | "archived";
+    type?: ContentType;
+    order?: number;
+  }
+): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const updateData: Record<string, unknown> = { ...data };
-  
+
   if (data.status === "published") {
     // Check if already published
-    const existing = await db.select({ publishedAt: articles.publishedAt })
+    const existing = await db
+      .select({ publishedAt: articles.publishedAt })
       .from(articles)
       .where(eq(articles.id, id))
       .limit(1);
@@ -346,7 +457,10 @@ export async function deleteArticle(id: number): Promise<void> {
   await db.delete(articles).where(eq(articles.id, id));
 }
 
-export async function updateArticlePublishedAt(id: number, publishedAt: Date): Promise<void> {
+export async function updateArticlePublishedAt(
+  id: number,
+  publishedAt: Date
+): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -363,10 +477,10 @@ function generateSlug(name: string): string {
   return name
     .toLowerCase()
     .trim()
-    .replace(/[\s]+/g, '-')           // Replace spaces with hyphens
-    .replace(/[^\w\u4e00-\u9fa5-]/g, '') // Keep only alphanumeric, Chinese characters, and hyphens
-    .replace(/--+/g, '-')             // Replace multiple hyphens with single hyphen
-    .replace(/^-+|-+$/g, '');         // Remove leading/trailing hyphens
+    .replace(/[\s]+/g, "-") // Replace spaces with hyphens
+    .replace(/[^\w\u4e00-\u9fa5-]/g, "") // Keep only alphanumeric, Chinese characters, and hyphens
+    .replace(/--+/g, "-") // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
 }
 
 /**
@@ -381,7 +495,11 @@ async function generateUniqueSlug(baseName: string): Promise<string> {
 
   // Check if slug exists, if so, append counter
   while (true) {
-    const existing = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
+    const existing = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.slug, slug))
+      .limit(1);
     if (existing.length === 0) break;
     slug = `${generateSlug(baseName)}-${counter}`;
     counter++;
@@ -390,25 +508,37 @@ async function generateUniqueSlug(baseName: string): Promise<string> {
   return slug;
 }
 
-export async function getCategories(options?: { type?: ContentType }): Promise<Category[]> {
+export async function getCategories(options?: {
+  type?: ContentType;
+}): Promise<Category[]> {
   const db = await getDb();
   if (!db) return [];
 
   if (options?.type) {
-    return await db.select().from(categories)
+    return await db
+      .select()
+      .from(categories)
       .where(eq(categories.type, options.type))
       .orderBy(asc(categories.sortOrder), asc(categories.name));
   }
 
-  return await db.select().from(categories)
+  return await db
+    .select()
+    .from(categories)
     .orderBy(asc(categories.sortOrder), asc(categories.name));
 }
 
-export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+export async function getCategoryBySlug(
+  slug: string
+): Promise<Category | null> {
   const db = await getDb();
   if (!db) return null;
 
-  const result = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
+  const result = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.slug, slug))
+    .limit(1);
   return result.length > 0 ? result[0] : null;
 }
 
@@ -426,7 +556,9 @@ export async function findOrCreateCategory(data: {
 
   // First, try to find existing category by name (case-insensitive)
   // Get all categories of the same type and filter in memory
-  const allCategories = await db.select().from(categories)
+  const allCategories = await db
+    .select()
+    .from(categories)
     .where(eq(categories.type, data.type));
 
   const existing = allCategories.find(
@@ -449,7 +581,11 @@ export async function findOrCreateCategory(data: {
   const newId = Number(result[0].insertId);
 
   // Fetch and return the newly created category
-  const newCategory = await db.select().from(categories).where(eq(categories.id, newId)).limit(1);
+  const newCategory = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.id, newId))
+    .limit(1);
   if (newCategory.length === 0) {
     throw new Error("Failed to create category");
   }
@@ -475,14 +611,17 @@ export async function createCategory(data: {
   return Number(result[0].insertId);
 }
 
-export async function updateCategory(id: number, data: {
-  name?: string;
-  slug?: string;
-  description?: string;
-  icon?: string;
-  sortOrder?: number;
-  type?: ContentType;
-}): Promise<void> {
+export async function updateCategory(
+  id: number,
+  data: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    icon?: string;
+    sortOrder?: number;
+    type?: ContentType;
+  }
+): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -494,10 +633,11 @@ export async function deleteCategory(id: number): Promise<void> {
   if (!db) throw new Error("Database not available");
 
   // Check if category has articles
-  const articleCount = await db.select({ count: sql<number>`count(*)` })
+  const articleCount = await db
+    .select({ count: sql<number>`count(*)` })
     .from(articles)
     .where(eq(articles.categoryId, id));
-  
+
   if (Number(articleCount[0]?.count || 0) > 0) {
     throw new Error("Cannot delete category with existing articles");
   }
@@ -520,49 +660,73 @@ export async function getAnalyticsOverview(): Promise<{
   const db = await getDb();
   if (!db) {
     return {
-      totalArticles: 0, publishedArticles: 0, draftArticles: 0,
-      totalViews: 0, totalUsers: 0, totalCategories: 0,
-      articlesByCategory: [], articlesByMonth: [], topArticles: [],
+      totalArticles: 0,
+      publishedArticles: 0,
+      draftArticles: 0,
+      totalViews: 0,
+      totalUsers: 0,
+      totalCategories: 0,
+      articlesByCategory: [],
+      articlesByMonth: [],
+      topArticles: [],
     };
   }
 
-  const [totalResult, publishedResult, draftResult, userResult, categoryResult, viewsResult] = await Promise.all([
+  const [
+    totalResult,
+    publishedResult,
+    draftResult,
+    userResult,
+    categoryResult,
+    viewsResult,
+  ] = await Promise.all([
     db.select({ count: sql<number>`count(*)` }).from(articles),
-    db.select({ count: sql<number>`count(*)` }).from(articles).where(eq(articles.status, "published")),
-    db.select({ count: sql<number>`count(*)` }).from(articles).where(eq(articles.status, "draft")),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(articles)
+      .where(eq(articles.status, "published")),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(articles)
+      .where(eq(articles.status, "draft")),
     db.select({ count: sql<number>`count(*)` }).from(users),
     db.select({ count: sql<number>`count(*)` }).from(categories),
     db.select({ count: sql<number>`count(*)` }).from(pageViews),
   ]);
 
   // Articles by category (published only)
-  const byCategoryResult = await db.select({
-    name: categories.name,
-    count: sql<number>`count(*)`,
-  })
+  const byCategoryResult = await db
+    .select({
+      name: categories.name,
+      count: sql<number>`count(*)`,
+    })
     .from(articles)
     .innerJoin(categories, eq(articles.categoryId, categories.id))
     .where(eq(articles.status, "published"))
     .groupBy(categories.name);
 
   // Articles by month (last 12 months, published only)
-  const byMonthResult = await db.select({
-    month: sql<string>`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`,
-    count: sql<number>`count(*)`,
-  })
+  const byMonthResult = await db
+    .select({
+      month: sql<string>`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`,
+      count: sql<number>`count(*)`,
+    })
     .from(articles)
-    .where(and(
-      eq(articles.status, "published"),
-      sql`${articles.publishedAt} >= DATE_SUB(NOW(), INTERVAL 12 MONTH)`,
-    ))
+    .where(
+      and(
+        eq(articles.status, "published"),
+        sql`${articles.publishedAt} >= DATE_SUB(NOW(), INTERVAL 12 MONTH)`
+      )
+    )
     .groupBy(sql`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`)
     .orderBy(sql`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`);
 
   // Top 10 published articles (by recency since viewCount was removed)
-  const topResult = await db.select({
-    title: articles.title,
-    slug: articles.slug,
-  })
+  const topResult = await db
+    .select({
+      title: articles.title,
+      slug: articles.slug,
+    })
     .from(articles)
     .where(eq(articles.status, "published"))
     .orderBy(desc(articles.publishedAt))
@@ -575,9 +739,19 @@ export async function getAnalyticsOverview(): Promise<{
     totalViews: Number(viewsResult[0]?.count || 0),
     totalUsers: Number(userResult[0]?.count || 0),
     totalCategories: Number(categoryResult[0]?.count || 0),
-    articlesByCategory: byCategoryResult.map(r => ({ name: r.name, count: Number(r.count) })),
-    articlesByMonth: byMonthResult.map(r => ({ month: r.month, count: Number(r.count) })),
-    topArticles: topResult.map(r => ({ title: r.title, slug: r.slug, viewCount: 0 })),
+    articlesByCategory: byCategoryResult.map(r => ({
+      name: r.name,
+      count: Number(r.count),
+    })),
+    articlesByMonth: byMonthResult.map(r => ({
+      month: r.month,
+      count: Number(r.count),
+    })),
+    topArticles: topResult.map(r => ({
+      title: r.title,
+      slug: r.slug,
+      viewCount: 0,
+    })),
   };
 }
 
@@ -590,7 +764,10 @@ export async function getStats(): Promise<{
   if (!db) return { articleCount: 0, categoryCount: 0 };
 
   const [articleResult, categoryResult] = await Promise.all([
-    db.select({ count: sql<number>`count(*)` }).from(articles).where(eq(articles.status, "published")),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(articles)
+      .where(eq(articles.status, "published")),
     db.select({ count: sql<number>`count(*)` }).from(categories),
   ]);
 
@@ -601,22 +778,31 @@ export async function getStats(): Promise<{
 }
 
 // Archive - get articles grouped by year and month
-export async function getArchive(): Promise<Array<{
-  year: number;
-  month: number;
-  count: number;
-  articles: Array<{ id: number; title: string; slug: string; publishedAt: Date | null; categoryName: string | null }>;
-}>> {
+export async function getArchive(): Promise<
+  Array<{
+    year: number;
+    month: number;
+    count: number;
+    articles: Array<{
+      id: number;
+      title: string;
+      slug: string;
+      publishedAt: Date | null;
+      categoryName: string | null;
+    }>;
+  }>
+> {
   const db = await getDb();
   if (!db) return [];
 
-  const articleList = await db.select({
-    id: articles.id,
-    title: articles.title,
-    slug: articles.slug,
-    publishedAt: articles.publishedAt,
-    categoryId: articles.categoryId,
-  })
+  const articleList = await db
+    .select({
+      id: articles.id,
+      title: articles.title,
+      slug: articles.slug,
+      publishedAt: articles.publishedAt,
+      categoryId: articles.categoryId,
+    })
     .from(articles)
     .where(eq(articles.status, "published"))
     .orderBy(desc(articles.publishedAt));
@@ -626,15 +812,26 @@ export async function getArchive(): Promise<Array<{
   const categoryMap = new Map(allCategories.map(c => [c.id, c.name]));
 
   // Group by year and month
-  const grouped = new Map<string, {
-    year: number;
-    month: number;
-    count: number;
-    articles: Array<{ id: number; title: string; slug: string; publishedAt: Date | null; categoryName: string | null }>;
-  }>();
+  const grouped = new Map<
+    string,
+    {
+      year: number;
+      month: number;
+      count: number;
+      articles: Array<{
+        id: number;
+        title: string;
+        slug: string;
+        publishedAt: Date | null;
+        categoryName: string | null;
+      }>;
+    }
+  >();
 
   for (const article of articleList) {
-    const date = article.publishedAt ? new Date(article.publishedAt) : new Date();
+    const date = article.publishedAt
+      ? new Date(article.publishedAt)
+      : new Date();
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const key = `${year}-${month}`;
@@ -646,7 +843,9 @@ export async function getArchive(): Promise<Array<{
     group.count++;
     group.articles.push({
       ...article,
-      categoryName: article.categoryId ? categoryMap.get(article.categoryId) || null : null,
+      categoryName: article.categoryId
+        ? categoryMap.get(article.categoryId) || null
+        : null,
     });
   }
 
@@ -657,18 +856,24 @@ export async function getArchive(): Promise<Array<{
 }
 
 // Get articles count by category (optimized with GROUP BY to avoid N+1)
-export async function getArticleCountByCategory(): Promise<Array<{ categoryId: number; categoryName: string; count: number }>> {
+export async function getArticleCountByCategory(): Promise<
+  Array<{ categoryId: number; categoryName: string; count: number }>
+> {
   const db = await getDb();
   if (!db) return [];
 
   // Get all categories
-  const allCategories = await db.select().from(categories).orderBy(asc(categories.sortOrder));
+  const allCategories = await db
+    .select()
+    .from(categories)
+    .orderBy(asc(categories.sortOrder));
 
   // Get counts in a single query using GROUP BY
-  const countResults = await db.select({
-    categoryId: articles.categoryId,
-    count: sql<number>`count(*)`,
-  })
+  const countResults = await db
+    .select({
+      categoryId: articles.categoryId,
+      count: sql<number>`count(*)`,
+    })
     .from(articles)
     .where(eq(articles.status, "published"))
     .groupBy(articles.categoryId);
@@ -701,48 +906,72 @@ async function batchFetchArticleRelations(
 
   // Batch fetch authors
   const authorIds = Array.from(new Set(articleList.map(a => a.authorId)));
-  const authorsResult = await db.select({
-    id: users.id,
-    name: users.name,
-    avatar: users.avatar,
-  })
+  const authorsResult = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      avatar: users.avatar,
+    })
     .from(users)
-    .where(sql`${users.id} IN (${sql.join(authorIds.map(id => sql`${id}`), sql`, `)})`);
+    .where(
+      sql`${users.id} IN (${sql.join(
+        authorIds.map(id => sql`${id}`),
+        sql`, `
+      )})`
+    );
   const authorMap = new Map(authorsResult.map(a => [a.id, a]));
 
   // Batch fetch categories
   const categoryIds = Array.from(
-    new Set(articleList.map(a => a.categoryId).filter((id): id is number => id !== null))
+    new Set(
+      articleList
+        .map(a => a.categoryId)
+        .filter((id): id is number => id !== null)
+    )
   );
   let categoryMap = new Map<number, Category>();
   if (categoryIds.length > 0) {
-    const categoriesResult = await db.select()
+    const categoriesResult = await db
+      .select()
       .from(categories)
-      .where(sql`${categories.id} IN (${sql.join(categoryIds.map(id => sql`${id}`), sql`, `)})`);
+      .where(
+        sql`${categories.id} IN (${sql.join(
+          categoryIds.map(id => sql`${id}`),
+          sql`, `
+        )})`
+      );
     categoryMap = new Map(categoriesResult.map(c => [c.id, c]));
   }
 
   // Build result
   return articleList.map(article => ({
     ...article,
-    author: authorMap.get(article.authorId) || { id: article.authorId, name: null, avatar: null },
-    category: article.categoryId ? categoryMap.get(article.categoryId) || null : null,
+    author: authorMap.get(article.authorId) || {
+      id: article.authorId,
+      name: null,
+      avatar: null,
+    },
+    category: article.categoryId
+      ? categoryMap.get(article.categoryId) || null
+      : null,
   }));
 }
 
 // Get related articles (same category, excluding current article)
-export async function getRelatedArticles(articleId: number, categoryId: number | null, limit: number = 4): Promise<ArticleWithRelations[]> {
+export async function getRelatedArticles(
+  articleId: number,
+  categoryId: number | null,
+  limit: number = 4
+): Promise<ArticleWithRelations[]> {
   const db = await getDb();
   if (!db) return [];
 
   // If no category, return latest published articles
   if (!categoryId) {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(articles)
-      .where(and(
-        eq(articles.status, "published"),
-        ne(articles.id, articleId)
-      ))
+      .where(and(eq(articles.status, "published"), ne(articles.id, articleId)))
       .orderBy(desc(articles.publishedAt))
       .limit(limit);
 
@@ -750,13 +979,16 @@ export async function getRelatedArticles(articleId: number, categoryId: number |
   }
 
   // Get articles from same category
-  const result = await db.select()
+  const result = await db
+    .select()
     .from(articles)
-    .where(and(
-      eq(articles.status, "published"),
-      eq(articles.categoryId, categoryId),
-      ne(articles.id, articleId)
-    ))
+    .where(
+      and(
+        eq(articles.status, "published"),
+        eq(articles.categoryId, categoryId),
+        ne(articles.id, articleId)
+      )
+    )
     .orderBy(desc(articles.publishedAt))
     .limit(limit);
 
@@ -769,17 +1001,45 @@ export async function initDefaultCategories(): Promise<void> {
   if (!db) return;
 
   const defaultCategories = [
-    { name: "全栈开发", slug: "fullstack", description: "", icon: "Code", sortOrder: 1 },
-    { name: "嵌入式开发", slug: "embedded", description: "", icon: "Cpu", sortOrder: 2 },
-    { name: "ROS开发", slug: "ros", description: "", icon: "Bot", sortOrder: 3 },
-    { name: "深度学习", slug: "deep-learning", description: "", icon: "Brain", sortOrder: 4 },
+    {
+      name: "全栈开发",
+      slug: "fullstack",
+      description: "",
+      icon: "Code",
+      sortOrder: 1,
+    },
+    {
+      name: "嵌入式开发",
+      slug: "embedded",
+      description: "",
+      icon: "Cpu",
+      sortOrder: 2,
+    },
+    {
+      name: "ROS开发",
+      slug: "ros",
+      description: "",
+      icon: "Bot",
+      sortOrder: 3,
+    },
+    {
+      name: "深度学习",
+      slug: "deep-learning",
+      description: "",
+      icon: "Brain",
+      sortOrder: 4,
+    },
     { name: "DIY", slug: "diy", description: "", icon: "Wrench", sortOrder: 5 },
   ];
 
   for (const cat of defaultCategories) {
     try {
       // Check if category exists
-      const existing = await db.select().from(categories).where(eq(categories.slug, cat.slug)).limit(1);
+      const existing = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.slug, cat.slug))
+        .limit(1);
       if (existing.length === 0) {
         await db.insert(categories).values(cat);
       }
@@ -826,7 +1086,8 @@ export async function getDocTree(categorySlug?: string): Promise<DocTree[]> {
     categoryConditions.push(eq(categories.slug, categorySlug));
   }
 
-  const docCategories = await db.select()
+  const docCategories = await db
+    .select()
     .from(categories)
     .where(and(...categoryConditions))
     .orderBy(asc(categories.sortOrder), asc(categories.name));
@@ -835,20 +1096,26 @@ export async function getDocTree(categorySlug?: string): Promise<DocTree[]> {
 
   // Step 2: Get all published doc articles for these categories (single query - avoids N+1)
   const categoryIds = docCategories.map(c => c.id);
-  const docArticles = await db.select({
-    id: articles.id,
-    title: articles.title,
-    slug: articles.slug,
-    order: articles.order,
-    summary: articles.summary,
-    categoryId: articles.categoryId,
-  })
+  const docArticles = await db
+    .select({
+      id: articles.id,
+      title: articles.title,
+      slug: articles.slug,
+      order: articles.order,
+      summary: articles.summary,
+      categoryId: articles.categoryId,
+    })
     .from(articles)
-    .where(and(
-      eq(articles.type, "doc"),
-      eq(articles.status, "published"),
-      sql`${articles.categoryId} IN (${sql.join(categoryIds.map(id => sql`${id}`), sql`, `)})`
-    ))
+    .where(
+      and(
+        eq(articles.type, "doc"),
+        eq(articles.status, "published"),
+        sql`${articles.categoryId} IN (${sql.join(
+          categoryIds.map(id => sql`${id}`),
+          sql`, `
+        )})`
+      )
+    )
     .orderBy(asc(articles.order), asc(articles.title));
 
   // Step 3: Group articles by category (in-memory, O(n))
@@ -902,6 +1169,8 @@ export interface DatabaseExportData {
     users: Array<typeof users.$inferSelect>;
     articles: Array<typeof articles.$inferSelect>;
     categories: Array<typeof categories.$inferSelect>;
+    pageViews?: Array<typeof pageViews.$inferSelect>;
+    backupSettings?: Array<typeof backupSettings.$inferSelect>;
   };
 }
 
@@ -909,6 +1178,8 @@ export interface DatabaseStats {
   userCount: number;
   articleCount: number;
   categoryCount: number;
+  pageViewCount: number;
+  backupSettingsCount: number;
 }
 
 /**
@@ -916,32 +1187,60 @@ export interface DatabaseStats {
  */
 export async function getDatabaseStats(): Promise<DatabaseStats> {
   const db = await getDb();
-  if (!db) return { userCount: 0, articleCount: 0, categoryCount: 0 };
+  if (!db)
+    return {
+      userCount: 0,
+      articleCount: 0,
+      categoryCount: 0,
+      pageViewCount: 0,
+      backupSettingsCount: 0,
+    };
 
-  const [userResult, articleResult, categoryResult] = await Promise.all([
+  const [
+    userResult,
+    articleResult,
+    categoryResult,
+    pageViewResult,
+    backupSettingsResult,
+  ] = await Promise.all([
     db.select({ count: sql<number>`count(*)` }).from(users),
     db.select({ count: sql<number>`count(*)` }).from(articles),
     db.select({ count: sql<number>`count(*)` }).from(categories),
+    db.select({ count: sql<number>`count(*)` }).from(pageViews),
+    db.select({ count: sql<number>`count(*)` }).from(backupSettings),
   ]);
 
   return {
     userCount: Number(userResult[0]?.count || 0),
     articleCount: Number(articleResult[0]?.count || 0),
     categoryCount: Number(categoryResult[0]?.count || 0),
+    pageViewCount: Number(pageViewResult[0]?.count || 0),
+    backupSettingsCount: Number(backupSettingsResult[0]?.count || 0),
   };
 }
 
 /**
  * Export all data from database
  */
-export async function exportAllData(): Promise<{ exportData: DatabaseExportData; stats: DatabaseStats }> {
+export async function exportAllData(): Promise<{
+  exportData: DatabaseExportData;
+  stats: DatabaseStats;
+}> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [usersData, articlesData, categoriesData] = await Promise.all([
+  const [
+    usersData,
+    articlesData,
+    categoriesData,
+    pageViewsData,
+    backupSettingsData,
+  ] = await Promise.all([
     db.select().from(users),
     db.select().from(articles),
     db.select().from(categories),
+    db.select().from(pageViews),
+    db.select().from(backupSettings),
   ]);
 
   const exportData: DatabaseExportData = {
@@ -951,6 +1250,8 @@ export async function exportAllData(): Promise<{ exportData: DatabaseExportData;
       users: usersData,
       articles: articlesData,
       categories: categoriesData,
+      pageViews: pageViewsData,
+      backupSettings: backupSettingsData,
     },
   };
 
@@ -967,7 +1268,19 @@ export async function exportAllData(): Promise<{ exportData: DatabaseExportData;
  * Import all data to database (replaces existing data)
  * Uses transaction to ensure atomicity
  */
-export async function importAllData(data: DatabaseExportData): Promise<DatabaseStats> {
+/** Convert ISO datetime string or Date to MySQL-compatible format */
+function toMySQLDatetime(
+  value: string | Date | null | undefined
+): string | null {
+  if (value == null) return null;
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 19).replace("T", " ");
+}
+
+export async function importAllData(
+  data: DatabaseExportData
+): Promise<DatabaseStats> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -985,10 +1298,12 @@ export async function importAllData(data: DatabaseExportData): Promise<DatabaseS
   try {
     await connection.beginTransaction();
 
-    // Delete in order: articles → categories → users (respect foreign key dependencies)
+    // Delete in order: pageViews → articles → categories → users, backupSettings (respect foreign key dependencies)
+    await connection.execute("DELETE FROM page_views");
     await connection.execute("DELETE FROM articles");
     await connection.execute("DELETE FROM categories");
     await connection.execute("DELETE FROM users");
+    await connection.execute("DELETE FROM backup_settings");
 
     // Insert in order: users → categories → articles
     if (data.data.users.length > 0) {
@@ -996,7 +1311,19 @@ export async function importAllData(data: DatabaseExportData): Promise<DatabaseS
         await connection.execute(
           `INSERT INTO users (id, openId, name, email, avatar, bio, loginMethod, role, createdAt, updatedAt, lastSignedIn)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [user.id, user.openId, user.name, user.email, user.avatar, user.bio, user.loginMethod, user.role, user.createdAt, user.updatedAt, user.lastSignedIn]
+          [
+            user.id,
+            user.openId,
+            user.name,
+            user.email,
+            user.avatar,
+            user.bio,
+            user.loginMethod,
+            user.role,
+            toMySQLDatetime(user.createdAt),
+            toMySQLDatetime(user.updatedAt),
+            toMySQLDatetime(user.lastSignedIn),
+          ]
         );
       }
     }
@@ -1006,7 +1333,16 @@ export async function importAllData(data: DatabaseExportData): Promise<DatabaseS
         await connection.execute(
           `INSERT INTO categories (id, name, slug, description, icon, sortOrder, type, createdAt)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [cat.id, cat.name, cat.slug, cat.description, cat.icon, cat.sortOrder, cat.type, cat.createdAt]
+          [
+            cat.id,
+            cat.name,
+            cat.slug,
+            cat.description,
+            cat.icon,
+            cat.sortOrder,
+            cat.type,
+            toMySQLDatetime(cat.createdAt),
+          ]
         );
       }
     }
@@ -1016,7 +1352,58 @@ export async function importAllData(data: DatabaseExportData): Promise<DatabaseS
         await connection.execute(
           `INSERT INTO articles (id, title, slug, summary, content, coverImage, authorId, categoryId, status, type, \`order\`, publishedAt, createdAt, updatedAt)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [article.id, article.title, article.slug, article.summary, article.content, article.coverImage, article.authorId, article.categoryId, article.status, article.type, article.order, article.publishedAt, article.createdAt, article.updatedAt]
+          [
+            article.id,
+            article.title,
+            article.slug,
+            article.summary,
+            article.content,
+            article.coverImage,
+            article.authorId,
+            article.categoryId,
+            article.status,
+            article.type,
+            article.order,
+            toMySQLDatetime(article.publishedAt),
+            toMySQLDatetime(article.createdAt),
+            toMySQLDatetime(article.updatedAt),
+          ]
+        );
+      }
+    }
+
+    // Import pageViews (optional for backward compatibility)
+    if (data.data.pageViews && data.data.pageViews.length > 0) {
+      for (const pv of data.data.pageViews) {
+        await connection.execute(
+          `INSERT INTO page_views (id, articleId, ip, userAgent, path, viewedAt)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            pv.id,
+            pv.articleId,
+            pv.ip,
+            pv.userAgent,
+            pv.path,
+            toMySQLDatetime(pv.viewedAt),
+          ]
+        );
+      }
+    }
+
+    // Import backupSettings (optional for backward compatibility)
+    if (data.data.backupSettings && data.data.backupSettings.length > 0) {
+      for (const bs of data.data.backupSettings) {
+        await connection.execute(
+          `INSERT INTO backup_settings (id, enabled, \`interval\`, lastBackupAt, nextBackupAt, updatedAt)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            bs.id,
+            bs.enabled,
+            bs.interval,
+            toMySQLDatetime(bs.lastBackupAt),
+            toMySQLDatetime(bs.nextBackupAt),
+            toMySQLDatetime(bs.updatedAt),
+          ]
         );
       }
     }
@@ -1043,7 +1430,11 @@ export async function getCategoryWithArticles(
     page?: number;
     status?: "draft" | "published" | "archived";
   }
-): Promise<{ category: CategoryWithArticles; total: number; totalPages: number } | null> {
+): Promise<{
+  category: CategoryWithArticles;
+  total: number;
+  totalPages: number;
+} | null> {
   const db = await getDb();
   if (!db) return null;
 
@@ -1051,7 +1442,8 @@ export async function getCategoryWithArticles(
   const offset = (page - 1) * limit;
 
   // Step 1: Get category
-  const categoryResult = await db.select()
+  const categoryResult = await db
+    .select()
     .from(categories)
     .where(eq(categories.slug, slug))
     .limit(1);
@@ -1060,26 +1452,27 @@ export async function getCategoryWithArticles(
   const category = categoryResult[0];
 
   // Step 2: Get total count
-  const countResult = await db.select({ count: sql<number>`count(*)` })
+  const countResult = await db
+    .select({ count: sql<number>`count(*)` })
     .from(articles)
-    .where(and(
-      eq(articles.categoryId, category.id),
-      eq(articles.status, status)
-    ));
+    .where(
+      and(eq(articles.categoryId, category.id), eq(articles.status, status))
+    );
   const total = Number(countResult[0]?.count || 0);
   const totalPages = Math.ceil(total / limit);
 
   // Step 3: Get articles with sorting based on category type
-  const orderByClause = category.type === "doc"
-    ? [asc(articles.order), asc(articles.title)]
-    : [desc(articles.publishedAt), desc(articles.createdAt)];
+  const orderByClause =
+    category.type === "doc"
+      ? [asc(articles.order), asc(articles.title)]
+      : [desc(articles.publishedAt), desc(articles.createdAt)];
 
-  const articleList = await db.select()
+  const articleList = await db
+    .select()
     .from(articles)
-    .where(and(
-      eq(articles.categoryId, category.id),
-      eq(articles.status, status)
-    ))
+    .where(
+      and(eq(articles.categoryId, category.id), eq(articles.status, status))
+    )
     .orderBy(...orderByClause)
     .limit(limit)
     .offset(offset);
@@ -1094,25 +1487,41 @@ export async function getCategoryWithArticles(
 
   // Step 4: Batch fetch authors (avoid N+1)
   const authorIds = Array.from(new Set(articleList.map(a => a.authorId)));
-  const authorsResult = await db.select({
-    id: users.id,
-    name: users.name,
-    avatar: users.avatar,
-  })
+  const authorsResult = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      avatar: users.avatar,
+    })
     .from(users)
-    .where(sql`${users.id} IN (${sql.join(authorIds.map(id => sql`${id}`), sql`, `)})`);
+    .where(
+      sql`${users.id} IN (${sql.join(
+        authorIds.map(id => sql`${id}`),
+        sql`, `
+      )})`
+    );
 
   const authorMap = new Map(authorsResult.map(a => [a.id, a]));
 
   // Step 5: Build articles with relations
-  const articlesWithRelations: ArticleWithRelations[] = articleList.map(article => ({
-    ...article,
-    author: authorMap.get(article.authorId) || { id: article.authorId, name: null, avatar: null },
-    category,
-  }));
+  const articlesWithRelations: ArticleWithRelations[] = articleList.map(
+    article => ({
+      ...article,
+      author: authorMap.get(article.authorId) || {
+        id: article.authorId,
+        name: null,
+        avatar: null,
+      },
+      category,
+    })
+  );
 
   return {
-    category: { ...category, articles: articlesWithRelations, articleCount: total },
+    category: {
+      ...category,
+      articles: articlesWithRelations,
+      articleCount: total,
+    },
     total,
     totalPages,
   };
@@ -1141,14 +1550,24 @@ export interface BackupSettingsData {
 export async function getBackupSettings(): Promise<BackupSettingsData> {
   const db = await getDb();
   if (!db) {
-    return { enabled: false, interval: "monthly", lastBackupAt: null, nextBackupAt: null };
+    return {
+      enabled: false,
+      interval: "monthly",
+      lastBackupAt: null,
+      nextBackupAt: null,
+    };
   }
 
   const result = await db.select().from(backupSettings).limit(1);
   if (result.length === 0) {
     // Create default settings
     await db.insert(backupSettings).values({ enabled: 0, interval: "monthly" });
-    return { enabled: false, interval: "monthly", lastBackupAt: null, nextBackupAt: null };
+    return {
+      enabled: false,
+      interval: "monthly",
+      lastBackupAt: null,
+      nextBackupAt: null,
+    };
   }
 
   const settings = result[0];
@@ -1177,14 +1596,22 @@ export async function updateBackupSettings(
       nextBackupAt,
     });
   } else {
-    await db.update(backupSettings).set({
-      enabled: enabled ? 1 : 0,
-      interval,
-      nextBackupAt,
-    }).where(eq(backupSettings.id, existing[0].id));
+    await db
+      .update(backupSettings)
+      .set({
+        enabled: enabled ? 1 : 0,
+        interval,
+        nextBackupAt,
+      })
+      .where(eq(backupSettings.id, existing[0].id));
   }
 
-  return { enabled, interval, lastBackupAt: existing[0]?.lastBackupAt || null, nextBackupAt };
+  return {
+    enabled,
+    interval,
+    lastBackupAt: existing[0]?.lastBackupAt || null,
+    nextBackupAt,
+  };
 }
 
 export async function updateLastBackupTime(): Promise<void> {
@@ -1225,7 +1652,9 @@ function calculateNextBackupTime(interval: BackupInterval): Date {
   return next;
 }
 
-export async function saveBackupFile(data: DatabaseExportData): Promise<string> {
+export async function saveBackupFile(
+  data: DatabaseExportData
+): Promise<string> {
   await ensureBackupDir();
 
   const now = new Date();
@@ -1288,36 +1717,53 @@ export async function getPageViewStats(days: number = 30): Promise<{
   totalViews: number;
   todayViews: number;
   dailyViews: Array<{ date: string; views: number; uniqueVisitors: number }>;
-  articleViews: Array<{ articleId: number; title: string; slug: string; views: number }>;
+  articleViews: Array<{
+    articleId: number;
+    title: string;
+    slug: string;
+    views: number;
+  }>;
   topPaths: Array<{ path: string; views: number }>;
 }> {
   const db = await getDb();
   if (!db) {
-    return { totalViews: 0, todayViews: 0, dailyViews: [], articleViews: [], topPaths: [] };
+    return {
+      totalViews: 0,
+      todayViews: 0,
+      dailyViews: [],
+      articleViews: [],
+      topPaths: [],
+    };
   }
 
   const [totalResult, todayResult] = await Promise.all([
     db.select({ count: sql<number>`count(*)` }).from(pageViews),
-    db.select({ count: sql<number>`count(*)` }).from(pageViews)
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(pageViews)
       .where(sql`DATE(${pageViews.viewedAt}) = CURDATE()`),
   ]);
 
   // Daily views for last N days
-  const dailyResult = await db.select({
-    date: sql<string>`DATE(${pageViews.viewedAt})`,
-    views: sql<number>`count(*)`,
-    uniqueVisitors: sql<number>`count(DISTINCT ${pageViews.ip})`,
-  })
+  const dailyResult = await db
+    .select({
+      date: sql<string>`DATE(${pageViews.viewedAt})`,
+      views: sql<number>`count(*)`,
+      uniqueVisitors: sql<number>`count(DISTINCT ${pageViews.ip})`,
+    })
     .from(pageViews)
-    .where(sql`${pageViews.viewedAt} >= DATE_SUB(NOW(), INTERVAL ${sql.raw(String(days))} DAY)`)
+    .where(
+      sql`${pageViews.viewedAt} >= DATE_SUB(NOW(), INTERVAL ${sql.raw(String(days))} DAY)`
+    )
     .groupBy(sql`DATE(${pageViews.viewedAt})`)
     .orderBy(sql`DATE(${pageViews.viewedAt})`);
 
   // Article view counts
-  const articleViewResult = await db.select({
-    articleId: pageViews.articleId,
-    views: sql<number>`count(*)`,
-  })
+  const articleViewResult = await db
+    .select({
+      articleId: pageViews.articleId,
+      views: sql<number>`count(*)`,
+    })
     .from(pageViews)
     .where(sql`${pageViews.articleId} IS NOT NULL`)
     .groupBy(pageViews.articleId)
@@ -1325,12 +1771,23 @@ export async function getPageViewStats(days: number = 30): Promise<{
     .limit(20);
 
   // Enrich with article titles
-  let articleViews: Array<{ articleId: number; title: string; slug: string; views: number }> = [];
+  let articleViews: Array<{
+    articleId: number;
+    title: string;
+    slug: string;
+    views: number;
+  }> = [];
   if (articleViewResult.length > 0) {
     const ids = articleViewResult.map(r => r.articleId!);
-    const articleData = await db.select({ id: articles.id, title: articles.title, slug: articles.slug })
+    const articleData = await db
+      .select({ id: articles.id, title: articles.title, slug: articles.slug })
       .from(articles)
-      .where(sql`${articles.id} IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`);
+      .where(
+        sql`${articles.id} IN (${sql.join(
+          ids.map(id => sql`${id}`),
+          sql`, `
+        )})`
+      );
     const articleMap = new Map(articleData.map(a => [a.id, a]));
     articleViews = articleViewResult
       .filter(r => r.articleId && articleMap.has(r.articleId))
@@ -1343,10 +1800,11 @@ export async function getPageViewStats(days: number = 30): Promise<{
   }
 
   // Top paths
-  const topPathsResult = await db.select({
-    path: pageViews.path,
-    views: sql<number>`count(*)`,
-  })
+  const topPathsResult = await db
+    .select({
+      path: pageViews.path,
+      views: sql<number>`count(*)`,
+    })
     .from(pageViews)
     .where(sql`${pageViews.path} IS NOT NULL`)
     .groupBy(pageViews.path)
@@ -1370,9 +1828,14 @@ export async function getPageViewStats(days: number = 30): Promise<{
 }
 
 async function cleanupOldBackups(): Promise<void> {
-  const files = fs.readdirSync(BACKUP_DIR)
+  const files = fs
+    .readdirSync(BACKUP_DIR)
     .filter(f => f.startsWith("auto-backup-") && f.endsWith(".json"))
-    .map(f => ({ name: f, path: path.join(BACKUP_DIR, f), mtime: fs.statSync(path.join(BACKUP_DIR, f)).mtime }))
+    .map(f => ({
+      name: f,
+      path: path.join(BACKUP_DIR, f),
+      mtime: fs.statSync(path.join(BACKUP_DIR, f)).mtime,
+    }))
     .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 
   if (files.length > MAX_BACKUP_FILES) {

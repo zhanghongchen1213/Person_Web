@@ -54,6 +54,8 @@ export default function AdminDatabase() {
     userCount: number;
     articleCount: number;
     categoryCount: number;
+    pageViewCount: number;
+    backupSettingsCount: number;
   } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -63,43 +65,56 @@ export default function AdminDatabase() {
     userCount: number;
     articleCount: number;
     categoryCount: number;
+    pageViewCount: number;
+    backupSettingsCount: number;
     version: string;
     exportedAt: string;
   } | null>(null);
-  const [importData, setImportData] = useState<Record<string, unknown> | null>(null);
+  const [importData, setImportData] = useState<Record<string, unknown> | null>(
+    null
+  );
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto backup state
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
-  const [autoBackupInterval, setAutoBackupInterval] = useState<"weekly" | "monthly" | "quarterly">("monthly");
+  const [autoBackupInterval, setAutoBackupInterval] = useState<
+    "weekly" | "monthly" | "quarterly"
+  >("monthly");
   const [isSavingBackupSettings, setIsSavingBackupSettings] = useState(false);
 
   // tRPC queries and mutations
-  const statsMutation = trpc.database.stats.useQuery(undefined, { enabled: false });
-  const exportMutation = trpc.database.export.useQuery(undefined, { enabled: false });
-  const backupSettingsQuery = trpc.database.backupSettings.useQuery();
-  const updateBackupSettingsMutation = trpc.database.updateBackupSettings.useMutation({
-    onSuccess: (result) => {
-      toast.success("自动备份设置已保存");
-      setAutoBackupEnabled(result.enabled);
-      setAutoBackupInterval(result.interval);
-      setIsSavingBackupSettings(false);
-    },
-    onError: (error) => {
-      toast.error(`保存失败: ${error.message}`);
-      setIsSavingBackupSettings(false);
-    },
+  const statsMutation = trpc.database.stats.useQuery(undefined, {
+    enabled: false,
   });
+  const exportMutation = trpc.database.export.useQuery(undefined, {
+    enabled: false,
+  });
+  const backupSettingsQuery = trpc.database.backupSettings.useQuery();
+  const updateBackupSettingsMutation =
+    trpc.database.updateBackupSettings.useMutation({
+      onSuccess: result => {
+        toast.success("自动备份设置已保存");
+        setAutoBackupEnabled(result.enabled);
+        setAutoBackupInterval(result.interval);
+        setIsSavingBackupSettings(false);
+      },
+      onError: error => {
+        toast.error(`保存失败: ${error.message}`);
+        setIsSavingBackupSettings(false);
+      },
+    });
   const importMutation = trpc.database.import.useMutation({
-    onSuccess: (result) => {
-      toast.success(`导入成功！用户: ${result.userCount}, 文章: ${result.articleCount}, 分类: ${result.categoryCount}`);
+    onSuccess: result => {
+      toast.success(
+        `导入成功！用户: ${result.userCount}, 文章: ${result.articleCount}, 分类: ${result.categoryCount}`
+      );
       setShowImportDialog(false);
       setImportPreview(null);
       setImportData(null);
       setIsImporting(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`导入失败: ${error.message}`);
       setIsImporting(false);
     },
@@ -133,7 +148,9 @@ export default function AdminDatabase() {
       const result = await exportMutation.refetch();
       if (result.data) {
         const { exportData } = result.data;
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+          type: "application/json",
+        });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         const now = new Date();
@@ -165,7 +182,7 @@ export default function AdminDatabase() {
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       try {
         const data = JSON.parse(e.target?.result as string);
         if (!data.version || !data.data) {
@@ -177,6 +194,8 @@ export default function AdminDatabase() {
           userCount: data.data.users?.length || 0,
           articleCount: data.data.articles?.length || 0,
           categoryCount: data.data.categories?.length || 0,
+          pageViewCount: data.data.pageViews?.length || 0,
+          backupSettingsCount: data.data.backupSettings?.length || 0,
           version: data.version,
           exportedAt: data.exportedAt,
         });
@@ -199,7 +218,9 @@ export default function AdminDatabase() {
       const backupResult = await exportMutation.refetch();
       if (backupResult.data) {
         const { exportData } = backupResult.data;
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+          type: "application/json",
+        });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         const now = new Date();
@@ -217,7 +238,9 @@ export default function AdminDatabase() {
     }
 
     // Then import
-    importMutation.mutate(importData as Parameters<typeof importMutation.mutate>[0]);
+    importMutation.mutate(
+      importData as Parameters<typeof importMutation.mutate>[0]
+    );
   };
 
   // Handle save backup settings
@@ -234,8 +257,6 @@ export default function AdminDatabase() {
     if (!date) return "-";
     return new Date(date).toLocaleString("zh-CN");
   };
-
-
 
   // Permission check
   if (authLoading) {
@@ -373,7 +394,11 @@ export default function AdminDatabase() {
                   </div>
                   <Select
                     value={autoBackupInterval}
-                    onValueChange={(v) => setAutoBackupInterval(v as "weekly" | "monthly" | "quarterly")}
+                    onValueChange={v =>
+                      setAutoBackupInterval(
+                        v as "weekly" | "monthly" | "quarterly"
+                      )
+                    }
                   >
                     <SelectTrigger className="w-32">
                       <SelectValue />
@@ -390,11 +415,15 @@ export default function AdminDatabase() {
                   <div className="bg-muted p-4 rounded-lg space-y-2 text-sm">
                     <p>
                       <span className="text-muted-foreground">上次备份：</span>
-                      <strong>{formatDateTime(backupSettingsQuery.data.lastBackupAt)}</strong>
+                      <strong>
+                        {formatDateTime(backupSettingsQuery.data.lastBackupAt)}
+                      </strong>
                     </p>
                     <p>
                       <span className="text-muted-foreground">下次备份：</span>
-                      <strong>{formatDateTime(backupSettingsQuery.data.nextBackupAt)}</strong>
+                      <strong>
+                        {formatDateTime(backupSettingsQuery.data.nextBackupAt)}
+                      </strong>
                     </p>
                   </div>
                 )}
@@ -404,7 +433,9 @@ export default function AdminDatabase() {
                   disabled={isSavingBackupSettings}
                   className="w-full"
                 >
-                  {isSavingBackupSettings && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                  {isSavingBackupSettings && (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  )}
                   <Settings className="w-4 h-4 mr-2" />
                   保存设置
                 </Button>
@@ -422,17 +453,38 @@ export default function AdminDatabase() {
                 <div className="space-y-4">
                   <p>即将导出以下数据：</p>
                   <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <p>用户: <strong>{exportStats?.userCount || 0}</strong> 个</p>
-                    <p>文章: <strong>{exportStats?.articleCount || 0}</strong> 篇</p>
-                    <p>分类: <strong>{exportStats?.categoryCount || 0}</strong> 个</p>
+                    <p>
+                      用户: <strong>{exportStats?.userCount || 0}</strong> 个
+                    </p>
+                    <p>
+                      文章: <strong>{exportStats?.articleCount || 0}</strong> 篇
+                    </p>
+                    <p>
+                      分类: <strong>{exportStats?.categoryCount || 0}</strong>{" "}
+                      个
+                    </p>
+                    <p>
+                      浏览记录:{" "}
+                      <strong>{exportStats?.pageViewCount || 0}</strong> 条
+                    </p>
+                    <p>
+                      备份配置:{" "}
+                      <strong>{exportStats?.backupSettingsCount || 0}</strong>{" "}
+                      条
+                    </p>
                   </div>
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isExporting}>取消</AlertDialogCancel>
-              <AlertDialogAction onClick={handleExportConfirm} disabled={isExporting}>
-                {isExporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              <AlertDialogAction
+                onClick={handleExportConfirm}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
                 确认导出
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -451,15 +503,44 @@ export default function AdminDatabase() {
                 <div className="space-y-4">
                   <p>即将导入以下数据：</p>
                   <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <p>版本: <strong>{importPreview?.version}</strong></p>
-                    <p>导出时间: <strong>{importPreview?.exportedAt ? new Date(importPreview.exportedAt).toLocaleString("zh-CN") : "-"}</strong></p>
-                    <p>用户: <strong>{importPreview?.userCount || 0}</strong> 个</p>
-                    <p>文章: <strong>{importPreview?.articleCount || 0}</strong> 篇</p>
-                    <p>分类: <strong>{importPreview?.categoryCount || 0}</strong> 个</p>
+                    <p>
+                      版本: <strong>{importPreview?.version}</strong>
+                    </p>
+                    <p>
+                      导出时间:{" "}
+                      <strong>
+                        {importPreview?.exportedAt
+                          ? new Date(importPreview.exportedAt).toLocaleString(
+                              "zh-CN"
+                            )
+                          : "-"}
+                      </strong>
+                    </p>
+                    <p>
+                      用户: <strong>{importPreview?.userCount || 0}</strong> 个
+                    </p>
+                    <p>
+                      文章: <strong>{importPreview?.articleCount || 0}</strong>{" "}
+                      篇
+                    </p>
+                    <p>
+                      分类: <strong>{importPreview?.categoryCount || 0}</strong>{" "}
+                      个
+                    </p>
+                    <p>
+                      浏览记录:{" "}
+                      <strong>{importPreview?.pageViewCount || 0}</strong> 条
+                    </p>
+                    <p>
+                      备份配置:{" "}
+                      <strong>{importPreview?.backupSettingsCount || 0}</strong>{" "}
+                      条
+                    </p>
                   </div>
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-lg">
                     <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-                      <strong>警告：</strong>此操作将覆盖所有现有数据，系统会先自动备份当前数据。
+                      <strong>警告：</strong>
+                      此操作将覆盖所有现有数据，系统会先自动备份当前数据。
                     </p>
                   </div>
                 </div>
@@ -472,7 +553,9 @@ export default function AdminDatabase() {
                 disabled={isImporting}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                {isImporting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {isImporting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
                 确认导入
               </AlertDialogAction>
             </AlertDialogFooter>
