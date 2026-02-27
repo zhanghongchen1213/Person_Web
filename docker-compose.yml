@@ -23,10 +23,8 @@ services:
     env_file:
       - .env.production
 
-    # Environment variables
+    # Environment variables (static values only; MYSQL_ROOT_PASSWORD/MYSQL_DATABASE come from env_file)
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-personal_blog}
       MYSQL_CHARACTER_SET_SERVER: utf8mb4
       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
 
@@ -45,7 +43,7 @@ services:
 
     # Health check
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -69,10 +67,13 @@ services:
     env_file:
       - .env.production
 
-    # Additional environment variables
+    # Additional environment variables (DATABASE_URL comes from env_file)
     environment:
       NODE_ENV: production
-      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-personal_blog}?charset=utf8mb4
+
+    # GitHub DNS fix for China servers
+    extra_hosts:
+      - "github.com:20.200.245.247"
 
     # Resource limits (512MB for app)
     mem_limit: 512m
