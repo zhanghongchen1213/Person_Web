@@ -21,12 +21,15 @@ export function getSessionCookieOptions(
   const hostname = req.hostname;
   const isLocalhost = LOCAL_HOSTS.has(hostname) || hostname === "127.0.0.1";
 
-  // For localhost, use lax sameSite to allow cookies to work in development
-  // For production, use lax with secure (works for same-site HTTPS)
+  // Cross-origin production: sameSite "none" + secure required for cross-domain cookies
+  // Development / same-origin: sameSite "lax" is sufficient
+  const isCrossOrigin = !isLocalhost && process.env.NODE_ENV === "production";
+
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "lax",
-    secure: isLocalhost ? false : isSecureRequest(req),
+    sameSite: isCrossOrigin ? "none" as const : "lax" as const,
+    secure: isCrossOrigin ? true : (isLocalhost ? false : isSecureRequest(req)),
+    ...(isCrossOrigin && { domain: ".zhcmqtt.top" }),
   };
 }

@@ -1,5 +1,6 @@
 import "dotenv/config";
 import compression from "compression";
+import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -11,7 +12,7 @@ import { registerMockOAuthRoutes } from "./mock-oauth";
 import { registerGitHubOAuthRoutes } from "./github-oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
+import { setupVite } from "./vite";
 import { logCacheStats } from "../performance";
 import { initBackupScheduler } from "./backup-scheduler";
 import { ensureFulltextIndex, ensurePageViewsTable } from "../db";
@@ -43,6 +44,19 @@ async function startServer() {
   app.use(helmet({
     contentSecurityPolicy: false, // CSP handled by Nginx in production
   }));
+
+  // CORS middleware - must be before all route handlers
+  const allowedOrigins = process.env.NODE_ENV === "production"
+    ? (process.env.CORS_ALLOWED_ORIGINS?.split(",").map(o => o.trim()).filter(Boolean) || ["https://zhcmqtt.top", "https://www.zhcmqtt.top"])
+    : ["http://localhost:5173", "http://localhost:3000"];
+
+  app.use(cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }));
+
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
@@ -91,12 +105,12 @@ async function startServer() {
       createContext,
     })
   );
-  // development mode uses Vite, production mode uses static files
+  // Development mode: use Vite dev server for HMR
+  // Production mode: static files served by Nginx, Express only handles API
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
-  } else {
-    serveStatic(app);
   }
+  // Production mode: no static file serving - handled by Nginx/CDN
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
