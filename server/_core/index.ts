@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { sql } from "drizzle-orm";
 import { registerOAuthRoutes } from "./oauth";
 import { registerMockOAuthRoutes } from "./mock-oauth";
 import { registerGitHubOAuthRoutes } from "./github-oauth";
@@ -41,6 +42,46 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
+
+  // Health check endpoints (before compression/helmet for minimal overhead on high-frequency probes)
+  const serverStartTime = Date.now();
+
+  app.get("/health", (_req, res) => {
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.get("/health/db", async (_req, res) => {
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) {
+        throw new Error("Database not initialized");
+      }
+      // Simple query to verify database connection with 3s timeout
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Database health check timeout")), 3000)
+      );
+      await Promise.race([db.execute(sql`SELECT 1`), timeout]);
+      res.json({
+        status: "ok",
+        database: "connected",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(503).json({
+        status: "error",
+        database: "disconnected",
+        error: process.env.NODE_ENV === "production"
+          ? "Database connection failed"
+          : String(error),
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
   app.use(compression());
   app.use(helmet({
     contentSecurityPolicy: false, // CSP handled by Nginx in production
@@ -129,10 +170,21 @@ async function startServer() {
   // Production mode: no static file serving - handled by Nginx/CDN
 
   const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
 
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+  // M3: In production, fail fast if preferred port is occupied
+  let port: number;
+  if (process.env.NODE_ENV === "production") {
+    const available = await isPortAvailable(preferredPort);
+    if (!available) {
+      console.error(`[FATAL] Port ${preferredPort} is already in use. In production, the server will not auto-switch ports.`);
+      process.exit(1);
+    }
+    port = preferredPort;
+  } else {
+    port = await findAvailablePort(preferredPort);
+    if (port !== preferredPort) {
+      console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    }
   }
 
   server.listen(port, () => {

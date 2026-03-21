@@ -139,3 +139,6 @@ uploads/
 
 # Performance Monitoring (optional)
 server/PERFORMANCE_MONITORING.md
+
+# PM2 logs
+logs/*.log

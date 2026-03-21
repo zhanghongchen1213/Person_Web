@@ -11,7 +11,12 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "lint": "eslint client/src server shared"
+    "lint": "eslint client/src server shared",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop personal-blog-api",
+    "pm2:restart": "pm2 restart personal-blog-api",
+    "pm2:logs": "pm2 logs personal-blog-api",
+    "pm2:status": "pm2 status"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
