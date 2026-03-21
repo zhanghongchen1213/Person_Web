@@ -52,7 +52,7 @@ development_status:
 
   # Epic 2: 内容管理系统
   epic-2: in-progress
-  2-1-article-crud-adaptation: ready-for-dev
+  2-1-article-crud-adaptation: done
   2-2-article-status-publish-date: backlog
   2-3-category-management-auto-creation: backlog
   epic-2-retrospective: optional
@@ -68,7 +68,7 @@ development_status:
   # Epic 4: 数据分析与浏览统计
   epic-4: in-progress
   4-1-page-view-data-recording: done
-  4-2-analytics-overview-view-stats: backlog
+  4-2-analytics-overview-view-stats: ready-for-dev
   epic-4-retrospective: optional
 
   # Epic 5: 数据备份与恢复

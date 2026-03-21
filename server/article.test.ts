@@ -12,6 +12,7 @@ vi.mock("./db", () => ({
   createArticle: vi.fn(),
   updateArticle: vi.fn(),
   deleteArticle: vi.fn(),
+  upsertArticle: vi.fn(),
   getCategories: vi.fn(),
   createCategory: vi.fn(),
   updateCategory: vi.fn(),
@@ -261,6 +262,168 @@ describe("category.list", () => {
 
     expect(result).toHaveLength(2);
     expect(result[0].name).toBe("Tech");
+  });
+});
+
+describe("article.update", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("allows admin to update article and invalidates cache", async () => {
+    vi.mocked(db.updateArticle).mockResolvedValue(undefined);
+
+    const ctx = createAdminContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.article.update({
+      id: 1,
+      title: "Updated Title",
+      content: "Updated content",
+      status: "published",
+    });
+
+    expect(result.success).toBe(true);
+    expect(db.updateArticle).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ title: "Updated Title", status: "published" })
+    );
+  });
+
+  it("sets updatedAt via db.updateArticle (PostgreSQL adaptation)", async () => {
+    vi.mocked(db.updateArticle).mockResolvedValue(undefined);
+
+    const ctx = createAdminContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await caller.article.update({ id: 2, title: "Another Update" });
+
+    // updateArticle is responsible for setting updatedAt: new Date() internally
+    expect(db.updateArticle).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({ title: "Another Update" })
+    );
+  });
+
+  it("denies regular user from updating article", async () => {
+    const ctx = createUserContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.article.update({ id: 1, title: "Hacked" })
+    ).rejects.toThrow("Admin access required");
+  });
+
+  it("denies unauthenticated user from updating article", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.article.update({ id: 1, title: "Hacked" })
+    ).rejects.toThrow();
+  });
+});
+
+describe("article.delete", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("allows admin to delete article and invalidates cache", async () => {
+    vi.mocked(db.deleteArticle).mockResolvedValue(undefined);
+
+    const ctx = createAdminContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.article.delete({ id: 1 });
+
+    expect(result.success).toBe(true);
+    expect(db.deleteArticle).toHaveBeenCalledWith(1);
+  });
+
+  it("denies regular user from deleting article", async () => {
+    const ctx = createUserContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.article.delete({ id: 1 })
+    ).rejects.toThrow("Admin access required");
+  });
+
+  it("denies unauthenticated user from deleting article", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.article.delete({ id: 1 })
+    ).rejects.toThrow();
+  });
+});
+
+describe("article.upsert", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("allows admin to upsert article (insert new) and invalidates cache", async () => {
+    vi.mocked(db.upsertArticle).mockResolvedValue(42);
+
+    const ctx = createAdminContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.article.upsert({
+      title: "New Doc",
+      slug: "new-doc",
+      content: "Doc content",
+      status: "draft",
+      type: "doc",
+      order: 0,
+    });
+
+    expect(result.id).toBe(42);
+    expect(db.upsertArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "New Doc",
+        slug: "new-doc",
+        authorId: 1,
+      })
+    );
+  });
+
+  it("allows admin to upsert article (update on conflict) using onConflictDoUpdate", async () => {
+    // db.upsertArticle uses onConflictDoUpdate targeting articles.slug
+    vi.mocked(db.upsertArticle).mockResolvedValue(7);
+
+    const ctx = createAdminContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.article.upsert({
+      title: "Existing Doc Updated",
+      slug: "existing-doc",
+      content: "Updated content",
+      status: "published",
+      type: "blog",
+      order: 1,
+    });
+
+    expect(result.id).toBe(7);
+    expect(db.upsertArticle).toHaveBeenCalledTimes(1);
+  });
+
+  it("denies regular user from upserting article", async () => {
+    const ctx = createUserContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.article.upsert({
+        title: "Doc",
+        slug: "doc",
+        content: "Content",
+        status: "draft",
+        type: "blog",
+        order: 0,
+      })
+    ).rejects.toThrow("Admin access required");
   });
 });
 
