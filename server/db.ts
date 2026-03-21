@@ -1561,7 +1561,7 @@ export async function getBackupSettings(): Promise<BackupSettingsData> {
   const result = await db.select().from(backupSettings).limit(1);
   if (result.length === 0) {
     // Create default settings
-    await db.insert(backupSettings).values({ enabled: 0, interval: "monthly" });
+    await db.insert(backupSettings).values({ enabled: false, interval: "monthly" });
     return {
       enabled: false,
       interval: "monthly",
@@ -1572,7 +1572,7 @@ export async function getBackupSettings(): Promise<BackupSettingsData> {
 
   const settings = result[0];
   return {
-    enabled: settings.enabled === 1,
+    enabled: settings.enabled,
     interval: settings.interval,
     lastBackupAt: settings.lastBackupAt,
     nextBackupAt: settings.nextBackupAt,
@@ -1591,7 +1591,7 @@ export async function updateBackupSettings(
   const existing = await db.select().from(backupSettings).limit(1);
   if (existing.length === 0) {
     await db.insert(backupSettings).values({
-      enabled: enabled ? 1 : 0,
+      enabled,
       interval,
       nextBackupAt,
     });
@@ -1599,7 +1599,7 @@ export async function updateBackupSettings(
     await db
       .update(backupSettings)
       .set({
-        enabled: enabled ? 1 : 0,
+        enabled,
         interval,
         nextBackupAt,
       })
