@@ -44,7 +44,7 @@ development_status:
   epic-1: in-progress
   1-1-drizzle-orm-schema-mysql-to-postgresql: done
   1-2-database-driver-replacement: done
-  1-3-database-query-syntax-adaptation: backlog
+  1-3-database-query-syntax-adaptation: done
   1-4-cors-middleware-frontend-api-base-url: backlog
   1-5-cross-domain-oauth-cookie-sharing: backlog
   1-6-backend-independent-deployment-health-check: backlog

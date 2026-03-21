@@ -1,4 +1,4 @@
-import { eq, desc, like, or, and, sql, ne, asc } from "drizzle-orm";
+import { eq, desc, or, and, sql, ne, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import {
@@ -51,10 +51,19 @@ export function getPool() {
 }
 
 export async function ensureFulltextIndex() {
-  // PostgreSQL uses GIN/GiST indexes for full-text search instead of MySQL FULLTEXT.
-  // Full-text search index creation will be handled in Story 1.3 (query syntax adaptation).
-  // This function is intentionally left as a no-op for now.
-  return;
+  const pool = getPool();
+  if (!pool) return;
+  try {
+    // Create GIN index for full-text search on articles (title + content)
+    // Uses 'simple' config for better CJK (Chinese/Japanese/Korean) support
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_articles_fulltext
+      ON articles
+      USING GIN (to_tsvector('simple', coalesce("title", '') || ' ' || coalesce("content", '')))
+    `);
+  } catch (e) {
+    console.warn("[Database] Failed to create fulltext index:", e);
+  }
 }
 
 // User functions
@@ -110,7 +119,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.lastSignedIn = new Date();
     }
 
-    if (Object.keys(updateSet).length === 0) {
+    // Always update updatedAt on upsert (PostgreSQL has no ON UPDATE CURRENT_TIMESTAMP)
+    updateSet.updatedAt = new Date();
+
+    if (Object.keys(updateSet).length === 1) {
+      // Only updatedAt was set, also update lastSignedIn
       updateSet.lastSignedIn = new Date();
     }
 
@@ -187,44 +200,57 @@ export async function getArticles(options: {
     if (cat.length > 0) baseConditions.push(eq(articles.categoryId, cat[0].id));
   }
 
-  const escapedSearch = search?.replace(/[+\-*~<>()@"]/g, " ").trim();
-  // TODO: Story 1.3 - 替换为 PostgreSQL tsvector/tsquery 全文搜索
-  // MySQL MATCH AGAINST 语法在 PostgreSQL 中不可用，暂时禁用走 LIKE 降级路径
-  const ftCondition = null;
-  const likeCondition = search
-    ? or(
-        like(articles.title, `%${search}%`),
-        like(articles.content, `%${search}%`)
-      )
-    : null;
-
+  // Build search condition using PostgreSQL tsvector/tsquery with ILIKE fallback
   let conditions = [...baseConditions];
   let total = 0;
+  if (search) {
+    const sanitized = search.replace(/[&|!():*<>']/g, " ").trim();
 
-  if (ftCondition) {
-    try {
-      const ftWhere = and(...conditions, ftCondition);
+    if (sanitized.length > 0) {
+      // Build tsquery: split into words, wrap each in single quotes (with escaping), join with & (AND)
+      const tsQueryTerms = sanitized
+        .split(/\s+/)
+        .filter(t => t.length > 0)
+        .map(t => "'" + t.replace(/'/g, "''") + "'")
+        .join(" & ");
+
+      // Try full-text search first (requires GIN index from ensureFulltextIndex)
+      const ftsCondition = sql`to_tsvector('simple', coalesce(${articles.title}, '') || ' ' || coalesce(${articles.content}, '')) @@ to_tsquery('simple', ${tsQueryTerms})`;
+
+      try {
+        const ftsConditions = [...baseConditions, ftsCondition];
+        const ftsWhere = ftsConditions.length > 0 ? and(...ftsConditions) : undefined;
+        const countResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(articles)
+          .where(ftsWhere);
+        total = Number(countResult[0]?.count || 0);
+
+        if (total > 0) {
+          conditions = ftsConditions;
+        }
+      } catch {
+        // tsquery failed, will fall through to ILIKE fallback
+        total = 0;
+      }
+    }
+
+    // Fallback to ILIKE if full-text search returned 0 results or failed
+    if (total === 0) {
+      const escapedSearch = search.replace(/[%_\\]/g, '\\$&');
+      const likeCondition = or(
+        sql`${articles.title} ILIKE ${'%' + escapedSearch + '%'}`,
+        sql`${articles.content} ILIKE ${'%' + escapedSearch + '%'}`
+      );
+      conditions = [...baseConditions, likeCondition!];
       const countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(articles)
-        .where(ftWhere);
+        .where(and(...conditions));
       total = Number(countResult[0]?.count || 0);
-      if (total > 0) conditions.push(ftCondition);
-    } catch {
-      // FULLTEXT index missing or query failed
     }
-  }
-
-  if (total === 0 && likeCondition) {
-    conditions = [...baseConditions, likeCondition];
-    const countResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(articles)
-      .where(and(...conditions));
-    total = Number(countResult[0]?.count || 0);
-  }
-
-  if (total === 0 && !search) {
+  } else {
+    // No search term: count with base conditions only
     const whereForCount =
       baseConditions.length > 0 ? and(...baseConditions) : undefined;
     const countResult = await db
@@ -431,7 +457,7 @@ export async function updateArticle(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const updateData: Record<string, unknown> = { ...data };
+  const updateData: Record<string, unknown> = { ...data, updatedAt: new Date() };
 
   if (data.status === "published") {
     // Check if already published
@@ -462,7 +488,7 @@ export async function updateArticlePublishedAt(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(articles).set({ publishedAt }).where(eq(articles.id, id));
+  await db.update(articles).set({ publishedAt, updatedAt: new Date() }).where(eq(articles.id, id));
 }
 
 // Category functions
@@ -1602,6 +1628,7 @@ export async function updateBackupSettings(
         enabled,
         interval,
         nextBackupAt,
+        updatedAt: new Date(),
       })
       .where(eq(backupSettings.id, existing[0].id));
   }
@@ -1624,6 +1651,7 @@ export async function updateLastBackupTime(): Promise<void> {
   await db.update(backupSettings).set({
     lastBackupAt: new Date(),
     nextBackupAt,
+    updatedAt: new Date(),
   });
 }
 
