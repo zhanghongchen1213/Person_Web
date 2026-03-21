@@ -18,6 +18,7 @@ import { initBackupScheduler } from "./backup-scheduler";
 import { ensureFulltextIndex, ensurePageViewsTable } from "../db";
 import { seoMiddleware } from "./seo";
 import { generateSitemap } from "./sitemap";
+import { ENV } from "./env";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -56,6 +57,21 @@ async function startServer() {
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }));
+
+  // HIGH #5: FRONTEND_URL 与 CORS 交叉校验
+  if (process.env.NODE_ENV === "production") {
+    try {
+      const frontendOrigin = new URL(ENV.frontendUrl).origin;
+      if (!allowedOrigins.includes(frontendOrigin)) {
+        console.warn(
+          `[ENV] WARNING: FRONTEND_URL origin "${frontendOrigin}" is NOT in CORS_ALLOWED_ORIGINS [${allowedOrigins.join(", ")}]. ` +
+          "OAuth redirects may fail due to CORS blocking."
+        );
+      }
+    } catch {
+      console.warn("[ENV] WARNING: FRONTEND_URL is not a valid URL:", ENV.frontendUrl);
+    }
+  }
 
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads

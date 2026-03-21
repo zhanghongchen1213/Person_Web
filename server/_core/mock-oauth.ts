@@ -3,6 +3,7 @@ import { ExchangeTokenResponse, GetUserInfoResponse } from "./types/manusTypes";
 
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
+import { ENV } from "./env";
 import { sdk } from "./sdk";
 import { upsertUser } from "../db";
 
@@ -118,7 +119,7 @@ export function registerMockOAuthRoutes(app: Express) {
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
       console.log("[MockOAuth] Admin session created successfully");
-      res.redirect("/admin/database");
+      res.redirect(ENV.frontendUrl + "/admin/database");
     } catch (error) {
       console.error("[MockOAuth] Failed to create admin session:", error);
       res.status(500).send("Failed to create admin session");

@@ -61,7 +61,7 @@ export function registerGitHubOAuthRoutes(app: Express) {
     const code = req.query.code as string;
     if (!code) {
       console.error("[GitHubOAuth] Missing authorization code");
-      res.status(400).json({ error: "Missing authorization code" });
+      res.redirect(302, `${ENV.frontendUrl}/login?error=oauth_missing_code`);
       return;
     }
 
@@ -85,7 +85,7 @@ export function registerGitHubOAuthRoutes(app: Express) {
 
       if (!tokenData.access_token) {
         console.error("[GitHubOAuth] Failed to get access token");
-        res.status(400).json({ error: "Failed to get access token" });
+        res.redirect(302, `${ENV.frontendUrl}/login?error=oauth_token_failed`);
         return;
       }
 
@@ -103,7 +103,7 @@ export function registerGitHubOAuthRoutes(app: Express) {
 
       if (!githubUser.id) {
         console.error("[GitHubOAuth] Failed to get user info");
-        res.status(400).json({ error: "Failed to get user info" });
+        res.redirect(302, `${ENV.frontendUrl}/login?error=oauth_user_failed`);
         return;
       }
 
@@ -136,11 +136,11 @@ export function registerGitHubOAuthRoutes(app: Express) {
 
       console.log("[GitHubOAuth] Session created, redirecting to home");
 
-      // 重定向到首页
-      res.redirect(302, "/");
+      // 重定向到前端首页（跨域架构下必须使用绝对 URL）
+      res.redirect(302, ENV.frontendUrl);
     } catch (error) {
       console.error("[GitHubOAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
+      res.redirect(302, `${ENV.frontendUrl}/login?error=oauth_failed`);
     }
   });
 

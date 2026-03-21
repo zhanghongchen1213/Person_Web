@@ -1,4 +1,5 @@
 import type { CookieOptions, Request } from "express";
+import { ENV } from "./env";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
@@ -30,6 +31,7 @@ export function getSessionCookieOptions(
     path: "/",
     sameSite: isCrossOrigin ? "none" as const : "lax" as const,
     secure: isCrossOrigin ? true : (isLocalhost ? false : isSecureRequest(req)),
-    ...(isCrossOrigin && { domain: ".zhcmqtt.top" }),
+    // Cookie domain 从环境变量读取；undefined 时浏览器默认使用当前域名
+    ...(isCrossOrigin && ENV.cookieDomain && { domain: ENV.cookieDomain }),
   };
 }
