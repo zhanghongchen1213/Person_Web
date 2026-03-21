@@ -1,6 +1,6 @@
 import { eq, desc, like, or, and, sql, ne, asc } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import {
   InsertUser,
   users,
@@ -18,18 +18,25 @@ import * as fs from "fs";
 import * as path from "path";
 
 let _db: ReturnType<typeof drizzle> | null = null;
-let _pool: mysql.Pool | null = null;
+let _pool: Pool | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      // Create mysql2 connection pool with proper charset configuration
-      _pool = mysql.createPool({
-        uri: process.env.DATABASE_URL,
-        charset: "utf8mb4",
-        connectionLimit: 10,
+      // Create pg connection pool with SSL for remote MemfireDB
+      _pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        max: 10, // MemfireDB 免费额度连接数限制
+        ssl: { rejectUnauthorized: false }, // 远程数据库 SSL 必须
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
       });
-      _db = drizzle(_pool) as unknown as ReturnType<typeof drizzle>;
+
+      // Verify connection is working
+      const testClient = await _pool.connect();
+      testClient.release();
+
+      _db = drizzle(_pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -44,20 +51,10 @@ export function getPool() {
 }
 
 export async function ensureFulltextIndex() {
-  const pool = getPool();
-  if (!pool) return;
-  try {
-    const [rows] = await pool.execute(
-      "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'articles' AND INDEX_NAME = 'ft_title_content'"
-    );
-    if ((rows as Record<string, unknown>[]).length === 0) {
-      await pool.execute(
-        "ALTER TABLE articles ADD FULLTEXT INDEX ft_title_content (title, content) WITH PARSER ngram"
-      );
-    }
-  } catch (e) {
-    console.warn("[Database] Failed to create fulltext index:", e);
-  }
+  // PostgreSQL uses GIN/GiST indexes for full-text search instead of MySQL FULLTEXT.
+  // Full-text search index creation will be handled in Story 1.3 (query syntax adaptation).
+  // This function is intentionally left as a no-op for now.
+  return;
 }
 
 // User functions
@@ -117,7 +114,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -190,9 +188,9 @@ export async function getArticles(options: {
   }
 
   const escapedSearch = search?.replace(/[+\-*~<>()@"]/g, " ").trim();
-  const ftCondition = escapedSearch
-    ? sql`MATCH(${articles.title}, ${articles.content}) AGAINST(${escapedSearch} IN BOOLEAN MODE)`
-    : null;
+  // TODO: Story 1.3 - 替换为 PostgreSQL tsvector/tsquery 全文搜索
+  // MySQL MATCH AGAINST 语法在 PostgreSQL 中不可用，暂时禁用走 LIKE 降级路径
+  const ftCondition = null;
   const likeCondition = search
     ? or(
         like(articles.title, `%${search}%`),
@@ -411,9 +409,9 @@ export async function createArticle(data: {
     type: data.type ?? "blog",
     order: data.order ?? 0,
     publishedAt: data.status === "published" ? new Date() : null,
-  });
+  }).returning({ id: articles.id });
 
-  return Number(result[0].insertId);
+  return result[0].id;
 }
 
 export async function updateArticle(
@@ -576,21 +574,13 @@ export async function findOrCreateCategory(data: {
     slug,
     type: data.type,
     sortOrder: 0,
-  });
+  }).returning();
 
-  const newId = Number(result[0].insertId);
-
-  // Fetch and return the newly created category
-  const newCategory = await db
-    .select()
-    .from(categories)
-    .where(eq(categories.id, newId))
-    .limit(1);
-  if (newCategory.length === 0) {
+  if (result.length === 0) {
     throw new Error("Failed to create category");
   }
 
-  return newCategory[0];
+  return result[0];
 }
 
 export async function createCategory(data: {
@@ -607,8 +597,8 @@ export async function createCategory(data: {
   const result = await db.insert(categories).values({
     ...data,
     type: data.type ?? "blog",
-  });
-  return Number(result[0].insertId);
+  }).returning({ id: categories.id });
+  return result[0].id;
 }
 
 export async function updateCategory(
@@ -708,18 +698,18 @@ export async function getAnalyticsOverview(): Promise<{
   // Articles by month (last 12 months, published only)
   const byMonthResult = await db
     .select({
-      month: sql<string>`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`,
+      month: sql<string>`TO_CHAR(${articles.publishedAt}, 'YYYY-MM')`,
       count: sql<number>`count(*)`,
     })
     .from(articles)
     .where(
       and(
         eq(articles.status, "published"),
-        sql`${articles.publishedAt} >= DATE_SUB(NOW(), INTERVAL 12 MONTH)`
+        sql`${articles.publishedAt} >= NOW() - INTERVAL '12 months'`
       )
     )
-    .groupBy(sql`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`)
-    .orderBy(sql`DATE_FORMAT(${articles.publishedAt}, '%Y-%m')`);
+    .groupBy(sql`TO_CHAR(${articles.publishedAt}, 'YYYY-MM')`)
+    .orderBy(sql`TO_CHAR(${articles.publishedAt}, 'YYYY-MM')`);
 
   // Top 10 published articles (by recency since viewCount was removed)
   const topResult = await db
@@ -1259,6 +1249,8 @@ export async function exportAllData(): Promise<{
     userCount: usersData.length,
     articleCount: articlesData.length,
     categoryCount: categoriesData.length,
+    pageViewCount: pageViewsData.length,
+    backupSettingsCount: backupSettingsData.length,
   };
 
   return { exportData, stats };
@@ -1268,16 +1260,6 @@ export async function exportAllData(): Promise<{
  * Import all data to database (replaces existing data)
  * Uses transaction to ensure atomicity
  */
-/** Convert ISO datetime string or Date to MySQL-compatible format */
-function toMySQLDatetime(
-  value: string | Date | null | undefined
-): string | null {
-  if (value == null) return null;
-  const d = typeof value === "string" ? new Date(value) : value;
-  if (isNaN(d.getTime())) return null;
-  return d.toISOString().slice(0, 19).replace("T", " ");
-}
-
 export async function importAllData(
   data: DatabaseExportData
 ): Promise<DatabaseStats> {
@@ -1293,24 +1275,24 @@ export async function importAllData(
   const pool = getPool();
   if (!pool) throw new Error("Cannot access database connection pool");
 
-  const connection = await pool.getConnection();
+  const client = await pool.connect();
 
   try {
-    await connection.beginTransaction();
+    await client.query("BEGIN");
 
     // Delete in order: pageViews → articles → categories → users, backupSettings (respect foreign key dependencies)
-    await connection.execute("DELETE FROM page_views");
-    await connection.execute("DELETE FROM articles");
-    await connection.execute("DELETE FROM categories");
-    await connection.execute("DELETE FROM users");
-    await connection.execute("DELETE FROM backup_settings");
+    await client.query("DELETE FROM page_views");
+    await client.query("DELETE FROM articles");
+    await client.query("DELETE FROM categories");
+    await client.query("DELETE FROM users");
+    await client.query("DELETE FROM backup_settings");
 
     // Insert in order: users → categories → articles
     if (data.data.users.length > 0) {
       for (const user of data.data.users) {
-        await connection.execute(
-          `INSERT INTO users (id, openId, name, email, avatar, bio, loginMethod, role, createdAt, updatedAt, lastSignedIn)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        await client.query(
+          `INSERT INTO users (id, "openId", name, email, avatar, bio, "loginMethod", role, "createdAt", "updatedAt", "lastSignedIn")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
           [
             user.id,
             user.openId,
@@ -1320,9 +1302,9 @@ export async function importAllData(
             user.bio,
             user.loginMethod,
             user.role,
-            toMySQLDatetime(user.createdAt),
-            toMySQLDatetime(user.updatedAt),
-            toMySQLDatetime(user.lastSignedIn),
+            user.createdAt,
+            user.updatedAt,
+            user.lastSignedIn,
           ]
         );
       }
@@ -1330,9 +1312,9 @@ export async function importAllData(
 
     if (data.data.categories.length > 0) {
       for (const cat of data.data.categories) {
-        await connection.execute(
-          `INSERT INTO categories (id, name, slug, description, icon, sortOrder, type, createdAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        await client.query(
+          `INSERT INTO categories (id, name, slug, description, icon, "sortOrder", type, "createdAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             cat.id,
             cat.name,
@@ -1341,7 +1323,7 @@ export async function importAllData(
             cat.icon,
             cat.sortOrder,
             cat.type,
-            toMySQLDatetime(cat.createdAt),
+            cat.createdAt,
           ]
         );
       }
@@ -1349,9 +1331,9 @@ export async function importAllData(
 
     if (data.data.articles.length > 0) {
       for (const article of data.data.articles) {
-        await connection.execute(
-          `INSERT INTO articles (id, title, slug, summary, content, coverImage, authorId, categoryId, status, type, \`order\`, publishedAt, createdAt, updatedAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        await client.query(
+          `INSERT INTO articles (id, title, slug, summary, content, "coverImage", "authorId", "categoryId", status, type, "order", "publishedAt", "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
           [
             article.id,
             article.title,
@@ -1364,9 +1346,9 @@ export async function importAllData(
             article.status,
             article.type,
             article.order,
-            toMySQLDatetime(article.publishedAt),
-            toMySQLDatetime(article.createdAt),
-            toMySQLDatetime(article.updatedAt),
+            article.publishedAt,
+            article.createdAt,
+            article.updatedAt,
           ]
         );
       }
@@ -1375,16 +1357,16 @@ export async function importAllData(
     // Import pageViews (optional for backward compatibility)
     if (data.data.pageViews && data.data.pageViews.length > 0) {
       for (const pv of data.data.pageViews) {
-        await connection.execute(
-          `INSERT INTO page_views (id, articleId, ip, userAgent, path, viewedAt)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+        await client.query(
+          `INSERT INTO page_views (id, "articleId", ip, "userAgent", path, "viewedAt")
+           VALUES ($1, $2, $3, $4, $5, $6)`,
           [
             pv.id,
             pv.articleId,
             pv.ip,
             pv.userAgent,
             pv.path,
-            toMySQLDatetime(pv.viewedAt),
+            pv.viewedAt,
           ]
         );
       }
@@ -1393,33 +1375,51 @@ export async function importAllData(
     // Import backupSettings (optional for backward compatibility)
     if (data.data.backupSettings && data.data.backupSettings.length > 0) {
       for (const bs of data.data.backupSettings) {
-        await connection.execute(
-          `INSERT INTO backup_settings (id, enabled, \`interval\`, lastBackupAt, nextBackupAt, updatedAt)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+        await client.query(
+          `INSERT INTO backup_settings (id, enabled, "interval", "lastBackupAt", "nextBackupAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6)`,
           [
             bs.id,
             bs.enabled,
             bs.interval,
-            toMySQLDatetime(bs.lastBackupAt),
-            toMySQLDatetime(bs.nextBackupAt),
-            toMySQLDatetime(bs.updatedAt),
+            bs.lastBackupAt,
+            bs.nextBackupAt,
+            bs.updatedAt,
           ]
         );
       }
     }
 
-    await connection.commit();
+    // Reset sequences to max id + 1 for each table with SERIAL primary key
+    // Use pg_get_serial_sequence() to dynamically resolve sequence names
+    const tables = [
+      { table: 'users', column: 'id' },
+      { table: 'categories', column: 'id' },
+      { table: 'articles', column: 'id' },
+      { table: 'page_views', column: 'id' },
+      { table: 'backup_settings', column: 'id' },
+    ];
+    for (const { table, column } of tables) {
+      await client.query(
+        `SELECT setval(pg_get_serial_sequence($1, $2), COALESCE((SELECT MAX(id) FROM ${table}), 0) + 1, false)`,
+        [table, column]
+      );
+    }
+
+    await client.query("COMMIT");
 
     return {
       userCount: data.data.users.length,
       articleCount: data.data.articles.length,
       categoryCount: data.data.categories.length,
+      pageViewCount: data.data.pageViews?.length ?? 0,
+      backupSettingsCount: data.data.backupSettings?.length ?? 0,
     };
   } catch (error) {
-    await connection.rollback();
+    await client.query("ROLLBACK");
     throw error;
   } finally {
-    connection.release();
+    client.release();
   }
 }
 
@@ -1678,16 +1678,18 @@ export async function ensurePageViewsTable(): Promise<void> {
   const pool = getPool();
   if (!pool) return;
   try {
-    await pool.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS page_views (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        articleId INT,
+        id SERIAL PRIMARY KEY,
+        "articleId" INTEGER,
         ip VARCHAR(45),
-        userAgent VARCHAR(512),
+        "userAgent" VARCHAR(512),
         path VARCHAR(500),
-        viewedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        "viewedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_page_views_viewed_at ON page_views ("viewedAt")`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_page_views_article_id ON page_views ("articleId")`);
   } catch (e) {
     console.warn("[Database] Failed to ensure page_views table:", e);
   }
@@ -1741,7 +1743,7 @@ export async function getPageViewStats(days: number = 30): Promise<{
     db
       .select({ count: sql<number>`count(*)` })
       .from(pageViews)
-      .where(sql`DATE(${pageViews.viewedAt}) = CURDATE()`),
+      .where(sql`DATE(${pageViews.viewedAt}) = CURRENT_DATE`),
   ]);
 
   // Daily views for last N days
@@ -1753,7 +1755,7 @@ export async function getPageViewStats(days: number = 30): Promise<{
     })
     .from(pageViews)
     .where(
-      sql`${pageViews.viewedAt} >= DATE_SUB(NOW(), INTERVAL ${sql.raw(String(days))} DAY)`
+      sql`${pageViews.viewedAt} >= NOW() - make_interval(days => ${days})`
     )
     .groupBy(sql`DATE(${pageViews.viewedAt})`)
     .orderBy(sql`DATE(${pageViews.viewedAt})`);
