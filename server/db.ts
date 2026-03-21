@@ -481,6 +481,46 @@ export async function deleteArticle(id: number): Promise<void> {
   await db.delete(articles).where(eq(articles.id, id));
 }
 
+export async function upsertArticle(data: {
+  title: string;
+  slug: string;
+  summary?: string;
+  content: string;
+  coverImage?: string;
+  authorId: number;
+  categoryId?: number;
+  status?: "draft" | "published" | "archived";
+  type?: ContentType;
+  order?: number;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(articles).values({
+    ...data,
+    type: data.type ?? "blog",
+    order: data.order ?? 0,
+    publishedAt: data.status === "published" ? new Date() : null,
+  }).onConflictDoUpdate({
+    target: articles.slug,
+    set: {
+      title: data.title,
+      summary: data.summary ?? null,
+      content: data.content,
+      coverImage: data.coverImage ?? null,
+      authorId: data.authorId,
+      categoryId: data.categoryId ?? null,
+      status: data.status ?? "draft",
+      type: data.type ?? "blog",
+      order: data.order ?? 0,
+      updatedAt: new Date(),
+      publishedAt: data.status === "published" ? new Date() : undefined,
+    },
+  }).returning({ id: articles.id });
+
+  return result[0].id;
+}
+
 export async function updateArticlePublishedAt(
   id: number,
   publishedAt: Date
@@ -1718,6 +1758,7 @@ export async function ensurePageViewsTable(): Promise<void> {
     `);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_page_views_viewed_at ON page_views ("viewedAt")`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_page_views_article_id ON page_views ("articleId")`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_page_views_path ON page_views (path)`);
   } catch (e) {
     console.warn("[Database] Failed to ensure page_views table:", e);
   }
@@ -1729,14 +1770,14 @@ export async function recordPageView(data: {
   userAgent?: string | null;
   path?: string | null;
 }): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
   try {
+    const db = await getDb();
+    if (!db) return;
     await db.insert(pageViews).values({
       articleId: data.articleId ?? null,
       ip: data.ip ?? null,
       userAgent: data.userAgent?.slice(0, 512) ?? null,
-      path: data.path ?? null,
+      path: data.path?.slice(0, 500) ?? null,
     });
   } catch {
     // silently fail - don't break user experience for analytics

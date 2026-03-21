@@ -229,6 +229,33 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Upsert article by slug (admin) - for import/sync scenarios
+    upsert: adminProcedure
+      .input(
+        z.object({
+          title: z.string().min(1).max(255),
+          slug: z.string().min(1).max(255),
+          summary: z.string().optional(),
+          content: z.string().min(1),
+          coverImage: z.string().optional(),
+          categoryId: z.number().optional(),
+          status: z.enum(["draft", "published", "archived"]).default("draft"),
+          type: z.enum(["blog", "doc"]).default("blog"),
+          order: z.number().default(0),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const articleId = await db.upsertArticle({
+          ...input,
+          authorId: ctx.user.id,
+        });
+
+        // Invalidate article cache
+        invalidateArticleCache();
+
+        return { id: articleId };
+      }),
+
     // Update article published date (admin)
     updatePublishedAt: adminProcedure
       .input(
@@ -487,19 +514,22 @@ export const appRouter = router({
       .input(
         z.object({
           articleId: z.number().optional(),
-          path: z.string().optional(),
+          path: z.string().max(500).optional(),
         })
       )
-      .mutation(async ({ input, ctx }) => {
-        const ip =
-          ctx.req.ip || ctx.req.headers["x-forwarded-for"]?.toString() || null;
+      .mutation(({ input, ctx }) => {
+        // Use req.ip which respects Express "trust proxy" setting
+        // This is safer than manually parsing x-forwarded-for (prevents IP spoofing)
+        const ip = ctx.req.ip || null;
         const userAgent = ctx.req.headers["user-agent"] || null;
-        await db.recordPageView({
+        // Fire-and-forget: don't await DB write to minimize response latency
+        // .catch() prevents unhandled Promise rejection if getDb() throws
+        db.recordPageView({
           articleId: input.articleId,
           ip,
           userAgent,
           path: input.path,
-        });
+        }).catch(() => {});
         return { success: true };
       }),
   }),

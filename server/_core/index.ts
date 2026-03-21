@@ -43,6 +43,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
 
+  // Trust first proxy (Nginx reverse proxy) for correct req.ip
+  app.set("trust proxy", 1);
+
   // Health check endpoints (before compression/helmet for minimal overhead on high-frequency probes)
   const serverStartTime = Date.now();
 
