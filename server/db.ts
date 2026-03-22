@@ -52,7 +52,7 @@ export function getPool() {
 
 export async function ensureFulltextIndex() {
   const pool = getPool();
-  if (!pool) return;
+  if (!pool) return false;
   try {
     // Create GIN index for full-text search on articles (title + content)
     // Uses 'simple' config for better CJK (Chinese/Japanese/Korean) support
@@ -61,8 +61,22 @@ export async function ensureFulltextIndex() {
       ON articles
       USING GIN (to_tsvector('simple', coalesce("title", '') || ' ' || coalesce("content", '')))
     `);
+
+    // Verify index exists
+    const result = await pool.query(`
+      SELECT indexname FROM pg_indexes
+      WHERE tablename = 'articles' AND indexname = 'idx_articles_fulltext'
+    `);
+
+    if (result.rows.length === 0) {
+      console.error("[Database] Fulltext index verification failed");
+      return false;
+    }
+
+    return true;
   } catch (e) {
-    console.warn("[Database] Failed to create fulltext index:", e);
+    console.error("[Database] Failed to create fulltext index:", e);
+    return false;
   }
 }
 
@@ -204,18 +218,11 @@ export async function getArticles(options: {
   let conditions = [...baseConditions];
   let total = 0;
   if (search) {
-    const sanitized = search.replace(/[&|!():*<>']/g, " ").trim();
+    const sanitized = search.trim();
 
     if (sanitized.length > 0) {
-      // Build tsquery: split into words, wrap each in single quotes (with escaping), join with & (AND)
-      const tsQueryTerms = sanitized
-        .split(/\s+/)
-        .filter(t => t.length > 0)
-        .map(t => "'" + t.replace(/'/g, "''") + "'")
-        .join(" & ");
-
-      // Try full-text search first (requires GIN index from ensureFulltextIndex)
-      const ftsCondition = sql`to_tsvector('simple', coalesce(${articles.title}, '') || ' ' || coalesce(${articles.content}, '')) @@ to_tsquery('simple', ${tsQueryTerms})`;
+      // Use plainto_tsquery for safe user input handling (prevents SQL injection)
+      const ftsCondition = sql`to_tsvector('simple', coalesce(${articles.title}, '') || ' ' || coalesce(${articles.content}, '')) @@ plainto_tsquery('simple', ${sanitized})`;
 
       try {
         const ftsConditions = [...baseConditions, ftsCondition];

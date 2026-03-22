@@ -157,6 +157,62 @@ export const appRouter = router({
         );
       }),
 
+    // Search articles (public) - dedicated endpoint for full-text search
+    search: publicProcedure
+      .input(
+        z.object({
+          keyword: z.string().max(100),
+          limit: z.number().min(1).max(50).default(50),
+        })
+      )
+      .query(async ({ input, ctx }) => {
+        if (!input.keyword.trim()) {
+          return { articles: [], total: 0 };
+        }
+
+        // Rate limiting: max 10 searches per minute per IP
+        const ip = ctx.req.ip || 'unknown';
+        const rateLimitKey = `search:ratelimit:${ip}`;
+        const currentCount = (appCache.get(rateLimitKey) as number) || 0;
+
+        if (currentCount >= 10) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "Too many search requests. Please try again later.",
+          });
+        }
+
+        appCache.set(rateLimitKey, currentCount + 1, 60 * 1000);
+
+        // Cache search results for 60 seconds
+        const cacheKey = `search:${input.keyword}:${input.limit}`;
+        const cached = appCache.get(cacheKey);
+        if (cached) {
+          return cached as { articles: any[]; total: number };
+        }
+
+        const result = await db.getArticles({
+          search: input.keyword.slice(0, 100),
+          limit: input.limit,
+          status: "published",
+        });
+
+        const response = {
+          articles: result.articles.map(a => ({
+            id: a.id,
+            title: a.title,
+            slug: a.slug,
+            summary: a.summary,
+            publishedAt: a.publishedAt,
+            category: a.category ? { name: a.category.name, slug: a.category.slug } : null,
+          })),
+          total: result.total,
+        };
+
+        appCache.set(cacheKey, response, 60 * 1000);
+        return response;
+      }),
+
     // Admin: list all articles including drafts
     adminList: adminProcedure
       .input(

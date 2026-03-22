@@ -21,6 +21,14 @@ export interface DocNavItem {
 }
 
 /**
+ * Document tree item structure
+ */
+export interface DocTreeItem {
+  category: { id: number; slug: string };
+  articles: Array<{ slug: string; title: string }>;
+}
+
+/**
  * Props for the DocSidebar component
  */
 export interface DocSidebarProps {

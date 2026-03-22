@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, cloneElement, isValidElement } from "react";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,26 @@ export function DocLayout({ sidebar, content, toc }: DocLayoutProps) {
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev);
   }, []);
+
+  const closeSidebar = useCallback(() => {
+    setSidebarOpen(false);
+  }, []);
+
+  // Close sidebar on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && sidebarOpen) {
+        closeSidebar();
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [sidebarOpen, closeSidebar]);
+
+  // Clone sidebar element to inject onNavigate callback
+  const sidebarWithProps = isValidElement(sidebar)
+    ? cloneElement(sidebar, { onNavigate: closeSidebar } as any)
+    : sidebar;
 
   return (
     <div className="relative min-h-screen">
@@ -59,7 +79,7 @@ export function DocLayout({ sidebar, content, toc }: DocLayoutProps) {
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
-          {sidebar}
+          {sidebarWithProps}
         </aside>
 
         {/* Main content area */}

@@ -25,17 +25,19 @@ export function DocSidebar({ currentSlug, onNavigate }: DocSidebarProps) {
   );
 
   // Auto-expand category containing current article
-   
   useEffect(() => {
     if (docTree && currentSlug) {
       const match = docTree.find((tree) =>
         tree.articles.some((article) => article.slug === currentSlug)
       );
-      if (match && !expandedCategories.has(match.category.id)) {
-        setExpandedCategories((prev) => new Set(prev).add(match.category.id)); // eslint-disable-line react-hooks/set-state-in-effect
+      if (match) {
+        setExpandedCategories((prev) => {
+          if (prev.has(match.category.id)) return prev;
+          return new Set(prev).add(match.category.id);
+        });
       }
     }
-  }, [docTree, currentSlug, expandedCategories]);
+  }, [docTree, currentSlug]);
 
   const toggleCategory = (categoryId: number) => {
     setExpandedCategories((prev) => {
@@ -51,7 +53,7 @@ export function DocSidebar({ currentSlug, onNavigate }: DocSidebarProps) {
 
   if (isLoading) {
     return (
-      <div className="p-4">
+      <div className="p-4" aria-busy="true" aria-label="Loading documentation">
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
@@ -215,6 +217,7 @@ function ArticleItem({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isActive && "bg-primary text-primary-foreground font-medium"
         )}
+        aria-current={isActive ? "page" : undefined}
       >
         <FileText className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{article.title}</span>

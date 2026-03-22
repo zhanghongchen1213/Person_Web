@@ -50,6 +50,7 @@ const DATE_RANGES = [
   { label: "7天", days: 7 },
   { label: "30天", days: 30 },
   { label: "90天", days: 90 },
+  { label: "1年", days: 365 },
 ] as const;
 
 export default function AdminAnalytics() {
@@ -66,18 +67,26 @@ export default function AdminAnalytics() {
   const { data: viewStats, isLoading: viewStatsLoading, refetch: refetchViewStats } =
     trpc.analytics.pageViewStats.useQuery({ days }, { enabled: isAdmin });
 
+  // Issue 3 Fix: Add error handling for race conditions
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchOverview(), refetchViewStats()]);
-    setRefreshing(false);
+    try {
+      await Promise.all([refetchOverview(), refetchViewStats()]);
+    } catch (error) {
+      console.error("Failed to refresh analytics data:", error);
+    } finally {
+      setRefreshing(false);
+    }
   }, [refetchOverview, refetchViewStats]);
 
-  // Auto-refresh every 60s
+  // Issue 2 Fix: Auto-refresh every 60s without memory leak
   useEffect(() => {
     if (!isAdmin) return;
-    const timer = setInterval(handleRefresh, 60_000);
+    const timer = setInterval(() => {
+      handleRefresh();
+    }, 60_000);
     return () => clearInterval(timer);
-  }, [isAdmin, handleRefresh]);
+  }, [isAdmin]); // Removed handleRefresh from dependencies
 
   if (authLoading) {
     return (
@@ -163,6 +172,11 @@ export default function AdminAnalytics() {
             <div className="grid gap-6 lg:grid-cols-2">
               <CategoryPieChart data={overview?.articlesByCategory ?? []} />
               <ArticleViewsRanking data={viewStats?.articleViews ?? []} />
+            </div>
+
+            {/* Charts Row 3 - Top Paths */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <TopPathsTable data={viewStats?.topPaths ?? []} />
             </div>
           </div>
         )}
@@ -444,6 +458,43 @@ function CategoryPieChart({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---- Top Paths Table ---- */
+function TopPathsTable({
+  data,
+}: {
+  data: Array<{ path: string; views: number }>;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">热门路径</CardTitle>
+        <CardDescription>浏览量最高的页面路径</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {data.length === 0 ? (
+          <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
+            暂无数据
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            {data.map((item, i) => (
+              <div key={item.path} className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground w-5 text-right shrink-0">
+                  {i + 1}
+                </span>
+                <code className="truncate flex-1 text-xs bg-muted px-1 py-0.5 rounded">
+                  {item.path}
+                </code>
+                <span className="font-medium shrink-0">{item.views}</span>
+              </div>
+            ))}
           </div>
         )}
       </CardContent>

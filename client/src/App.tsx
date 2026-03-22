@@ -11,11 +11,13 @@ const ArticleDetail = React.lazy(() => import("./pages/ArticleDetail"));
 const Archive = React.lazy(() => import("./pages/Archive"));
 const About = React.lazy(() => import("./pages/About"));
 const WriteArticle = React.lazy(() => import("./pages/WriteArticle"));
+const DocIndex = React.lazy(() => import("./pages/DocIndex"));
 const DocReader = React.lazy(() => import("./pages/DocReader"));
 const AdminArticles = React.lazy(() => import("./pages/AdminArticles"));
 const AdminDatabase = React.lazy(() => import("./pages/AdminDatabase"));
 const AdminAnalytics = React.lazy(() => import("./pages/AdminAnalytics"));
 const Login = React.lazy(() => import("./pages/Login"));
+const SearchPage = React.lazy(() => import("./pages/SearchPage"));
 const NotFound = React.lazy(() => import("@/pages/NotFound"));
 
 function Router() {
@@ -24,8 +26,10 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/articles" component={Articles} />
       <Route path="/article/:slug" component={ArticleDetail} />
+      <Route path="/docs" component={DocIndex} />
       <Route path="/docs/:category/:slug" component={DocReader} />
       <Route path="/archive" component={Archive} />
+      <Route path="/search" component={SearchPage} />
       <Route path="/about" component={About} />
       <Route path="/login" component={Login} />
       <Route path="/write" component={WriteArticle} />

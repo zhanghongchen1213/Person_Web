@@ -60,10 +60,12 @@ interface NavLinkProps {
 
 function NavLink({ href, direction, title }: NavLinkProps) {
   const isPrev = direction === "prev";
+  const shortcut = isPrev ? "Alt+←" : "Alt+→";
 
   return (
     <Link
       href={href}
+      title={`${title} (${shortcut})`}
       className={cn(
         "group flex items-center gap-3 p-4",
         "border-2 border-border hover:bg-muted transition-colors",

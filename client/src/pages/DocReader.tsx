@@ -10,9 +10,11 @@ import {
   DocTOC,
   DocNavigation,
   MarkdownRenderer,
+  DocBreadcrumb,
 } from "@/components/doc";
 import { useActiveHeading } from "@/hooks/useActiveHeading";
-import type { TocItem, DocNavItem } from "@/types/doc";
+import { useDocKeyboardNav } from "@/hooks/useDocKeyboardNav";
+import type { TocItem, DocNavItem, DocTreeItem } from "@/types/doc";
 
 /**
  * DocReader page component
@@ -20,7 +22,6 @@ import type { TocItem, DocNavItem } from "@/types/doc";
  */
 export default function DocReader() {
   const params = useParams<{ category: string; slug: string }>();
-  const _categorySlug = params.category || ""; // eslint-disable-line @typescript-eslint/no-unused-vars
   const articleSlug = params.slug || "";
 
   // State for TOC headings
@@ -55,6 +56,9 @@ export default function DocReader() {
     return calculateNavigation(docTree, articleSlug);
   }, [docTree, articleSlug]);
 
+  // Enable keyboard navigation
+  useDocKeyboardNav(navigation.prev, navigation.next);
+
   // Loading state
   if (articleLoading) {
     return (
@@ -82,6 +86,7 @@ export default function DocReader() {
             article={article}
             navigation={navigation}
             onHeadingsExtracted={handleHeadingsExtracted}
+            docTree={docTree}
           />
         }
         toc={<DocTOC headings={headings} activeId={activeId} />}
@@ -142,12 +147,17 @@ interface DocContentProps {
   };
   navigation: { prev: DocNavItem | null; next: DocNavItem | null };
   onHeadingsExtracted: (headings: TocItem[]) => void;
+  docTree?: Array<{
+    category: { slug: string };
+    articles: Array<{ slug: string }>;
+  }>;
 }
 
 function DocContent({
   article,
   navigation,
   onHeadingsExtracted,
+  docTree,
 }: DocContentProps) {
   const formatDate = (date: Date | string) => {
     const d = new Date(date);
@@ -158,8 +168,23 @@ function DocContent({
     });
   };
 
+  // Find first article slug in current category for breadcrumb
+  const firstArticleSlug = docTree
+    ?.find((tree) => tree.category.slug === article.category?.slug)
+    ?.articles[0]?.slug;
+
   return (
     <article>
+      {/* Breadcrumb */}
+      {article.category && (
+        <DocBreadcrumb
+          categoryName={article.category.name}
+          categorySlug={article.category.slug}
+          articleTitle={article.title}
+          firstArticleSlug={firstArticleSlug}
+        />
+      )}
+
       {/* Header */}
       <header className="mb-8 pb-6 border-b-2 border-border">
         {article.category && (
@@ -192,11 +217,6 @@ function DocContent({
 /**
  * Calculate prev/next navigation from document tree
  */
-interface DocTreeItem {
-  category: { id: number; slug: string };
-  articles: Array<{ slug: string; title: string }>;
-}
-
 function calculateNavigation(
   docTree: DocTreeItem[],
   currentSlug: string
