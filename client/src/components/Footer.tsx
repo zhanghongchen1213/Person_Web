@@ -3,6 +3,8 @@ import { Github, MessageCircle, Mail, BookOpen, Video } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const icpRecordNumber = "鲁ICP备2024057224号";
+  const beianUrl = "https://beian.miit.gov.cn/";
 
   return (
     <footer className="border-t-2 border-border bg-background">
@@ -103,6 +105,18 @@ export default function Footer() {
             <p className="text-xs text-muted-foreground">
               Built with brutalist aesthetics
             </p>
+          </div>
+          <div className="mt-5 flex justify-center">
+            <a
+              href={beianUrl}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="inline-flex min-h-10 items-center px-3 text-center text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+              aria-label="工业和信息化部备案管理系统（新窗口打开）"
+              title="点击前往工信部备案管理系统查询备案信息"
+            >
+              {icpRecordNumber}
+            </a>
           </div>
         </div>
       </div>
