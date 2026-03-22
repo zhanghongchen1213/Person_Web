@@ -2,8 +2,8 @@
 title: 从零搭建企业级设备管理平台：BMAD + Pencil + Claude Code AI全流程实战开发
 slug: 2026-01-29-bamd-pencil
 summary: 本文分享如何使用 BMAD 方法论、Pencil 设计工具和 Claude Code AI 编程助手，从零搭建一个完整的企业设备烧录、管理、质量分析平台
-category: AI编程
-categorySlug: blog
+category: 全栈开发
+categorySlug: full-stack-development
 type: blog
 status: published
 publishedAt: 2026-01-29T00:00:00.000Z

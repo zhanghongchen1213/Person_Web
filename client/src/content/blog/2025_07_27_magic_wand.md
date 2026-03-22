@@ -3,7 +3,7 @@ title: 魔法不够赛博来凑！DIY 赛博魔杖，挥一下直接解锁未来
 slug: 2025-07-27-magic-wand
 summary: 本文介绍如何使用全志 V851s 开发板、BMI088 传感器和 Keras 机器学习框架，打造一根能识别手势的赛博魔杖。挥动魔杖即可控制智能设备，让科幻电影中的魔法场景走进现实！
 category: DIY
-categorySlug: blog
+categorySlug: diy
 type: blog
 status: published
 publishedAt: 2025-07-27T00:00:00.000Z

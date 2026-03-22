@@ -9,6 +9,25 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 
 type ViewTab = "timeline" | "categories";
 
+type ArchiveItem = ReturnType<typeof getArchive>[number];
+
+export function getDefaultExpandedArchiveState(archiveData: ArchiveItem[]) {
+  if (!archiveData || archiveData.length === 0) {
+    return {
+      expandedYears: new Set<number>(),
+      expandedMonths: new Set<string>(),
+    };
+  }
+
+  const years = archiveData.map(item => item.year);
+  const monthKeys = archiveData.map(item => `${item.year}-${item.month}`);
+
+  return {
+    expandedYears: new Set<number>(years),
+    expandedMonths: new Set<string>(monthKeys),
+  };
+}
+
 const getMonthName = (month: number) => {
   const months = [
     "一月", "二月", "三月", "四月", "五月", "六月",
@@ -39,10 +58,12 @@ export default function Archive() {
   const archiveLoading = false;
   const categoryLoading = false;
 
-  // Track expanded years and months
-  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
-  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
-  const [initialized, setInitialized] = useState(false);
+  const defaultExpanded = useMemo(
+    () => getDefaultExpandedArchiveState(archiveData),
+    [archiveData]
+  );
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(defaultExpanded.expandedYears);
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(defaultExpanded.expandedMonths);
 
   // Memoize grouped data to avoid recomputation and unstable references
   const groupedByYear = useMemo(() => {
@@ -64,19 +85,6 @@ export default function Archive() {
     () => archiveData?.reduce((sum, m) => sum + m.count, 0) || 0,
     [archiveData]
   );
-
-  // Initialize: expand the most recent year and its first month
-  useEffect(() => {
-    if (!initialized && years.length > 0) {
-      const latestYear = years[0];
-      setExpandedYears(new Set([latestYear]));
-      const firstMonth = groupedByYear[latestYear]?.[0];
-      if (firstMonth) {
-        setExpandedMonths(new Set([`${latestYear}-${firstMonth.month}`]));
-      }
-      setInitialized(true);
-    }
-  }, [years, groupedByYear, initialized]);
 
   // Sync tab to URL
   useEffect(() => {

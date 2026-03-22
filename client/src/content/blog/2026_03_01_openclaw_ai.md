@@ -3,7 +3,7 @@ title: 基于 OpenClaw + Claude Code 的智能资讯检索、整合与主动推�
 slug: 2026-03-01-openclaw-ai
 summary: 基于 Astro 构建的静态资讯聚合站点，通过 Claude Code 原生能力实现多领域资讯的自动检索与智能整合；结合 OpenClaw 定时调度实现每日自动更新，并通过飞书机器人将日报摘要主动推送给用户
 category: AI自动化
-categorySlug: blog
+categorySlug: ai-automation
 type: blog
 status: published
 publishedAt: 2026-03-01T00:00:00.000Z

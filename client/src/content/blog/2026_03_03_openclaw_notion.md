@@ -3,7 +3,7 @@ title: 基于 Openclaw + Notion 的工作日报/周报/月报自动化管理系�
 slug: 2026-03-03-openclaw-notion
 summary: 通过OpenClaw定时调度，自动收集 Git 提交记录与 Notion 活动日志，利用 Claude Code Skills 生成结构化报告并写入 Notion 数据库。全程无需人工干预，跨平台开箱即用。
 category: AI自动化
-categorySlug: blog
+categorySlug: ai-automation
 type: blog
 status: published
 publishedAt: 2026-03-03T00:00:00.000Z

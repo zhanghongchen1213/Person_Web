@@ -3,7 +3,7 @@ title: 基于 Screenpipe + Ollama + Notion 打造 AI 全自动日报、周报生
 slug: 2026-01-04-daily-report
 summary: 在数字化办公时代，如何高效记录工作内容并生成高质量的日报/周报是很多开发者的痛点。本文将分享如何利用 Screenpipe（开源屏幕记录工具）、Ollama（本地大模型推理引擎）与 Notion（可视化数据库），构建一套完全运行在本地（隐私安全）且高度自动化的工作流。
 category: AI自动化
-categorySlug: blog
+categorySlug: ai-automation
 type: blog
 status: published
 publishedAt: 2026-01-04T00:00:00.000Z

@@ -3,7 +3,7 @@ title: BMAD Method：用敏捷流程驯服 AI 编码
 slug: 2026-03-07-bmad-method-analysis
 summary: BMAD 是一套将"和 AI 聊天写代码"升级为流程化工程的框架——通过 Markdown/XML/YAML 定义 PM、架构师、开发者等 Agent 角色，在 AI IDE 中按脚本执行完整敏捷开发流程。本文基于笔者从零开发前端计算器项目的实战经验，剖析 BMAD v6 的工作机制、与传统敏捷的关系，以及人类在流程中的真实位置。核心发现：BMAD 通过结构化工作流、跨会话状态管理和强制 TDD，切实缓解了 LLM 生成代码不可控的问题，但代价是显著的流程开销和 token 消耗。它适合需要长期维护的中大型项目，而非快速原型。更重要的是，BMAD 的"多 Agent"本质上是人类手动切换的 Prompt 模板，需要人类更强而非更弱的介入才能保证质量。
 category: AI编程
-categorySlug: blog
+categorySlug: ai-coding
 type: blog
 status: published
 publishedAt: 2026-03-07T00:00:00.000Z

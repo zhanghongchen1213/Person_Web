@@ -3,7 +3,7 @@ title: 复刻桌面轮足机器人，办公桌面的趣味移动搭子！
 slug: 2025-03-30-wheelled-robot
 summary: 本文详细介绍了一款基于ESP32的微型轮腿机器人复刻项目。该机器人采用轮式+腿式混合结构，通过FOC算法驱动无刷轮毂电机，支持WiFi远程控制。文章涵盖硬件选型、PCB设计、软件架构及制作流程，适合机器人爱好者学习参考。
 category: DIY
-categorySlug: blog
+categorySlug: diy
 type: blog
 status: published
 publishedAt: 2025-03-30T00:00:00.000Z

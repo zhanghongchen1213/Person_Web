@@ -3,7 +3,7 @@ title: 复刻马里奥经典问号砖，摇一摇出金币，这波回忆杀满�
 slug: 2024-04-22-boring-box
 summary: 本项目是一款复刻经典马里奥问号砖块的互动解压玩具，灵感来源于"Useless Box（无聊盒子）"。当你按下按钮时，盒子会以各种出其不意的方式自己关闭开关——快速、慢速、犹豫、抖动、偷看……每次互动都充满惊喜。项目基于 ESP32-WROOM 主控，采用 FreeRTOS 实时操作系统，集成 OLED 表情显示、MP3 音效播放和双舵机动作控制，支持 PlatformIO 开发环境。全部硬件设计、3D 模型和固件源码均已开源，适合 DIY 爱好者学习和复刻。
 category: DIY
-categorySlug: blog
+categorySlug: diy
 type: blog
 status: published
 publishedAt: 2024-04-22T00:00:00.000Z

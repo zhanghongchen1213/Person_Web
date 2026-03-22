@@ -3,7 +3,7 @@ title: 飞书一句话，AI 全自动产出小红书爆文：我用 OpenClaw + C
 slug: 2026-03-11-xiaohongshu
 summary: 从发送一条飞书消息开始，到两篇小红书爆文 + 8张配图全部落盘，全程零人工干预。本文拆解整套系统的架构设计、5个核心技能的协作机制，以及实际跑通的完整案例。
 category: AI自动化
-categorySlug: blog
+categorySlug: ai-automation
 type: blog
 status: published
 publishedAt: 2026-03-11T00:00:00.000Z

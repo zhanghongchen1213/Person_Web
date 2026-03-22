@@ -3,7 +3,7 @@ title: OpenSpec 完全使用指南：用规格驱动 AI 编码
 slug: 2026-03-09-openspec-complete-guide
 summary: 如果你正在用 AI 写代码，却总觉得"沟通成本"比"写代码"还高——OpenSpec 可能是你一直缺的那块拼图。本文是我整理的日常使用 OpenSpec 的实战指南
 category: AI编程
-categorySlug: blog
+categorySlug: ai-coding
 type: blog
 status: published
 publishedAt: 2026-03-09T00:00:00.000Z

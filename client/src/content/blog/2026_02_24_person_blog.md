@@ -2,8 +2,8 @@
 title: 从零开始搭建、部署个人博客指南
 slug: 2026-02-24-person-blog
 summary: Person_Web 是一个基于 React 19 + Express + tRPC + MySQL 的现代化全栈个人博客系统。本项目采用 Docker 容器化部署，提供完整的一键部署脚本，让你可以快速在云服务器上搭建属于自己的技术博客。
-category: AI编程
-categorySlug: blog
+category: 全栈开发
+categorySlug: full-stack-development
 type: blog
 status: published
 publishedAt: 2026-02-24T00:00:00.000Z

@@ -3,7 +3,7 @@ title: 桌面改造新神器！墨水屏摆件让我的工位成为焦点！
 slug: 2024-02-26-deskscreen
 summary: 本项目是一个 DIY 桌面墨水屏摆件，采用 ESP32 作为主控芯片，搭配 1.54 寸电子墨水屏，通过 WiFi 联网获取天气信息和网络时间，并可通过 MQTT 协议与智能家居系统联动。
 category: DIY
-categorySlug: blog
+categorySlug: diy
 type: blog
 status: published
 publishedAt: 2024-02-26T00:00:00.000Z
