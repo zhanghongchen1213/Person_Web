@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router, rateLimitedAdminProcedure } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
@@ -634,12 +634,17 @@ export const appRouter = router({
     }),
 
     // Export all data
-    export: adminProcedure.query(async () => {
+    // Issue 7 Fix: Changed from query to mutation (state-changing operation)
+    // Issue 2 Fix: Applied rate limiting
+    export: rateLimitedAdminProcedure.mutation(async ({ ctx }) => {
+      // Issue 8 Fix: Add audit logging
+      console.log(`[AUDIT] Data export by user ${ctx.user?.id} (${ctx.user?.email}) at ${new Date().toISOString()}`);
       return await db.exportAllData();
     }),
 
     // Import data (replaces all existing data)
-    import: adminProcedure
+    // Issue 2 Fix: Applied rate limiting
+    import: rateLimitedAdminProcedure
       .input(
         z.object({
           version: z.string(),
@@ -655,7 +660,10 @@ export const appRouter = router({
           }),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Issue 8 Fix: Add audit logging
+        console.log(`[AUDIT] Data import by user ${ctx.user?.id} (${ctx.user?.email}) at ${new Date().toISOString()}`);
+
         const result = await db.importAllData(input as DatabaseExportData);
 
         // Invalidate all caches after import

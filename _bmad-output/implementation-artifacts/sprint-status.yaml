@@ -72,8 +72,8 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: 数据备份与恢复
-  epic-5: backlog
-  5-1-data-export-import: backlog
+  epic-5: in-progress
+  5-1-data-export-import: done
   5-2-database-stats-auto-backup: backlog
   epic-5-retrospective: optional
 

@@ -87,9 +87,7 @@ export default function AdminDatabase() {
   const statsMutation = trpc.database.stats.useQuery(undefined, {
     enabled: false,
   });
-  const exportMutation = trpc.database.export.useQuery(undefined, {
-    enabled: false,
-  });
+  const exportMutation = trpc.database.export.useMutation();
   const backupSettingsQuery = trpc.database.backupSettings.useQuery();
   const updateBackupSettingsMutation =
     trpc.database.updateBackupSettings.useMutation({
@@ -145,27 +143,34 @@ export default function AdminDatabase() {
   const handleExportConfirm = async () => {
     setIsExporting(true);
     try {
-      const result = await exportMutation.refetch();
-      if (result.data) {
-        const { exportData } = result.data;
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-          type: "application/json",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        const now = new Date();
-        const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
-        a.href = url;
-        a.download = `manual-backup-${timestamp}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success("数据导出成功！");
-      }
+      exportMutation.mutate(undefined, {
+        onSuccess: (result) => {
+          const { exportData } = result;
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+            type: "application/json",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          const now = new Date();
+          const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
+          a.href = url;
+          a.download = `manual-backup-${timestamp}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast.success("数据导出成功！");
+          setIsExporting(false);
+          setShowExportDialog(false);
+        },
+        onError: () => {
+          toast.error("导出失败");
+          setIsExporting(false);
+          setShowExportDialog(false);
+        },
+      });
     } catch {
       toast.error("导出失败");
-    } finally {
       setIsExporting(false);
       setShowExportDialog(false);
     }
@@ -215,24 +220,28 @@ export default function AdminDatabase() {
     setIsImporting(true);
     // First backup current data
     try {
-      const backupResult = await exportMutation.refetch();
-      if (backupResult.data) {
-        const { exportData } = backupResult.data;
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-          type: "application/json",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        const now = new Date();
-        const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
-        a.href = url;
-        a.download = `pre-import-backup-${timestamp}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.info("已自动备份当前数据");
-      }
+      exportMutation.mutate(undefined, {
+        onSuccess: (backupResult) => {
+          const { exportData } = backupResult;
+          const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+            type: "application/json",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          const now = new Date();
+          const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
+          a.href = url;
+          a.download = `pre-import-backup-${timestamp}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast.info("已自动备份当前数据");
+        },
+        onError: () => {
+          toast.warning("自动备份失败，继续导入...");
+        },
+      });
     } catch {
       toast.warning("自动备份失败，继续导入...");
     }

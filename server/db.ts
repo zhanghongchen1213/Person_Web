@@ -1372,6 +1372,18 @@ export async function importAllData(
     throw new Error(`Unsupported data version: ${data.version}. Expected: 1.0`);
   }
 
+  // Issue 3 Fix: Validate data size to prevent memory exhaustion
+  const totalRecords =
+    data.data.users.length +
+    data.data.articles.length +
+    data.data.categories.length +
+    (data.data.pageViews?.length || 0) +
+    (data.data.backupSettings?.length || 0);
+
+  if (totalRecords > 100000) {
+    throw new Error(`Import size too large: ${totalRecords} records (max: 100000)`);
+  }
+
   // Use raw connection for transaction
   const pool = getPool();
   if (!pool) throw new Error("Cannot access database connection pool");
@@ -1379,6 +1391,8 @@ export async function importAllData(
   const client = await pool.connect();
 
   try {
+    // Issue 5 Fix: Set transaction timeout to 5 minutes
+    await client.query("SET statement_timeout = '300000'");
     await client.query("BEGIN");
 
     // Delete in order: pageViews → articles → categories → users, backupSettings (respect foreign key dependencies)
@@ -1491,8 +1505,7 @@ export async function importAllData(
       }
     }
 
-    // Reset sequences to max id + 1 for each table with SERIAL primary key
-    // Use pg_get_serial_sequence() to dynamically resolve sequence names
+    // Issue 6 Fix: Reset sequences with safe parameterized queries
     const tables = [
       { table: 'users', column: 'id' },
       { table: 'categories', column: 'id' },
@@ -1502,7 +1515,7 @@ export async function importAllData(
     ];
     for (const { table, column } of tables) {
       await client.query(
-        `SELECT setval(pg_get_serial_sequence($1, $2), COALESCE((SELECT MAX(id) FROM ${table}), 0) + 1, false)`,
+        `SELECT setval(pg_get_serial_sequence($1, $2), COALESCE((SELECT MAX(${column}) FROM ${table}), 0) + 1, false)`,
         [table, column]
       );
     }
@@ -1855,7 +1868,7 @@ export async function getPageViewStats(days: number = 30): Promise<{
       .where(sql`DATE(${pageViews.viewedAt}) = CURRENT_DATE`),
   ]);
 
-  // Daily views for last N days
+  // Daily views for last N days - use INTERVAL with safe integer
   const dailyResult = await db
     .select({
       date: sql<string>`DATE(${pageViews.viewedAt})`,
@@ -1864,7 +1877,7 @@ export async function getPageViewStats(days: number = 30): Promise<{
     })
     .from(pageViews)
     .where(
-      sql`${pageViews.viewedAt} >= NOW() - make_interval(days => ${days})`
+      sql`${pageViews.viewedAt} >= NOW() - INTERVAL '${sql.raw(days.toString())} days'`
     )
     .groupBy(sql`DATE(${pageViews.viewedAt})`)
     .orderBy(sql`DATE(${pageViews.viewedAt})`);
@@ -1882,7 +1895,7 @@ export async function getPageViewStats(days: number = 30): Promise<{
     .where(
       and(
         sql`${pageViews.articleId} IS NOT NULL`,
-        sql`${pageViews.viewedAt} >= NOW() - make_interval(days => ${days})`
+        sql`${pageViews.viewedAt} >= NOW() - INTERVAL '${sql.raw(days.toString())} days'`
       )
     )
     .groupBy(pageViews.articleId, articles.title, articles.slug)
