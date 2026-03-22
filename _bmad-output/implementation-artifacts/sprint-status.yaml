@@ -51,24 +51,24 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: 内容管理系统
-  epic-2: in-progress
+  epic-2: done
   2-1-article-crud-adaptation: done
-  2-2-article-status-publish-date: backlog
-  2-3-category-management-auto-creation: backlog
+  2-2-article-status-publish-date: done
+  2-3-category-management-auto-creation: done
   epic-2-retrospective: optional
 
   # Epic 3: 内容消费与阅读体验
-  epic-3: backlog
-  3-1-article-list-detail-browsing: backlog
+  epic-3: in-progress
+  3-1-article-list-detail-browsing: done
   3-2-archive-category-stats-recommendations: backlog
   3-3-document-tree-navigation: backlog
   3-4-fulltext-search-migration: backlog
   epic-3-retrospective: optional
 
   # Epic 4: 数据分析与浏览统计
-  epic-4: in-progress
+  epic-4: done
   4-1-page-view-data-recording: done
-  4-2-analytics-overview-view-stats: ready-for-dev
+  4-2-analytics-overview-view-stats: done
   epic-4-retrospective: optional
 
   # Epic 5: 数据备份与恢复

@@ -3,11 +3,14 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { useParams, Link } from "wouter";
-import { Loader2, Calendar, ArrowLeft } from "lucide-react";
+import { Loader2, Calendar, ArrowLeft, Clock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Streamdown } from "streamdown";
 import TableOfContents from "@/components/TableOfContents";
 import { usePageView } from "@/_core/hooks/usePageView";
+import { useMemo } from "react";
+import { estimateReadingTime } from "@/_core/utils/readingTime";
+import { formatDate, toISODate } from "@/_core/utils/date";
 
 export default function ArticleDetail() {
   const params = useParams<{ slug: string }>();
@@ -20,6 +23,11 @@ export default function ArticleDetail() {
 
   usePageView(`/article/${slug}`, article?.id, true);
 
+  const readingTime = useMemo(
+    () => (article?.content ? estimateReadingTime(article.content) : 0),
+    [article?.content]
+  );
+
   // Get related articles
   const { data: relatedArticles } = trpc.article.related.useQuery(
     {
@@ -30,22 +38,13 @@ export default function ArticleDetail() {
     { enabled: !!article }
   );
 
-  const formatDate = (date: Date | string | null) => {
-    if (!date) return "";
-    const d = new Date(date);
-    return d.toLocaleDateString("zh-CN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background text-foreground">
         <Navbar />
-        <main className="flex-1 pt-16 md:pt-20 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin" />
+        <main className="flex-1 pt-16 md:pt-20 flex items-center justify-center" role="status">
+          <Loader2 className="w-8 h-8 animate-spin" aria-hidden="true" />
+          <span className="sr-only">加载中...</span>
         </main>
         <Footer />
       </div>
@@ -77,7 +76,7 @@ export default function ArticleDetail() {
         description={article.summary || article.title}
         image={article.coverImage || undefined}
         type="article"
-        canonical={`${window.location.origin}/article/${article.slug}`}
+        canonical={`${typeof window !== "undefined" ? window.location.origin : ""}/article/${article.slug}`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "BlogPosting",
@@ -142,9 +141,21 @@ export default function ArticleDetail() {
 
               {/* Date */}
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm">{formatDate(article.publishedAt)}</span>
+                <Calendar className="w-4 h-4" aria-hidden="true" />
+                <time className="text-sm" dateTime={toISODate(article.publishedAt)}>
+                  {formatDate(article.publishedAt)}
+                </time>
               </div>
+
+              {readingTime > 0 && (
+                <>
+                  <div className="geo-line-v h-8 hidden sm:block" />
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="w-4 h-4" aria-hidden="true" />
+                    <span className="text-sm">约 {readingTime} 分钟阅读</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -156,7 +167,7 @@ export default function ArticleDetail() {
               <div className="aspect-video max-w-4xl mx-auto overflow-hidden border-2 border-border">
                 <img
                   src={article.coverImage}
-                  alt={article.title}
+                  alt={`${article.title} 封面图`}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -178,7 +189,7 @@ export default function ArticleDetail() {
 
         {/* Related Articles */}
         {relatedArticles && relatedArticles.length > 0 && (
-          <section className="border-b-2 border-border">
+          <section aria-label="相关文章" className="border-b-2 border-border">
             <div className="container py-12 md:py-16">
               <h2 className="text-2xl md:text-3xl font-black mb-8">相关文章</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -187,6 +198,7 @@ export default function ArticleDetail() {
                     key={related.id}
                     href={`/article/${related.slug}`}
                     className="group p-6 border-2 border-border hover:bg-muted transition-colors"
+                    aria-label={`阅读: ${related.title}`}
                   >
                     {related.category && (
                       <span className="inline-block text-xs font-bold uppercase tracking-wider px-2 py-1 bg-primary text-primary-foreground mb-3">
@@ -202,8 +214,10 @@ export default function ArticleDetail() {
                       </p>
                     )}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="w-3 h-3" />
-                      <span>{formatDate(related.publishedAt)}</span>
+                      <Calendar className="w-3 h-3" aria-hidden="true" />
+                      <time dateTime={toISODate(related.publishedAt)}>
+                        {formatDate(related.publishedAt)}
+                      </time>
                     </div>
                   </Link>
                 ))}

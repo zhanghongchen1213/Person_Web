@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Calendar, Folder, ArrowRight } from "lucide-react";
+import { formatDate, toISODate } from "@/_core/utils/date";
 
 export interface ArticleCardProps {
   id: number;
@@ -28,16 +29,6 @@ export default function ArticleCard({
   category,
   publishedAt,
 }: ArticleCardProps) {
-  const formatDate = (date: Date | string | null) => {
-    if (!date) return "";
-    const d = new Date(date);
-    return d.toLocaleDateString("zh-CN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   return (
     <article className="group border-b-2 border-border pb-8 mb-8">
       {/* Cover Image */}
@@ -46,7 +37,7 @@ export default function ArticleCard({
           <div className="aspect-video overflow-hidden border-2 border-border">
             <img
               src={coverImage}
-              alt={title}
+              alt={`${title} 封面图`}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
@@ -57,7 +48,7 @@ export default function ArticleCard({
       {category && (
         <Link href={`/articles?category=${category.slug}`}>
           <span className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-widest mb-4 hover:underline underline-offset-4">
-            <Folder className="w-3 h-3" />
+            <Folder className="w-3 h-3" aria-hidden="true" />
             [{category.name}]
           </span>
         </Link>
@@ -81,15 +72,15 @@ export default function ArticleCard({
       <div className="flex flex-wrap items-center gap-6 text-sm">
         {/* Date */}
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Calendar className="w-4 h-4" />
-          <time>{formatDate(publishedAt)}</time>
+          <Calendar className="w-4 h-4" aria-hidden="true" />
+          <time dateTime={toISODate(publishedAt)}>{formatDate(publishedAt)}</time>
         </div>
 
         {/* Read More Link */}
-        <Link href={`/article/${slug}`}>
+        <Link href={`/article/${slug}`} aria-label={`阅读全文: ${title}`}>
           <span className="inline-flex items-center gap-1 font-bold hover:underline underline-offset-4 group-hover:gap-2 transition-all">
             阅读全文
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </span>
         </Link>
       </div>
