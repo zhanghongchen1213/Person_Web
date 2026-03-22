@@ -226,6 +226,8 @@ export function invalidateArticleCache(): void {
   appCache.deletePattern(/^article:/);
   appCache.deletePattern(/^doc:tree:/);
   appCache.delete("sitemap:xml");
+  // Article changes affect category counts (countByCategory)
+  appCache.delete("category:countByCategory");
 }
 
 /**

@@ -536,40 +536,34 @@ export async function updateArticlePublishedAt(
 /**
  * Generate a URL-friendly slug from a category name
  * Converts Chinese and special characters to a safe format
+ * Includes Unicode normalization and control character filtering
  */
 function generateSlug(name: string): string {
-  return name
+  // Unicode normalization (NFC) and trim
+  const normalized = name.normalize('NFC').trim();
+
+  return normalized
     .toLowerCase()
-    .trim()
-    .replace(/[\s]+/g, "-") // Replace spaces with hyphens
-    .replace(/[^\w\u4e00-\u9fa5-]/g, "") // Keep only alphanumeric, Chinese characters, and hyphens
-    .replace(/--+/g, "-") // Replace multiple hyphens with single hyphen
-    .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
+    // Replace spaces with hyphens
+    .replace(/[\s]+/g, "-")
+    // Remove control characters
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, "")
+    // Keep only alphanumeric, Chinese characters, and hyphens
+    .replace(/[^\w\u4e00-\u9fa5-]/g, "")
+    // Replace multiple hyphens with single hyphen
+    .replace(/--+/g, "-")
+    // Remove leading/trailing hyphens
+    .replace(/^-+|-+$/g, "");
 }
 
 /**
- * Generate a unique slug by appending a number if needed
+ * Generate a unique slug with timestamp suffix to avoid race conditions.
+ * Uses database unique constraint + onConflictDoUpdate for atomicity.
  */
-async function generateUniqueSlug(baseName: string): Promise<string> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  let slug = generateSlug(baseName);
-  let counter = 1;
-
-  // Check if slug exists, if so, append counter
-  while (true) {
-    const existing = await db
-      .select()
-      .from(categories)
-      .where(eq(categories.slug, slug))
-      .limit(1);
-    if (existing.length === 0) break;
-    slug = `${generateSlug(baseName)}-${counter}`;
-    counter++;
-  }
-
-  return slug;
+function generateUniqueSlug(baseName: string): string {
+  const baseSlug = generateSlug(baseName);
+  const timestamp = Date.now().toString(36).slice(-4);
+  return `${baseSlug}-${timestamp}`;
 }
 
 export async function getCategories(options?: {
@@ -610,6 +604,7 @@ export async function getCategoryBySlug(
  * Find or create a category by name
  * If a category with the given name exists, return it
  * Otherwise, create a new category with auto-generated slug
+ * Uses database-level case-insensitive query for efficiency
  */
 export async function findOrCreateCategory(data: {
   name: string;
@@ -618,28 +613,35 @@ export async function findOrCreateCategory(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // First, try to find existing category by name (case-insensitive)
-  // Get all categories of the same type and filter in memory
-  const allCategories = await db
+  // Use database-level case-insensitive query for efficiency
+  const existing = await db
     .select()
     .from(categories)
-    .where(eq(categories.type, data.type));
+    .where(
+      and(
+        eq(categories.type, data.type),
+        sql`LOWER(${categories.name}) = LOWER(${data.name})`
+      )
+    )
+    .limit(1);
 
-  const existing = allCategories.find(
-    cat => cat.name.toLowerCase() === data.name.toLowerCase()
-  );
-
-  if (existing) {
-    return existing;
+  if (existing.length > 0) {
+    return existing[0];
   }
 
-  // Category doesn't exist, create new one
-  const slug = await generateUniqueSlug(data.name);
+  // Category doesn't exist, create with unique slug
+  const slug = generateUniqueSlug(data.name);
   const result = await db.insert(categories).values({
     name: data.name,
     slug,
     type: data.type,
     sortOrder: 0,
+  }).onConflictDoUpdate({
+    target: categories.slug,
+    set: {
+      name: data.name,
+      type: data.type,
+    },
   }).returning();
 
   if (result.length === 0) {
@@ -660,9 +662,19 @@ export async function createCategory(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Use onConflictDoUpdate to handle slug conflicts gracefully
   const result = await db.insert(categories).values({
     ...data,
     type: data.type ?? "blog",
+  }).onConflictDoUpdate({
+    target: categories.slug,
+    set: {
+      name: data.name,
+      description: data.description ?? null,
+      icon: data.icon ?? null,
+      sortOrder: data.sortOrder ?? 0,
+      type: data.type ?? "blog",
+    },
   }).returning({ id: categories.id });
   return result[0].id;
 }
@@ -777,15 +789,18 @@ export async function getAnalyticsOverview(): Promise<{
     .groupBy(sql`TO_CHAR(${articles.publishedAt}, 'YYYY-MM')`)
     .orderBy(sql`TO_CHAR(${articles.publishedAt}, 'YYYY-MM')`);
 
-  // Top 10 published articles (by recency since viewCount was removed)
+  // Top 10 published articles by actual page view count
   const topResult = await db
     .select({
       title: articles.title,
       slug: articles.slug,
+      viewCount: sql<number>`count(${pageViews.id})`,
     })
     .from(articles)
+    .leftJoin(pageViews, eq(articles.id, pageViews.articleId))
     .where(eq(articles.status, "published"))
-    .orderBy(desc(articles.publishedAt))
+    .groupBy(articles.id, articles.title, articles.slug)
+    .orderBy(sql`count(${pageViews.id}) DESC`)
     .limit(10);
 
   return {
@@ -806,7 +821,7 @@ export async function getAnalyticsOverview(): Promise<{
     topArticles: topResult.map(r => ({
       title: r.title,
       slug: r.slug,
-      viewCount: 0,
+      viewCount: Number(r.viewCount),
     })),
   };
 }
@@ -913,7 +928,7 @@ export async function getArchive(): Promise<
 
 // Get articles count by category (optimized with GROUP BY to avoid N+1)
 export async function getArticleCountByCategory(): Promise<
-  Array<{ categoryId: number; categoryName: string; count: number }>
+  Array<{ categoryId: number; categoryName: string; categorySlug: string; count: number }>
 > {
   const db = await getDb();
   if (!db) return [];
@@ -946,6 +961,7 @@ export async function getArticleCountByCategory(): Promise<
   return allCategories.map(cat => ({
     categoryId: cat.id,
     categoryName: cat.name,
+    categorySlug: cat.slug,
     count: countMap.get(cat.id) || 0,
   }));
 }
@@ -1058,47 +1074,59 @@ export async function initDefaultCategories(): Promise<void> {
 
   const defaultCategories = [
     {
-      name: "全栈开发",
-      slug: "fullstack",
-      description: "",
+      name: "技术",
+      slug: "tech",
+      description: "技术相关文章",
       icon: "Code",
       sortOrder: 1,
+      type: "blog" as const,
     },
     {
-      name: "嵌入式开发",
-      slug: "embedded",
-      description: "",
-      icon: "Cpu",
+      name: "生活",
+      slug: "life",
+      description: "生活随想",
+      icon: "Heart",
       sortOrder: 2,
+      type: "blog" as const,
     },
     {
-      name: "ROS开发",
-      slug: "ros",
-      description: "",
-      icon: "Bot",
+      name: "随笔",
+      slug: "essay",
+      description: "随笔文章",
+      icon: "FileText",
       sortOrder: 3,
+      type: "blog" as const,
     },
     {
-      name: "深度学习",
-      slug: "deep-learning",
-      description: "",
-      icon: "Brain",
+      name: "开源",
+      slug: "opensource",
+      description: "开源项目相关",
+      icon: "GitBranch",
       sortOrder: 4,
+      type: "blog" as const,
     },
-    { name: "DIY", slug: "diy", description: "", icon: "Wrench", sortOrder: 5 },
+    {
+      name: "其他",
+      slug: "other",
+      description: "其他分类",
+      icon: "MoreHorizontal",
+      sortOrder: 5,
+      type: "blog" as const,
+    },
   ];
 
   for (const cat of defaultCategories) {
     try {
-      // Check if category exists
-      const existing = await db
-        .select()
-        .from(categories)
-        .where(eq(categories.slug, cat.slug))
-        .limit(1);
-      if (existing.length === 0) {
-        await db.insert(categories).values(cat);
-      }
+      await db.insert(categories).values(cat).onConflictDoUpdate({
+        target: categories.slug,
+        set: {
+          name: cat.name,
+          description: cat.description,
+          icon: cat.icon,
+          sortOrder: cat.sortOrder,
+          type: cat.type,
+        },
+      });
     } catch (error) {
       console.warn(`Failed to create category ${cat.name}:`, error);
     }
@@ -1796,6 +1824,11 @@ export async function getPageViewStats(days: number = 30): Promise<{
   }>;
   topPaths: Array<{ path: string; views: number }>;
 }> {
+  // Issue 1 Fix: Validate days parameter to prevent SQL injection
+  if (!Number.isInteger(days) || days < 1 || days > 365) {
+    throw new Error("Invalid days parameter: must be integer between 1 and 365");
+  }
+
   const db = await getDb();
   if (!db) {
     return {
@@ -1829,46 +1862,35 @@ export async function getPageViewStats(days: number = 30): Promise<{
     .groupBy(sql`DATE(${pageViews.viewedAt})`)
     .orderBy(sql`DATE(${pageViews.viewedAt})`);
 
-  // Article view counts
-  const articleViewResult = await db
+  // Issue 4 Fix: Use single JOIN query instead of N+1 pattern
+  const articleViews = await db
     .select({
       articleId: pageViews.articleId,
+      title: articles.title,
+      slug: articles.slug,
       views: sql<number>`count(*)`,
     })
     .from(pageViews)
-    .where(sql`${pageViews.articleId} IS NOT NULL`)
-    .groupBy(pageViews.articleId)
+    .leftJoin(articles, eq(pageViews.articleId, articles.id))
+    .where(
+      and(
+        sql`${pageViews.articleId} IS NOT NULL`,
+        sql`${pageViews.viewedAt} >= NOW() - make_interval(days => ${days})`
+      )
+    )
+    .groupBy(pageViews.articleId, articles.title, articles.slug)
     .orderBy(sql`count(*) DESC`)
-    .limit(20);
-
-  // Enrich with article titles
-  let articleViews: Array<{
-    articleId: number;
-    title: string;
-    slug: string;
-    views: number;
-  }> = [];
-  if (articleViewResult.length > 0) {
-    const ids = articleViewResult.map(r => r.articleId!);
-    const articleData = await db
-      .select({ id: articles.id, title: articles.title, slug: articles.slug })
-      .from(articles)
-      .where(
-        sql`${articles.id} IN (${sql.join(
-          ids.map(id => sql`${id}`),
-          sql`, `
-        )})`
-      );
-    const articleMap = new Map(articleData.map(a => [a.id, a]));
-    articleViews = articleViewResult
-      .filter(r => r.articleId && articleMap.has(r.articleId))
-      .map(r => ({
-        articleId: r.articleId!,
-        title: articleMap.get(r.articleId!)!.title,
-        slug: articleMap.get(r.articleId!)!.slug,
-        views: Number(r.views),
-      }));
-  }
+    .limit(20)
+    .then(results =>
+      results
+        .filter(r => r.articleId && r.title && r.slug)
+        .map(r => ({
+          articleId: r.articleId!,
+          title: r.title!,
+          slug: r.slug!,
+          views: Number(r.views),
+        }))
+    );
 
   // Top paths
   const topPathsResult = await db

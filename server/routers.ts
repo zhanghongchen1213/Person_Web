@@ -116,14 +116,28 @@ export const appRouter = router({
       return await db.getStats();
     }),
 
-    // Get archive (public)
+    // Get archive (public) - with cache (TTL: 5 minutes)
     archive: publicProcedure.query(async () => {
-      return await db.getArchive();
+      const cacheKey = "article:archive";
+      const cached = appCache.get(cacheKey);
+      if (cached) {
+        return cached as Awaited<ReturnType<typeof db.getArchive>>;
+      }
+      const result = await db.getArchive();
+      appCache.set(cacheKey, result, 5 * 60 * 1000);
+      return result;
     }),
 
-    // Get article count by category (public)
+    // Get article count by category (public) - with cache (TTL: 10 minutes)
     countByCategory: publicProcedure.query(async () => {
-      return await db.getArticleCountByCategory();
+      const cacheKey = "category:countByCategory";
+      const cached = appCache.get(cacheKey);
+      if (cached) {
+        return cached as Awaited<ReturnType<typeof db.getArticleCountByCategory>>;
+      }
+      const result = await db.getArticleCountByCategory();
+      appCache.set(cacheKey, result, 10 * 60 * 1000);
+      return result;
     }),
 
     // Get related articles (public)
@@ -165,6 +179,7 @@ export const appRouter = router({
       }),
 
     // Create article (admin)
+    // Supports categoryName for auto-creating category if it doesn't exist (FR8)
     create: adminProcedure
       .input(
         z.object({
@@ -173,15 +188,32 @@ export const appRouter = router({
           summary: z.string().optional(),
           content: z.string().min(1),
           coverImage: z.string().optional(),
-          categoryId: z.number().optional(), // 分类（建议填写）
+          categoryId: z.number().optional(), // 分类 ID（直接指定）
+          categoryName: z.string().min(1).max(100).optional(), // 分类名称（自动创建）
           status: z.enum(["draft", "published", "archived"]).default("draft"),
           type: z.enum(["blog", "doc"]).default("blog"),
           order: z.number().default(0),
         })
       )
       .mutation(async ({ input, ctx }) => {
+        const { categoryName, ...articleData } = input;
+
+        // If categoryName is provided but categoryId is not, auto-create category
+        let resolvedCategoryId = articleData.categoryId;
+        if (categoryName && !resolvedCategoryId) {
+          const category = await db.findOrCreateCategory({
+            name: categoryName,
+            type: input.type,
+          });
+          resolvedCategoryId = category.id;
+
+          // Invalidate category cache since a new category may have been created
+          invalidateCategoryCache();
+        }
+
         const articleId = await db.createArticle({
-          ...input,
+          ...articleData,
+          categoryId: resolvedCategoryId,
           authorId: ctx.user.id,
         });
 
@@ -394,6 +426,10 @@ export const appRouter = router({
     // Initialize default categories (admin)
     initDefaults: adminProcedure.mutation(async () => {
       await db.initDefaultCategories();
+
+      // Invalidate category cache after initialization
+      invalidateCategoryCache();
+
       return { success: true };
     }),
 
