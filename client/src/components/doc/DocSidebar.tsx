@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { ChevronRight, ChevronDown, FileText, FolderOpen } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { getDocTree } from "@/lib/staticContent";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -16,8 +16,8 @@ import type { DocSidebarProps } from "@/types/doc";
  * Displays a collapsible tree of categories and articles
  */
 export function DocSidebar({ currentSlug, onNavigate }: DocSidebarProps) {
-  // Fetch document tree from API
-  const { data: docTree, isLoading } = trpc.doc.tree.useQuery();
+  const docTree = getDocTree();
+  const isLoading = false;
 
   // Track which categories are expanded
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(

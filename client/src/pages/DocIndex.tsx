@@ -2,14 +2,15 @@ import { Link } from "wouter";
 import { FileText, FolderOpen, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { trpc } from "@/lib/trpc";
+import { getDocTree } from "@/lib/staticContent";
 
 /**
  * DocIndex page - displays all doc categories as overview cards.
  * Route: /docs
  */
 export default function DocIndex() {
-  const { data: docTree, isLoading } = trpc.doc.tree.useQuery();
+  const docTree = getDocTree();
+  const isLoading = false;
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">

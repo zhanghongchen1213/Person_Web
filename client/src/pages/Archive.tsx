@@ -1,7 +1,7 @@
 import SEOHead from "@/components/SEOHead";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { trpc } from "@/lib/trpc";
+import { getArchive, getCategoryCounts } from "@/lib/staticContent";
 import { Link, useSearch, useLocation } from "wouter";
 import { Loader2, Calendar, ChevronDown, ChevronRight, Tag } from "lucide-react";
 import { usePageView } from "@/_core/hooks/usePageView";
@@ -34,8 +34,10 @@ export default function Archive() {
     params.get("view") === "categories" ? "categories" : "timeline"
   );
 
-  const { data: archiveData, isLoading: archiveLoading } = trpc.article.archive.useQuery();
-  const { data: categoryCounts, isLoading: categoryLoading } = trpc.article.countByCategory.useQuery();
+  const archiveData = getArchive();
+  const categoryCounts = getCategoryCounts();
+  const archiveLoading = false;
+  const categoryLoading = false;
 
   // Track expanded years and months
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());

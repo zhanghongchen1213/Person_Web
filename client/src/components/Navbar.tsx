@@ -1,23 +1,12 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
-import { Menu, Search, X, User, LogOut, PenSquare, LayoutList, BarChart3 } from "lucide-react";
+import { Menu, Search, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface NavbarProps {
   onSearch?: (query: string) => void;
 }
 
 export default function Navbar({ onSearch: _onSearch }: NavbarProps) {
-  const { user, isAuthenticated, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -36,11 +25,6 @@ export default function Navbar({ onSearch: _onSearch }: NavbarProps) {
       setLocation(`/articles?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchOpen(false);
     }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    setLocation("/");
   };
 
   return (
@@ -78,58 +62,6 @@ export default function Navbar({ onSearch: _onSearch }: NavbarProps) {
               <Search className="w-5 h-5" />
             </button>
 
-            {/* Auth */}
-            {isAuthenticated && user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 p-1 hover:bg-muted transition-colors">
-                    <Avatar className="w-8 h-8 border-2 border-border">
-                      <AvatarImage src={user.avatar || undefined} />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
-                        {user.name?.charAt(0).toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 border-2 border-border">
-                  <div className="px-2 py-1.5 text-sm font-medium">{user.name}</div>
-                  <DropdownMenuSeparator />
-                  {user.role === "admin" && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link href="/write" className="flex items-center gap-2 cursor-pointer">
-                          <PenSquare className="w-4 h-4" />
-                          写文章
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin/articles" className="flex items-center gap-2 cursor-pointer">
-                          <LayoutList className="w-4 h-4" />
-                          文章管理
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin/analytics" className="flex items-center gap-2 cursor-pointer">
-                          <BarChart3 className="w-4 h-4" />
-                          数据分析
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
-                      <User className="w-4 h-4" />
-                      个人中心
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 cursor-pointer">
-                    <LogOut className="w-4 h-4" />
-                    退出登录
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
           </div>
 
           {/* Mobile Menu Button */}
@@ -186,64 +118,6 @@ export default function Navbar({ onSearch: _onSearch }: NavbarProps) {
                   {link.label}
                 </Link>
               ))}
-              <div className="geo-line-h my-2" />
-              {isAuthenticated && user ? (
-                <>
-                  {user.role === "admin" && (
-                    <>
-                      <Link
-                        href="/write"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="py-3 px-4 text-lg font-bold uppercase tracking-wider transition-colors hover:bg-muted flex items-center gap-2"
-                      >
-                        <PenSquare className="w-5 h-5" />
-                        写文章
-                      </Link>
-                      <Link
-                        href="/admin/articles"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="py-3 px-4 text-lg font-bold uppercase tracking-wider transition-colors hover:bg-muted flex items-center gap-2"
-                      >
-                        <LayoutList className="w-5 h-5" />
-                        文章管理
-                      </Link>
-                      <Link
-                        href="/admin/analytics"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="py-3 px-4 text-lg font-bold uppercase tracking-wider transition-colors hover:bg-muted flex items-center gap-2"
-                      >
-                        <BarChart3 className="w-5 h-5" />
-                        数据分析
-                      </Link>
-                    </>
-                  )}
-                  <Link
-                    href="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="py-3 px-4 text-lg font-bold uppercase tracking-wider transition-colors hover:bg-muted flex items-center gap-2"
-                  >
-                    <User className="w-5 h-5" />
-                    个人中心
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="py-3 px-4 text-lg font-bold uppercase tracking-wider transition-colors hover:bg-muted flex items-center gap-2 text-left"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    退出登录
-                  </button>
-                </>
-              ) : (
-                <a
-                  href={getLoginUrl()}
-                  className="py-3 px-4 text-lg font-bold uppercase tracking-wider bg-primary text-primary-foreground"
-                >
-                  登录
-                </a>
-              )}
             </div>
           </nav>
         )}

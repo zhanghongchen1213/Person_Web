@@ -2,7 +2,7 @@ import SEOHead from "@/components/SEOHead";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ArticleCard from "@/components/ArticleCard";
-import { trpc } from "@/lib/trpc";
+import { getCategories, getCategoryCounts, listArticles } from "@/lib/staticContent";
 import { useLocation, useSearch } from "wouter";
 import { Loader2, Filter, X } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -43,17 +43,17 @@ export default function Articles() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const { data: articlesData, isLoading } = trpc.article.list.useQuery({
+  const articlesData = listArticles({
     limit: 10,
     page,
-    status: "published",
     type: selectedType || undefined,
     categorySlug: selectedCategory || undefined,
     search: searchQuery || undefined,
   });
 
-  const { data: categories } = trpc.category.list.useQuery();
-  const { data: categoryCounts } = trpc.article.countByCategory.useQuery();
+  const categories = getCategories(selectedType || undefined);
+  const categoryCounts = getCategoryCounts();
+  const isLoading = false;
 
   // Update URL when filters change
   useEffect(() => {

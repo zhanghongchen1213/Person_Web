@@ -2,19 +2,17 @@ import SEOHead from "@/components/SEOHead";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ArticleCard from "@/components/ArticleCard";
-import { trpc } from "@/lib/trpc";
+import { getStats, listArticles } from "@/lib/staticContent";
 import { Link } from "wouter";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { usePageView } from "@/_core/hooks/usePageView";
 
 export default function Home() {
   usePageView("/");
-  const { data: articlesData, isLoading } = trpc.article.list.useQuery({
+  const articlesData = listArticles({
     limit: 5,
-    status: "published",
   });
-
-  const { data: statsData } = trpc.article.stats.useQuery();
+  const statsData = getStats();
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -82,11 +80,7 @@ export default function Home() {
               </Link>
             </div>
 
-            {isLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin" />
-              </div>
-            ) : articlesData?.articles && articlesData.articles.length > 0 ? (
+            {articlesData.articles && articlesData.articles.length > 0 ? (
               <div className="space-y-6">
                 {articlesData.articles.map((article) => (
                   <ArticleCard
@@ -118,26 +112,24 @@ export default function Home() {
         </section>
 
         {/* Stats Section */}
-        {statsData && (
-          <section className="border-b-2 border-border bg-muted">
-            <div className="container py-12 md:py-16">
-              <div className="grid grid-cols-2 gap-8 max-w-md mx-auto">
-                <div className="text-center">
-                  <div className="stat-number">{statsData.articleCount || 0}</div>
-                  <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground mt-2">
-                    文章
-                  </div>
+        <section className="border-b-2 border-border bg-muted">
+          <div className="container py-12 md:py-16">
+            <div className="grid grid-cols-2 gap-8 max-w-md mx-auto">
+              <div className="text-center">
+                <div className="stat-number">{statsData.articleCount || 0}</div>
+                <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground mt-2">
+                  文章
                 </div>
-                <div className="text-center">
-                  <div className="stat-number">{statsData.categoryCount || 0}</div>
-                  <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground mt-2">
-                    分类
-                  </div>
+              </div>
+              <div className="text-center">
+                <div className="stat-number">{statsData.categoryCount || 0}</div>
+                <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground mt-2">
+                  分类
                 </div>
               </div>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
 
         {/* CTA Section */}

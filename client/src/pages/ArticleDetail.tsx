@@ -1,9 +1,9 @@
 import SEOHead from "@/components/SEOHead";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { trpc } from "@/lib/trpc";
+import { getArticleBySlug, getRelatedArticles } from "@/lib/staticContent";
 import { useParams, Link } from "wouter";
-import { Loader2, Calendar, ArrowLeft, Clock } from "lucide-react";
+import { Calendar, ArrowLeft, Clock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Streamdown } from "streamdown";
 import TableOfContents from "@/components/TableOfContents";
@@ -16,10 +16,8 @@ export default function ArticleDetail() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug || "";
 
-  const { data: article, isLoading, error } = trpc.article.bySlug.useQuery(
-    { slug },
-    { enabled: !!slug }
-  );
+  const article = getArticleBySlug(slug);
+  const error = null;
 
   usePageView(`/article/${slug}`, article?.id, true);
 
@@ -29,27 +27,9 @@ export default function ArticleDetail() {
   );
 
   // Get related articles
-  const { data: relatedArticles } = trpc.article.related.useQuery(
-    {
-      articleId: article?.id ?? 0,
-      categoryId: article?.category?.id ?? null,
-      limit: 4,
-    },
-    { enabled: !!article }
-  );
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background text-foreground">
-        <Navbar />
-        <main className="flex-1 pt-16 md:pt-20 flex items-center justify-center" role="status">
-          <Loader2 className="w-8 h-8 animate-spin" aria-hidden="true" />
-          <span className="sr-only">加载中...</span>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+  const relatedArticles = article
+    ? getRelatedArticles(article.id, article?.category?.id ?? null, 4)
+    : [];
 
   if (error || !article) {
     return (
@@ -188,7 +168,7 @@ export default function ArticleDetail() {
         </article>
 
         {/* Related Articles */}
-        {relatedArticles && relatedArticles.length > 0 && (
+        {relatedArticles.length > 0 && (
           <section aria-label="相关文章" className="border-b-2 border-border">
             <div className="container py-12 md:py-16">
               <h2 className="text-2xl md:text-3xl font-black mb-8">相关文章</h2>

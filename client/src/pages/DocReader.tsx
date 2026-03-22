@@ -1,9 +1,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { useParams } from "wouter";
-import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { trpc } from "@/lib/trpc";
+import { getDocBySlug, getDocTree } from "@/lib/staticContent";
 import {
   DocLayout,
   DocSidebar,
@@ -31,17 +30,12 @@ export default function DocReader() {
   const activeId = useActiveHeading(headings);
 
   // Fetch article data
-  const {
-    data: article,
-    isLoading: articleLoading,
-    error: articleError,
-  } = trpc.article.bySlug.useQuery(
-    { slug: articleSlug },
-    { enabled: !!articleSlug }
-  );
+  const article = getDocBySlug(articleSlug);
+  const articleLoading = false;
+  const articleError = null;
 
   // Fetch document tree for navigation
-  const { data: docTree } = trpc.doc.tree.useQuery();
+  const docTree = getDocTree();
 
   // Handle headings extraction from markdown
   const handleHeadingsExtracted = useCallback((extractedHeadings: TocItem[]) => {
@@ -114,7 +108,7 @@ function DocReaderShell({ children }: { children: React.ReactNode }) {
 function LoadingState() {
   return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <Loader2 className="w-8 h-8 animate-spin" />
+      <p className="text-muted-foreground">加载中...</p>
     </div>
   );
 }
@@ -142,7 +136,7 @@ interface DocContentProps {
     id: number;
     title: string;
     content: string;
-    updatedAt: Date;
+    updatedAt: Date | string;
     category: { name: string; slug: string } | null;
   };
   navigation: { prev: DocNavItem | null; next: DocNavItem | null };

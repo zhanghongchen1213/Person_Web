@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "../lib/trpc";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 
 export function Search() {
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
-  const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (timerRef.current) {
@@ -49,7 +49,7 @@ export function Search() {
           {data.articles.map((article) => (
             <Link
               key={article.id}
-              to={`/article/${article.slug}`}
+              href={`/article/${article.slug}`}
               className="block p-4 border rounded hover:bg-gray-50"
               role="listitem"
             >
