@@ -2,7 +2,6 @@ import { Link } from "wouter";
 import { Github, MessageCircle, Mail, BookOpen, Video } from "lucide-react";
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
   const icpRecordNumber = "鲁ICP备2024057224号";
   const beianUrl = "https://beian.miit.gov.cn/";
 
@@ -97,16 +96,8 @@ export default function Footer() {
         </div>
 
         {/* Copyright */}
-        <div className="mt-12 pt-8 border-t-2 border-border">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-              © {currentYear} [BLOG]. All rights reserved.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Built with brutalist aesthetics
-            </p>
-          </div>
-          <div className="mt-5 flex justify-center">
+        <div className="mt-12 border-t-2 border-border">
+          <div className="flex justify-center">
             <a
               href={beianUrl}
               target="_blank"

@@ -4,7 +4,6 @@ import Footer from "@/components/Footer";
 import { getArticleBySlug, getRelatedArticles } from "@/lib/staticContent";
 import { useParams, Link } from "wouter";
 import { Calendar, ArrowLeft, Clock } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Streamdown } from "streamdown";
 import TableOfContents from "@/components/TableOfContents";
 import { usePageView } from "@/_core/hooks/usePageView";
@@ -104,21 +103,6 @@ export default function ArticleDetail() {
 
             {/* Meta */}
             <div className="flex flex-wrap items-center gap-6">
-              {/* Author */}
-              <div className="flex items-center gap-3">
-                <Avatar className="w-10 h-10 border-2 border-border">
-                  <AvatarImage src={article.author.avatar || undefined} />
-                  <AvatarFallback className="bg-muted font-bold">
-                    {article.author.name?.charAt(0).toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="font-medium">{article.author.name || "匿名"}</span>
-                </div>
-              </div>
-
-              <div className="geo-line-v h-8 hidden sm:block" />
-
               {/* Date */}
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="w-4 h-4" aria-hidden="true" />
