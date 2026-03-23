@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useParams } from "wouter";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEOHead";
 import { getDocBySlug, getDocTree } from "@/lib/staticContent";
 import {
   DocLayout,
@@ -14,6 +15,7 @@ import {
 import { useActiveHeading } from "@/hooks/useActiveHeading";
 import { useDocKeyboardNav } from "@/hooks/useDocKeyboardNav";
 import type { TocItem, DocNavItem, DocTreeItem } from "@/types/doc";
+import { buildCanonical, createBreadcrumbJsonLd, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 /**
  * DocReader page component
@@ -22,6 +24,8 @@ import type { TocItem, DocNavItem, DocTreeItem } from "@/types/doc";
 export default function DocReader() {
   const params = useParams<{ category: string; slug: string }>();
   const articleSlug = params.slug || "";
+  const categorySlug = params.category || "";
+  const docPathname = `/docs/${categorySlug}/${articleSlug}`;
 
   // State for TOC headings
   const [headings, setHeadings] = useState<TocItem[]>([]);
@@ -56,7 +60,15 @@ export default function DocReader() {
   // Loading state
   if (articleLoading) {
     return (
-      <DocReaderShell>
+      <DocReaderShell
+        seo={
+          <SEOHead
+            title="文档加载中"
+            description="技术文档正在加载。"
+            pathname="/docs"
+          />
+        }
+      >
         <LoadingState />
       </DocReaderShell>
     );
@@ -65,14 +77,64 @@ export default function DocReader() {
   // Error state
   if (articleError || !article) {
     return (
-      <DocReaderShell>
+      <DocReaderShell
+        seo={
+          <SEOHead
+            title="文档不存在"
+            description="请求的文档不存在。"
+            pathname={docPathname}
+            noindex
+          />
+        }
+      >
         <ErrorState />
       </DocReaderShell>
     );
   }
 
   return (
-    <DocReaderShell>
+    <DocReaderShell
+      seo={
+        <SEOHead
+          title={article.title}
+          description={`${article.category?.name || "文档"} - ${article.title}`}
+          pathname={docPathname}
+          type="article"
+          jsonLd={[
+            {
+              "@context": "https://schema.org",
+              "@type": "TechArticle",
+              headline: article.title,
+              description: `${article.category?.name || "文档"} - ${article.title}`,
+              url: buildCanonical(docPathname),
+              dateModified: article.updatedAt || undefined,
+              author: {
+                "@type": "Person",
+                name: "鸿尘客",
+              },
+              publisher: {
+                "@type": "Organization",
+                name: SITE_NAME,
+                url: SITE_URL,
+              },
+            },
+            createBreadcrumbJsonLd([
+              { name: "首页", url: buildCanonical("/") },
+              { name: "文档", url: buildCanonical("/docs") },
+              {
+                name: article.category?.name || "分类",
+                url: buildCanonical(
+                  article.category?.slug
+                    ? `/docs/${article.category.slug}/${articleSlug}`
+                    : "/docs",
+                ),
+              },
+              { name: article.title, url: buildCanonical(docPathname) },
+            ]),
+          ]}
+        />
+      }
+    >
       <DocLayout
         sidebar={<DocSidebar currentSlug={articleSlug} />}
         content={
@@ -89,12 +151,16 @@ export default function DocReader() {
   );
 }
 
-/**
- * Shell component with Navbar and Footer
- */
-function DocReaderShell({ children }: { children: React.ReactNode }) {
+function DocReaderShell({
+  children,
+  seo,
+}: {
+  children: React.ReactNode;
+  seo?: React.ReactNode;
+}) {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
+      {seo}
       <Navbar />
       <div className="flex-1 pt-16 md:pt-20">{children}</div>
       <Footer />

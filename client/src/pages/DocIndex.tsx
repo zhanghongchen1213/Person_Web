@@ -2,7 +2,9 @@ import { Link } from "wouter";
 import { FileText, FolderOpen, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEOHead";
 import { getDocTree } from "@/lib/staticContent";
+import { buildCanonical, createCollectionPageJsonLd } from "@/lib/seo";
 
 /**
  * DocIndex page - displays all doc categories as overview cards.
@@ -14,6 +16,17 @@ export default function DocIndex() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <SEOHead
+        title="文档"
+        description="浏览全部技术文档分类与教程内容。"
+        pathname="/docs"
+        jsonLd={createCollectionPageJsonLd({
+          name: "文档中心",
+          description: "技术文档分类与教程列表。",
+          url: buildCanonical("/docs"),
+          totalItems: docTree?.reduce((sum, item) => sum + item.articles.length, 0) || 0,
+        })}
+      />
       <Navbar />
       <main className="flex-1 pt-16 md:pt-20">
         <div className="container max-w-4xl py-12 px-4">

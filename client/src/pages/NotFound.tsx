@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Footer from "@/components/Footer";
 import { AlertCircle, Home } from "lucide-react";
 import { useLocation } from "wouter";
+import SEOHead from "@/components/SEOHead";
 
 export default function NotFound() {
   const [, setLocation] = useLocation();
@@ -13,6 +14,12 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
+      <SEOHead
+        title="404 页面不存在"
+        description="请求的页面不存在或已被移动。"
+        pathname="/404"
+        noindex
+      />
       <main className="flex-1 flex items-center justify-center">
         <Card className="w-full max-w-lg mx-4 border-2 border-border">
           <CardContent className="pt-8 pb-8 text-center">

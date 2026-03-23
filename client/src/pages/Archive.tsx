@@ -6,6 +6,7 @@ import { Link, useSearch, useLocation } from "wouter";
 import { Loader2, Calendar, ChevronDown, ChevronRight, Tag } from "lucide-react";
 import { usePageView } from "@/_core/hooks/usePageView";
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { buildCanonical, createCollectionPageJsonLd } from "@/lib/seo";
 
 type ViewTab = "timeline" | "categories";
 
@@ -136,7 +137,17 @@ export default function Archive() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <SEOHead title="归档" description="按时间线和分类浏览所有文章" />
+      <SEOHead
+        title="归档"
+        description="按时间线和分类维度浏览全部文章归档。"
+        pathname="/archive"
+        jsonLd={createCollectionPageJsonLd({
+          name: "文章归档",
+          description: "按时间线与分类整理的文章归档列表。",
+          url: buildCanonical("/archive"),
+          totalItems: totalArticles,
+        })}
+      />
       <Navbar />
 
       <main className="flex-1 pt-16 md:pt-20">

@@ -7,6 +7,7 @@ import { useLocation, useSearch } from "wouter";
 import { Loader2, Filter, X } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { usePageView } from "@/_core/hooks/usePageView";
+import { buildCanonical, createCollectionPageJsonLd } from "@/lib/seo";
 
 type ContentType = "blog" | "doc";
 
@@ -85,7 +86,17 @@ export default function Articles() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <SEOHead title="文章" description="所有文章" />
+      <SEOHead
+        title="文章"
+        description="浏览全部博客与文档内容，支持按类型、分类与关键词筛选。"
+        pathname="/articles"
+        jsonLd={createCollectionPageJsonLd({
+          name: "文章列表",
+          description: "全部文章与文档内容列表。",
+          url: buildCanonical("/articles"),
+          totalItems: articlesData?.total || 0,
+        })}
+      />
       <Navbar />
 
       <main className="flex-1 pt-16 md:pt-20">

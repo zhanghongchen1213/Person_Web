@@ -1,8 +1,10 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEOHead from "@/components/SEOHead";
 import { Link } from "wouter";
 import { Github, Mail, MessageCircle, ArrowRight, BookOpen, Video } from "lucide-react";
 import { usePageView } from "@/_core/hooks/usePageView";
+import { buildCanonical, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export default function About() {
   usePageView("/about");
@@ -15,6 +17,28 @@ export default function About() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <SEOHead
+        title="关于"
+        description="关于鸿尘客：技术方向、项目经历与联系方式。"
+        pathname="/about"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "ProfilePage",
+          url: buildCanonical("/about"),
+          name: "关于鸿尘客",
+          mainEntity: {
+            "@type": "Person",
+            name: "鸿尘客",
+            url: SITE_URL,
+            description: "专注嵌入式系统、机器人与深度学习的工程实践者。",
+          },
+          isPartOf: {
+            "@type": "WebSite",
+            name: SITE_NAME,
+            url: SITE_URL,
+          },
+        }}
+      />
       <Navbar />
 
       <main className="flex-1 pt-16 md:pt-20">

@@ -10,6 +10,7 @@ import { usePageView } from "@/_core/hooks/usePageView";
 import { useMemo } from "react";
 import { estimateReadingTime } from "@/_core/utils/readingTime";
 import { formatDate, toISODate } from "@/_core/utils/date";
+import { buildCanonical, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export default function ArticleDetail() {
   const params = useParams<{ slug: string }>();
@@ -55,16 +56,23 @@ export default function ArticleDetail() {
         description={article.summary || article.title}
         image={article.coverImage || undefined}
         type="article"
-        canonical={`${typeof window !== "undefined" ? window.location.origin : ""}/article/${article.slug}`}
+        pathname={`/article/${article.slug}`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "BlogPosting",
           headline: article.title,
           description: article.summary || article.title,
           image: article.coverImage || undefined,
+          mainEntityOfPage: buildCanonical(`/article/${article.slug}`),
+          url: buildCanonical(`/article/${article.slug}`),
           datePublished: article.publishedAt || undefined,
           dateModified: article.updatedAt || article.publishedAt || undefined,
           author: { "@type": "Person", name: article.author.name || "匿名" },
+          publisher: {
+            "@type": "Organization",
+            name: SITE_NAME,
+            url: SITE_URL,
+          },
         }}
       />
       <Navbar />

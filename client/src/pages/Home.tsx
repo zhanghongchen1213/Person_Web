@@ -6,6 +6,7 @@ import { getStats, listArticles } from "@/lib/staticContent";
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { usePageView } from "@/_core/hooks/usePageView";
+import { createWebsiteJsonLd } from "@/lib/seo";
 
 export default function Home() {
   usePageView("/");
@@ -16,7 +17,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <SEOHead title="首页" description="个人博客" />
+      <SEOHead
+        title="首页"
+        description="专注于嵌入式系统、机器人技术和深度学习的工程实践与技术分享。"
+        pathname="/"
+        jsonLd={createWebsiteJsonLd()}
+      />
       <Navbar />
 
       <main className="flex-1 pt-16 md:pt-20">
