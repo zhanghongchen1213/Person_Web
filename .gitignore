@@ -130,6 +130,21 @@ temp_*.sql
 image.png
 init-categories.js
 
+# Private keys and local credentials
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+id_ecdsa
+credentials.json
+serviceAccount*.json
+.netrc
+.env.development
+.env.test
+.env.production.example
+
 # Backup Files
 *.backup
 *.bak
