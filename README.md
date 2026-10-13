@@ -1,1168 +1,223 @@
-# 从零开始搭建、部署个人博客指南
+![我用 AI，给自己的文字搭了个家](https://image-osb.obs.cn-east-3.myhuaweicloud.com/blog/2026-01-20/person-blog/r02/cover/cover-wechat-009513a07ee6.webp)
 
-## 📖 前言
+![MIT License](https://img.shields.io/badge/license-MIT-111111?style=flat-square)![React 19](https://img.shields.io/badge/React-19-111111?style=flat-square&logo=react&logoColor=white)![TypeScript 5.9](https://img.shields.io/badge/TypeScript-5.9-111111?style=flat-square&logo=typescript&logoColor=white)![Vite 7](https://img.shields.io/badge/Vite-7-111111?style=flat-square&logo=vite&logoColor=white)![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-111111?style=flat-square&logo=tailwindcss&logoColor=white)![Node.js 22](https://img.shields.io/badge/Node.js-22-111111?style=flat-square&logo=nodedotjs&logoColor=white)
 
-### 项目简介
+**留白、醒目大字和深色线条的个人博客。**
+文章写在本地 Markdown 里。换成你的名字、头像和文章，就能部署成自己的静态站点。
 
-Person_Web 是一个基于 **React 19 + Express + tRPC + MySQL** 的现代化全栈个人博客系统。本项目采用 Docker 容器化部署，提供完整的一键部署脚本，让你可以快速在云服务器上搭建属于自己的技术博客。
+[预览](#预览) · [跑起来](#跑起来) · [换成自己的站点](#换成自己的站点) · [写文章](#写文章) · [构建与部署](#构建与部署) · [交流与贡献](#交流与贡献)
 
-### 📝 项目信息
+## 这是什么
 
-> **📝 开源地址**：[Person_Web](https://github.com/zhanghongchen1213/Person_Web)
-> **🎯 在线演示**：[zhcmqtt.top](https://zhcmqtt.top)
-> **📅 最后更新**：2026-02-24
-> **🚀 部署目标**：将个人博客部署到云服务器（华为云、阿里云、腾讯云等）
-> **⏱️ 预计耗时**：首次部署约 30-60 分钟（含服务器配置）
+这是一套个人博客的源码。首页、文章列表、阅读页、归档和关于页用同一套排版：大标题、明确的边框，以及比较多的留白。
 
-### 📸 项目截图
+文章放在 `client/src/content` 的 Markdown 文件里，由 React、TypeScript、Vite 和 Tailwind CSS 构建成静态站点。不需要数据库、后端或管理后台。
 
-<div align="center">
+现在的 [鸿尘客](https://zhcmqtt.top/) 已是后续重写的站点。本仓库保留的是这一版留白与墨线的博客。从零替换资料、写文章到部署上线的步骤，写在文末的开源资料里。
 
-**个人页面**
+## 预览
 
-[![个人页面](https://i.imgs.ovh/2026/01/20/yzv3Eh.md.jpeg)](https://imgloc.com/image/yzv3Eh)
 
-**首页展示**
+| 首页                                                                                                                          | 文章列表                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| ![首页：留白、醒目大字与深色线条](https://image-osb.obs.cn-east-3.myhuaweicloud.com/blog/2026-01-20/person-blog/r02/001.webp) | ![文章列表：分类、标题、摘要和日期](https://image-osb.obs.cn-east-3.myhuaweicloud.com/blog/2026-01-20/person-blog/r02/002.webp) |
 
-[![首页](https://i.imgs.ovh/2026/01/20/yzvi0e.md.png)](https://imgloc.com/image/yzvi0e)
 
-**文章详情页**
+| 阅读页                                                                                                                | 归档                                                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| ![阅读页：正文与右侧目录](https://image-osb.obs.cn-east-3.myhuaweicloud.com/blog/2026-01-20/person-blog/r02/003.webp) | ![归档：按年份和月份展开](https://image-osb.obs.cn-east-3.myhuaweicloud.com/blog/2026-01-20/person-blog/r02/004.webp) |
 
-[![文章详情](https://i.imgs.ovh/2026/01/20/yzF0za.md.png)](https://imgloc.com/image/yzF0za)
+截图来自这一版源码对应的页面。
 
-</div>
+## 功能
 
----
 
-### 🎯 适合人群
+|          |                                                                   |
+| -------- | ----------------------------------------------------------------- |
+| **页面** | 首页、文章列表、阅读页、归档、关于，以及文档索引`/docs`           |
+| **阅读** | Markdown 标题生成右侧目录，并显示发布日期、估算阅读时间和相关文章 |
+| **查找** | 按分类筛选；搜索范围包含正文。筛选条件写入地址栏，刷新后保留      |
+| **归档** | 按年份、月份展开，也可查看分类统计。月份来自文章的`publishedAt`   |
+| **状态** | `status: published` 出现在站点中，`draft` 不出现在列表中          |
+| **文档** | `type: doc` 的 Markdown 进入 `/docs/:category/:slug`              |
+| **SEO**  | 构建时生成`sitemap.xml` 与 `robots.txt`                           |
 
-本教程适合以下人群：
+## 跑起来
 
-- ✅ **技术爱好者**：有基本的编程基础和 Linux 命令行使用经验
-- ✅ **内容创作者**：需要一个稳定、美观的博客平台来发布技术文章
-
-### ⭐ 项目特点
-
-#### 🚀 技术栈先进
-
-- **前端**：React 19 + TypeScript + Vite + TailwindCSS
-- **后端**：Express + tRPC
-- **数据库**：MySQL 8.0 + Drizzle ORM
-- **数据可视化**：Recharts（图表统计）
-- **SEO**：React Helmet + JSON-LD + Open Graph + XML Sitemap
-- **部署**：Docker + Docker Compose + Nginx + Let's Encrypt
-
-#### 🎨 功能完整
-
-- ✅ Markdown 编辑器，支持代码高亮和实时预览
-- ✅ 文章分类管理、标签系统
-- ✅ 响应式设计，完美适配移动端
-- ✅ 暗黑模式支持
-- ✅ GitHub OAuth 认证，安全可靠
-- ✅ 图片上传和管理
-- ✅ 文档系统（支持技术文档编写）
-- ✅ SEO 优化（Open Graph、JSON-LD 结构化数据、XML Sitemap）
-- ✅ 数据分析仪表盘（页面浏览量、访客统计、趋势图表）
-- ✅ 文章目录导航（自动生成、滚动高亮、平滑跳转）
-- ✅ 页面浏览追踪与文章阅读统计
-- ✅ 数据库自动备份与数据导入导出
-
-#### 🛠️ 部署简单
-
-- ✅ **一键部署脚本**：自动化完成所有配置
-- ✅ **Docker 容器化**：环境隔离，避免依赖冲突
-- ✅ **详细文档**：每一步都有清晰的说明和截图
-- ✅ **国内优化**：提供镜像加速方案，解决网络问题
-- ✅ **HTTPS 支持**：自动申请和续期 SSL 证书
-
-#### 💰 成本低廉
-
-- 云服务器：2核2G 配置约 100-300 元/年
-- 域名：.top/.xyz 等域名约 10-50 元/年
-- SSL 证书：Let's Encrypt 免费证书
-- **总成本**：约 110-350 元/年即可拥有专业博客
-
-### 📊 部署效果
-
-部署完成后，你将拥有：
-
-- 🌐 一个可通过域名访问的个人博客网站
-- 🔒 HTTPS 加密连接，绿色安全锁标识
-- 📝 功能完整的后台管理系统
-- 📱 完美适配 PC、平板、手机的响应式界面
-- ⚡ 快速的页面加载速度（内置缓存优化）
-- 🔐 安全的 GitHub OAuth 认证
-- 📊 数据分析仪表盘，实时掌握访问数据
-- 🔍 SEO 优化，搜索引擎友好
-
-### 部署架构简介
-
-```mermaid
-graph TD
-    A[用户浏览器] --> B[域名 zhcmqtt.top]
-    B --> C[Nginx 反向代理 + HTTPS]
-    C --> D[Docker 容器]
-    D --> E[应用容器<br/>React + Express + tRPC]
-    D --> F[数据库容器<br/>MySQL 8.0]
-```
-
----
-
-## 📋 目录
-
-- [第一步：准备云服务器](#第一步准备云服务器)
-- [第二步：一键配置服务器环境](#第二步一键配置服务器环境)
-- [第三步：配置云服务商安全组](#第三步配置云服务商安全组)
-- [第四步：上传项目代码](#第四步上传项目代码)
-- [第五步：配置个人信息（重要）](#第五步配置个人信息重要)
-- [第六步：配置环境变量](#第六步配置环境变量)
-- [第七步：一键部署应用](#第七步一键部署应用)
-- [第八步：访问你的博客](#第八步访问你的博客)
-- [第九步：配置域名和 HTTPS（可选）](#第九步配置域名和-https可选)
-- [新增功能说明（数据分析、SEO、目录导航）](#八附新增功能说明)
-- [数据库自动备份和迁移](#九数据库自动备份和迁移)
-- [项目升级](#十项目升级)
-- [日常维护指南](#日常维护指南)
-
----
-
-## 一、准备云服务器
-
-### 1.1 购买云服务器
-
-你可以选择以下任一云服务商：
-
-- **华为云**：https://www.huaweicloud.com/
-- **阿里云**：https://www.aliyun.com/
-- **腾讯云**：https://cloud.tencent.com/
-
-**推荐配置**：
-
-| 配置项   | 最低要求         | 说明                   |
-| -------- | ---------------- | ---------------------- |
-| CPU      | 2 核心           | 保证应用流畅运行       |
-| 内存     | 2GB              | 足够运行 Docker 容器   |
-| 磁盘     | 20GB             | 存储系统、应用和数据库 |
-| 操作系统 | Ubuntu 22.04 LTS | 推荐使用 Ubuntu        |
-| 带宽     | 1Mbps            | 个人博客足够使用       |
-
-💡 **小贴士**：新用户通常有优惠活动，2核2G配置一年大约 100-300 元。
-
----
-
-### 1.2 购买域名（可选但推荐）
-
-如果你想使用自己的域名（如 `myblog.com`），需要：
-
-1. 在域名注册商购买域名（如阿里云、腾讯云、GoDaddy）
-2. 将域名解析到你的服务器 IP 地址
-
-**域名解析步骤**：
-
-```
-1. 登录域名管理控制台
-2. 找到 DNS 解析设置
-3. 添加 A 记录：
-   - 主机记录：@ (代表根域名)
-   - 记录类型：A
-   - 记录值：你的服务器公网 IP
-4. 添加 A 记录：
-   - 主机记录：www
-   - 记录类型：A
-   - 记录值：你的服务器公网 IP
-```
-
-💡 **小贴士**：如果暂时没有域名，可以先使用服务器 IP 地址访问，后续再配置域名。
-
----
-
-### 1.3 连接到服务器
-
-使用 SSH 连接到你的服务器：
-
-**Windows 用户**：
+需要 Node.js 22，版本不低于 22.13，以及 Git。npm 随 Node.js 安装包提供。下面的命令都在仓库根目录执行，根目录应能看到 `package.json`、`package-lock.json` 和 `vite.config.ts`。
 
 ```bash
-# 使用 PowerShell 或 Windows Terminal
-ssh root@你的服务器IP
-# 例如：ssh root@123.45.67.89
+git clone https://github.com/zhanghongchen1213/Web_blog.git
+cd Web_blog
+npm ci
+npm run dev
 ```
 
-**Mac/Linux 用户**：
+`npm ci` 按锁文件安装依赖，请保留仓库里的 `.npmrc`。启动后打开终端里的 Local 地址。`Ctrl+C` 停止开发服务器。
 
-```bash
-# 使用终端
-ssh root@你的服务器IP
+
+| 命令                   | 作用                                       |
+| ---------------------- | ------------------------------------------ |
+| `npm run dev`          | 启动开发服务器。保存 Markdown 后会重新加载 |
+| `npm run check`        | TypeScript 检查                            |
+| `npm run build`        | 生成 SEO 文件并构建。产物在`dist/public`   |
+| `npm run start`        | 预览构建结果，默认端口`4173`               |
+| `npm run lint`         | 检查`client/src`                           |
+| `npm run seo:generate` | 只生成站点地图和`robots.txt`               |
+
+## 目录
+
+```text
+.
+├── package.json
+├── vite.config.ts
+├── scripts/generate-seo-assets.mjs
+└── client/
+    ├── index.html
+    ├── public/                 # 图片等静态文件，访问路径从 / 开始
+    └── src/
+        ├── pages/              # Home、Articles、ArticleDetail、Archive、About
+        ├── components/         # Navbar、Footer
+        ├── lib/                # seo.ts、staticContent.ts
+        └── content/blog/       # 文章 Markdown
 ```
 
-首次连接会提示是否信任服务器，输入 `yes` 并回车，然后输入服务器密码。
 
-✅ **成功标志**：看到类似 `root@hostname:~#` 的命令提示符。
+| 路径                    | 页面     |
+| ----------------------- | -------- |
+| `/`                     | 首页     |
+| `/articles`             | 文章列表 |
+| `/article/:slug`        | 阅读页   |
+| `/archive`              | 归档     |
+| `/about`                | 关于     |
+| `/docs`                 | 文档索引 |
+| `/docs/:category/:slug` | 文档阅读 |
 
+## 换成自己的站点
+
+
+| 要改的内容                       | 文件                               |
+| -------------------------------- | ---------------------------------- |
+| 首页大标题、简介、主题标签       | `client/src/pages/Home.tsx`        |
+| 导航左侧站点标识                 | `client/src/components/Navbar.tsx` |
+| 头像、姓名、技术栈、项目与经历   | `client/src/pages/About.tsx`       |
+| 页脚介绍与联系方式               | `client/src/components/Footer.tsx` |
+| 网站名称、描述、作者             | `client/src/lib/seo.ts`            |
+| 文章默认作者名（当前为「站长」） | `client/src/lib/staticContent.ts`  |
+| 初始网页标题与描述               | `client/index.html`                |
+
+`Home.tsx` 的 `SEOHead` 和 `About.tsx` 的个人资料也要一起替换。改完后全局搜索原站名称、账号和联系方式。
+
+头像放在 `client/public/images/`，页面里使用 `/images/avatar.jpg`。浏览器路径不包含 `client/public`。没有对应账号的联系方式删掉入口。页脚备案使用自己的信息；没有可展示的备案信息，就删除该区块。
+
+`client/index.html` 末尾带有原站统计脚本。搜索 `data-cf-beacon`，删除包含它的整行 `<script>`，再配置自己的统计。
+
+## 写文章
+
+在 `client/src/content/blog` 新建 `.md`。文件只要还在 `client/src/content` 下就会被扫描，备份请放到仓库外。
+
+```markdown
+---
+title: 你好，这是我的第一篇博客
+slug: my-first-post
+summary: 记录我搭建个人博客的第一步。
+category: 生活记录
+categorySlug: life
+type: blog
+status: published
+publishedAt: 2026-01-20
 ---
 
-## 二、一键配置服务器环境
+## 为什么想写博客
 
-项目提供了一键配置脚本，可以自动完成 Docker、Nginx 和防火墙的安装配置。
-
-### 2.1 创建项目目录
-
-```bash
-# 创建项目目录
-sudo mkdir -p /opt/Person_Web
-
-# 设置目录所有者为当前用户
-sudo chown -R $USER:$USER /opt/Person_Web
-
-# 进入项目目录
-cd /opt/Person_Web
+先写下一篇，再慢慢把这里填满。
 ```
 
-### 2.2 上传项目到服务器
 
-#### 方法一：使用 GitHub 镜像加速（推荐，适用于国内服务器）
+| 字段                        | 说明                                                   |
+| --------------------------- | ------------------------------------------------------ |
+| `title`                     | 列表和阅读页标题                                       |
+| `slug`                      | 文章地址最后一段。使用不重复的英文短名，发布后尽量不改 |
+| `summary`                   | 列表摘要，保持单行                                     |
+| `category` / `categorySlug` | 展示名与英文标识。同一分类始终用同一个标识             |
+| `type`                      | 普通文章填`blog`，文档填 `doc`                         |
+| `status`                    | 要展示填`published`，草稿填 `draft`                    |
+| `publishedAt`               | `YYYY-MM-DD`，决定归档月份                             |
 
-如果你的云服务器无法直接访问 GitHub，可以使用以下镜像加速服务：
+元信息按行解析。正文图片放在 `client/public/images/`，在 Markdown 里写成 `/images/my-project.png`。文件名和格式与真实文件一致。
 
-```bash
-# 安装 Git（如果未安装）
-sudo apt install -y git
+## 构建与部署
 
-# 方案 1：使用 ghproxy.com 镜像（推荐）
-git clone https://ghproxy.com/https://github.com/zhanghongchen1213/Person_Web /opt/Person_Web
+站点公开地址写在仓库根目录的 `.env.production`：
 
-# 方案 2：使用 gitclone.com 镜像
-git clone https://gitclone.com/github.com/zhanghongchen1213/Person_Web /opt/Person_Web
-
-# 方案 3：使用 fastgit 镜像
-git clone https://hub.fastgit.xyz/zhanghongchen1213/Person_Web /opt/Person_Web
-
-# 进入项目目录
-cd /opt/Person_Web
+```dotenv
+VITE_SITE_URL=https://your-blog.pages.dev
 ```
 
-💡 **小贴士**：
+本地预览可先写成 `http://localhost:4173`。拿到托管地址后改成实际地址，再重新构建。这里只放公开网址。
 
-- 镜像服务可能会有延迟，建议优先尝试 ghproxy.com
-- 如果一个镜像失败，可以尝试其他镜像
-- 镜像服务仅用于克隆，后续 git 操作会自动使用原始仓库地址
+当前 `scripts/generate-seo-assets.mjs` 把站点地图写到仓库根目录的 `public/`，Vite 读取的是 `client/public`。上线前把输出目录改为：
 
-#### 方法二：手动上传代码（备选方案）
-
-如果 Git 克隆始终失败，可以手动上传代码：
-
-1. **在本地下载项目**：
-   - 访问 https://github.com/zhanghongchen1213/Person_Web
-   - 点击 "Code" → "Download ZIP"
-   - 解压到本地
-
-2. **上传到服务器**并解压
-
-   ```bash
-   unzip Person_Web-main.zip
-   rm -rf Person_Web-main.zip
-   cd Person_Web-main
-   ```
-
-### 2.3 配置网络环境（重要，适用于国内服务器）
-
-⚠️ **重要提示**：如果你的云服务器在国内，或者无法正常访问 GitHub、Docker Hub 等国外资源，**必须先执行此步骤**配置镜像源，否则后续安装可能会失败或非常缓慢。
-
-项目提供了网络环境配置脚本，可以自动配置国内镜像源，解决网络访问问题。
-
-```bash
-# 进入项目目录
-cd /opt/Person_Web
-
-# 赋予脚本执行权限
-chmod +x deploy/scripts/*
-
-# 执行网络环境配置脚本
-sudo bash deploy/scripts/setup-network.sh
+```js
+const OUTPUT_DIR = resolve(ROOT_DIR, "client/public");
 ```
 
-脚本会自动完成以下配置：
-
-1. ✅ **APT 软件源** - 切换到阿里云镜像，加速软件包下载
-2. ✅ **Docker 镜像源** - 配置国内镜像加速器（腾讯云、DaoCloud、DockerProxy）
-3. ✅ **Git 配置优化** - 禁用 HTTP/2，增加缓冲区，解决克隆失败问题
-4. ✅ **npm 镜像源** - 配置淘宝镜像（如已安装 npm）
-
-✅ **预期输出**：
-
-[![yV63jQ.md.png](https://i.imgs.ovh/2026/01/19/yV63jQ.md.png)](https://imgloc.com/image/yV63jQ)
-
-💡 **配置效果**：
-
-- ✅ APT 软件包下载速度提升 10-50 倍
-- ✅ Docker 镜像拉取速度提升 10-100 倍
-- ✅ Git 克隆成功率接近 100%
-- ✅ npm 包安装速度提升 5-20 倍
-
-### 2.4 执行服务器环境配置脚本
-
-```bash
-# 执行服务器环境配置脚本
-sudo bash deploy/scripts/setup-server.sh
-```
-
-脚本会自动完成以下操作：
-
-1. ✅ **更新系统软件包** - 更新 apt 软件包列表
-2. ✅ **安装 Docker** - 使用官方脚本安装 Docker 和 Docker Compose
-3. ✅ **配置 Docker 权限** - 将当前用户添加到 docker 组
-4. ✅ **安装 Nginx** - 安装并启动 Nginx 服务
-5. ✅ **配置防火墙** - 开放必要端口（22, 80, 443）
-6. ✅ **验证安装** - 测试所有服务是否正常运行
-
-### 2.5 预期输出
-
-[![yV8yHp.md.png](https://i.imgs.ovh/2026/01/19/yV8yHp.md.png)](https://imgloc.com/image/yV8yHp)
-
----
-
-## 三、配置云服务商安全组
-
-除了服务器防火墙，还需要在云服务商控制台配置安全组：
-
-1. 登录云服务商控制台
-2. 找到你的服务器实例
-3. 进入"安全组"或"防火墙"设置
-4. 添加入站规则：
-   - 端口 22（SSH）
-   - 端口 80（HTTP）
-   - 端口 443（HTTPS）
-
-⚠️ **安全警告**：**绝对不要开放 3306 端口（MySQL）到公网！** 数据库端口暴露会导致被黑客扫描攻击，造成数据丢失。本项目已配置 MySQL 仅监听本地地址（127.0.0.1），无需在安全组开放 3306 端口。
-
-💡 **小贴士**：不同云服务商的界面略有不同，但操作逻辑相同。
-
----
-
-## 四、配置个人信息（重要）
-
-⚠️ **重要提示**：在部署之前，你需要将项目中的示例个人信息替换为你自己的信息。
-
-### 4.1 使用一键配置脚本（推荐）
-
-项目提供了交互式个人信息配置脚本，可以自动替换所有相关文件中的个人信息。
-
-```bash
-cd Person_Web-main
-bash deploy/scripts/setup-personal-info.sh
-```
-
-脚本会提示你输入以下信息：
-
-1. **GitHub 用户名**：你的 GitHub 用户名（用于头像和个人主页链接）
-2. **域名**：你的博客域名（如 `myblog.com`）
-3. **邮箱地址**：你的联系邮箱
-4. **微信号**：你的微信号（可选）
-
-### 4.2 手动替换（备选方案）
-
-如果你不想使用脚本，也可以手动替换以下文件中的个人信息：
-
-**需要替换的文件：**
-
-- `client/src/pages/About.tsx` - 关于页面
-- `client/src/components/Footer.tsx` - 页脚组件
-- `README.md` - 项目文档
-
-**需要替换的信息：**
-
-- `zhanghongchen1213` → 你的 GitHub 用户名
-- `zhcmqtt.top` → 你的域名
-- `admin@zhcmqtt.top` → 你的邮箱
-- `zhang_hongchen` → 你的微信号
-
-💡 **小贴士**：使用脚本替换更安全，可以避免遗漏。
-
----
-
-## 五、配置环境变量
-
-环境变量包含了应用运行所需的配置信息，如数据库密码、JWT 密钥等。
-
-### 5.1 使用一键配置脚本（推荐）
-
-项目提供了交互式环境变量配置脚本，可以自动生成强密码并创建配置文件。
-
-⚠️ **重要提示**：为了确保博客安全，**强烈推荐使用 GitHub OAuth 认证**，这样只有你的 GitHub 账号能够登录管理员后台。
-
-#### 步骤 1：创建 GitHub OAuth 应用（推荐）
-
-在运行配置脚本之前，建议先创建 GitHub OAuth 应用以获取必要的认证参数。
-
-1. 访问 [GitHub Developer Settings](https://github.com/settings/developers)
-2. 点击 **"New OAuth App"** 创建新应用
-3. 填写应用信息：
-   - **Application name**: 你的博客名称（如 "My Personal Blog"）
-   - **Homepage URL**: `https://你的域名`
-   - **Authorization callback URL**: `https://你的域名/api/auth/github/callback`
-4. 点击 **"Register application"**
-5. 记录下 **Client ID** 和 **Client Secret**（稍后配置时需要）
-6. 获取你的 GitHub 用户 ID：
-   - 访问 `https://api.github.com/users/你的GitHub用户名`
-   - 记录返回的 JSON 中的 `id` 字段值
-
-💡 **示例**：如果你的 GitHub 用户名是 `zhangsan`，访问 `https://api.github.com/users/zhangsan`，会看到类似：
+并让生成脚本读到同一份环境变量。`package.json` 里只替换 `seo:generate` 的值：
 
 ```json
-{
-  "id": 12345678,
-  "login": "zhangsan",
-  ...
-}
+"seo:generate": "node --env-file=.env.production scripts/generate-seo-assets.mjs"
 ```
 
-记录下 `id: 12345678`，稍后配置时需要填写 `github:12345678`。
-
-#### 步骤 2：运行配置脚本
+然后在根目录执行：
 
 ```bash
-# 执行环境变量配置脚本
-sudo bash deploy/scripts/setup-env.sh
+npm run check
+npm run build
+npm run start
 ```
 
-脚本会交互式地询问你以下配置：
+确认 `dist/public` 中有 `index.html`、`assets`、`sitemap.xml` 和 `robots.txt`。打开 `/sitemap.xml` 与 `/robots.txt`，核对里面的域名。
 
-1. **MySQL root 密码**（留空自动生成32位强密码）
-2. **JWT 密钥**（留空自动生成32位强密码）
-3. **GitHub OAuth 配置**（必须配置，输入上一步获取的参数）：
-   - GitHub Client ID
-   - GitHub Client Secret
-   - GitHub Callback URL
-4. **管理员 GitHub 用户 ID**（格式为 `github:你的GitHub用户ID`）
+部署到 Cloudflare Pages 时使用 Direct Upload，上传 `dist/public` 这一层，根上直接是 `index.html` 和 `assets`。这个项目使用浏览器路由，Pages 会回退到首页再由 React 匹配地址，不要额外放入顶层 `404.html`。
 
-配置完成后，脚本会自动生成 `.env.production` 文件。
+同一个 Direct Upload 项目不能直接改成 Git 集成。若希望推送后自动部署，另建一个 Git 集成的 Pages 项目。绑定自己的域名后，把 `VITE_SITE_URL` 改成正式地址，重新构建并再部署一次。
 
-✅ **预期输出**（配置 GitHub OAuth）：
+## 遇到问题时
 
-[![yV8aLO.md.png](https://i.imgs.ovh/2026/01/19/yV8aLO.md.png)](https://imgloc.com/image/yV8aLO)
 
-🔒 **安全优势**：
+| 现象                          | 先看哪里                                                                                                 |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `npm ci` 提示 Node 版本不支持 | `node -v` 是否不低于 22.13，是否在仓库根目录，且保留了 `.npmrc`                                          |
+| 文章没有出现在列表            | 文件是否在`client/src/content` 下，`type` 是否为 `blog`，`status` 是否为 `published`，文首元信息是否完整 |
+| 图片本地有、线上没有          | 文件是否进入`dist/public/images`，文件名大小写和 Markdown 路径是否一致                                   |
+| 首页正常、刷新文章地址失败    | 上传的是否为`dist/public` 的内容，是否多放了顶层 `404.html`                                              |
+| 归档月份不对                  | `publishedAt` 是否为有效日期                                                                             |
+| 站点地图仍是旧域名            | `.env.production` 与 `seo:generate` 是否读到该文件，以及是否重新构建并上传                               |
 
-- ✅ 只有你的 GitHub 账号能够登录管理员后台
-- ✅ 使用 GitHub 官方 OAuth 认证，安全可靠
-- ✅ 无需记忆复杂的登录链接
-- ✅ 支持后续添加其他 GitHub 用户为管理员
+## 交流与贡献
 
----
+部署、写文章和上线时遇到问题，可以到 [Issues](https://github.com/zhanghongchen1213/Web_blog/issues) 提问。用这套源码做出自己的博客后，也欢迎在 Issue 里留下站点地址。
 
-## 六、一键部署应用
+发现 Bug 或有明确的改动建议，请 [提交 Issue](https://github.com/zhanghongchen1213/Web_blog/issues/new)。本仓库没有单独的贡献说明和安全政策，改代码前先用 Issue 说明改动范围。不要在公开 Issue 里贴密钥、统计令牌或 `.env` 内容。
 
-项目提供了一键部署脚本，会自动完成所有部署步骤。
+**本文资料 · 接着动手**
 
-### 6.1 执行一键部署
+**鸿尘客公众号**
+扫码关注鸿尘客公众号，回复 **“查看原文”**，获取本文开源资料与配套内容。
 
-```bash
-# 执行一键部署脚本
-sudo bash deploy/scripts/deploy.sh
-```
+![鸿尘客公众号二维码](https://image-osb.obs.cn-east-3.myhuaweicloud.com/wemedia/wxlogo.webp)
 
-⏱️ **预计耗时**：10-20 分钟（首次部署需要下载 Docker 镜像，会比较慢，请耐心等待）
+**鸿尘客独立站**
 
-[![ybCXcY.md.png](https://i.imgs.ovh/2026/01/19/ybCXcY.md.png)](https://imgloc.com/image/ybCXcY)
+点击下方获取本文**开源资料**与**配套内容**
+[开源资料：https://zhcmqtt.top/article/person-blog](https://zhcmqtt.top/article/person-blog)
 
----
+![官网](https://image-osb.obs.cn-east-3.myhuaweicloud.com/wemedia/honchic_logo.webp)
 
-### 5.2 部署过程说明
+## 许可
 
-部署脚本会自动执行以下 8 个步骤：
+本仓库以 **MIT License** 授权。SPDX 标识符为 `MIT`，版权人是鸿尘客，版权年份为 2026。具有法律效力的许可全文在仓库根目录的 [LICENSE](LICENSE)。`package.json` 的 `license` 字段同为 `MIT`，与该文件一致。
 
-1. ✅ **检查 Docker 环境** - 确保 Docker 和 Docker Compose 已安装
-2. ✅ **检查配置文件** - 验证 `.env.production` 文件存在且配置正确
-3. ✅ **停止旧容器** - 如果有旧版本运行，先停止并删除
-4. ✅ **构建新镜像** - 构建包含最新代码的 Docker 镜像
-5. ✅ **启动新容器** - 启动应用容器和数据库容器
-6. ✅ **执行数据库迁移** - 创建数据库表结构
-7. ✅ **健康检查** - 等待应用启动并验证运行状态
-8. ✅ **输出部署结果** - 显示部署成功信息和常用命令
+在所有副本或实质性部分中保留上述版权声明和许可声明的前提下，可以免费使用、复制、修改、合并、发布、分发、再许可或销售本软件及其配套文档。软件按「原样」提供，不包含适销性、特定用途适用性、不侵权等任何明示或暗示担保。作者与版权人不对因使用或无法使用本软件引起的索赔、损害或其他责任负责。
 
-### 5.3 预期输出
-
-[![yb11kx.md.png](https://i.imgs.ovh/2026/01/20/yb11kx.md.png)](https://imgloc.com/image/yb11kx)
-
-### 5.4 验证部署
-
-#### 检查容器状态
-
-```bash
-# 查看所有容器状态
-docker compose ps
-```
-
-✅ **预期输出**：
-
-```
-NAME                IMAGE               STATUS              PORTS
-person_web_app      person-web:latest   Up 2 minutes (healthy)   0.0.0.0:3000->3000/tcp
-person_web_mysql    mysql:8.0           Up 2 minutes (healthy)   127.0.0.1:3306->3306/tcp
-```
-
-两个容器的状态都应该是 `Up` 且显示 `(healthy)`。
-
-#### 查看应用日志
-
-```bash
-# 查看应用日志（实时）
-docker compose logs -f app
-```
-
-✅ **预期输出**：应该能看到类似以下的日志：
-
-```
-[INFO] Server running on http://localhost:3000
-[INFO] Database connected successfully
-```
-
-按 `Ctrl + C` 退出日志查看。
-
-#### 测试应用访问
-
-```bash
-# 测试本地访问
-curl http://localhost:3000
-```
-
-✅ **预期输出**：返回 HTML 内容（博客首页）
-
----
-
-## 七、配置域名和 HTTPS
-
-⚠️ **本步骤为可选项**：如果你没有域名或暂时不需要 HTTPS，可以跳过此步骤。使用 IP 地址访问博客已经完全可以正常使用。
-
-如果你有自己的域名，强烈建议配置 HTTPS 证书，让你的博客更安全、更专业。
-
-### 6.1 前置准备
-
-在开始配置之前，请确保：
-
-1. ✅ 你已经购买了域名（如 `myblog.com`）
-2. ✅ 域名已经解析到你的服务器 IP 地址
-3. ✅ 博客已经可以通过 IP 地址正常访问
-
-### 6.2 配置域名（一键脚本）
-
-项目提供了域名配置脚本，可以自动替换所有配置文件中的域名。
-
-```bash
-# 执行域名配置脚本
-sudo bash deploy/scripts/setup-domain.sh 你的域名
-# 例如：bash deploy/scripts/setup-domain.sh zhcmqtt.top
-```
-
-⏱️ **预计耗时**：10 秒
-
-脚本会自动完成以下操作：
-
-1. ✅ 备份原始配置文件
-2. ✅ 替换 SSL 证书申请脚本中的域名
-3. ✅ 创建新的 Nginx 配置文件（使用你的域名）
-4. ✅ 输出后续操作步骤
-
-### 6.3 准备 Let's Encrypt 验证目录
-
-在部署 Nginx 配置前，需要先创建 SSL 证书验证目录：
-
-```bash
-# 创建 Let's Encrypt 验证目录
-sudo mkdir -p /var/www/html/.well-known/acme-challenge
-
-# 设置正确的权限
-sudo chmod -R 755 /var/www/html/.well-known
-```
-
-### 6.4 部署 HTTP Nginx 配置（用于证书申请）
-
-⚠️ **重要**：首次配置时，需要先部署 HTTP 配置，申请证书成功后再切换到 HTTPS 配置。
-
-```bash
-# 删除旧配置（如果存在）
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo rm -f /etc/nginx/sites-enabled/你的域名.conf
-# 例如：sudo rm -f /etc/nginx/sites-enabled/zhcmqtt.top.conf
-
-# 复制 HTTP 配置文件到系统目录
-sudo cp deploy/nginx/你的域名.conf /etc/nginx/sites-available/
-# 例如：sudo cp deploy/nginx/zhcmqtt.top.conf /etc/nginx/sites-available/
-
-# 创建软链接启用配置
-sudo ln -s /etc/nginx/sites-available/你的域名.conf /etc/nginx/sites-enabled/
-# 例如：sudo ln -s /etc/nginx/sites-available/zhcmqtt.top.conf /etc/nginx/sites-enabled/
-
-# 测试 Nginx 配置
-sudo nginx -t
-
-# 重启 Nginx
-sudo systemctl restart nginx
-```
-
-✅ **预期输出**：`syntax is ok` 和 `test is successful`
-
-**验证 HTTP 访问**：
-
-```bash
-# 测试域名访问
-curl -I http://你的域名
-# 例如：curl -I http://zhcmqtt.top
-
-# 应该返回 HTTP/1.1 200 或看到 HTML 内容
-```
-
-### 6.5 申请 SSL 证书（一键脚本）
-
-⚠️ **前提条件**：确保 HTTP 访问正常后再执行此步骤。
-
-项目提供了 SSL 证书申请脚本，可以自动完成所有步骤。
-
-```bash
-# 执行 SSL 证书申请脚本
-sudo bash deploy/scripts/setup-ssl.sh 你的域名 你的邮箱
-
-# 例如：sudo bash deploy/scripts/setup-ssl.sh zhcmqtt.top admin@zhcmqtt.top
-```
-
-⏱️ **预计耗时**：2-3 分钟
-
-脚本会自动完成以下操作：
-
-1. ✅ 检查并安装 Certbot
-2. ✅ 申请 Let's Encrypt SSL 证书
-3. ✅ 配置证书自动续期
-4. ✅ 测试证书续期功能
-
-✅ **成功标志**：看到 `Congratulations! Your certificate and chain have been saved` 消息
-
----
-
-[![ybi7ft.md.png](https://i.imgs.ovh/2026/01/20/ybi7ft.md.png)](https://imgloc.com/image/ybi7ft)
-
----
-
-### 6.6 部署 HTTPS Nginx 配置
-
-证书申请成功后，需要切换到 HTTPS 配置：
-
-```bash
-# 删除 HTTP 配置
-sudo rm -f /etc/nginx/sites-enabled/你的域名.conf
-# 例如：sudo rm -f /etc/nginx/sites-enabled/zhcmqtt.top.conf
-
-# 复制 HTTPS 配置文件
-sudo cp deploy/nginx/你的域名-https.conf /etc/nginx/sites-available/
-# 例如：sudo cp deploy/nginx/zhcmqtt.top-https.conf /etc/nginx/sites-available/
-
-# 启用 HTTPS 配置
-sudo ln -s /etc/nginx/sites-available/你的域名-https.conf /etc/nginx/sites-enabled/
-# 例如：sudo ln -s /etc/nginx/sites-available/zhcmqtt.top-https.conf /etc/nginx/sites-enabled/
-
-# 测试配置
-sudo nginx -t
-
-# 重启 Nginx
-sudo systemctl restart nginx
-```
-
-### 6.7 验证 HTTPS 访问
-
-```bash
-# 测试 HTTPS 访问
-curl -I https://你的域名
-# 例如：curl -I https://zhcmqtt.top
-```
-
-✅ **预期输出**：`HTTP/2 200`
-
-或者在浏览器中访问 `https://你的域名`，应该能看到：
-
-- ✅ 绿色锁图标
-- ✅ 地址栏显示"安全"或"连接是安全的"
-- ✅ HTTP 自动重定向到 HTTPS
-
-### 6.8 证书自动续期说明
-
-SSL 证书申请脚本已经自动配置了证书续期任务。Let's Encrypt 证书有效期为 90 天，系统会在到期前自动续期。
-
-你可以手动测试续期功能：
-
-```bash
-# 测试证书续期（不会真正续期）
-sudo certbot renew --dry-run
-```
-
-✅ **预期输出**：`Congratulations, all simulated renewals succeeded`
-
-💡 **小贴士**：
-
-- 证书会在到期前 30 天自动续期
-- 续期失败会发送邮件通知到你配置的邮箱
-- 可以使用 `sudo certbot certificates` 查看证书状态
-
----
-
-## 八、访问你的博客
-
-恭喜！你的博客已经部署成功了。现在让我们了解如何访问博客。
-
-💡 **提示**：如果你还没有域名，可以直接使用服务器 IP 地址访问。域名配置是可选的，可以在第七步中完成。
-
-### 7.1 使用 域名 访问
-
-#### 访客访问
-
-访客可以通过以下方式访问你的博客：
-
-```
-https://你的域名
-```
-
-例如：`https://zhcmqtt.top`
-
-💡 **访客可以做什么**：
-
-- ✅ 浏览所有已发布的博客文章
-- ✅ 查看文章分类
-- ✅ 搜索文章
-- ✅ 查看文档（如果有）
-- ❌ 无法创建、编辑或删除文章
-
-#### 管理员访问
-
-作为博客的管理员，你需要使用 **GitHub OAuth 登录**进行身份验证。
-
-⚠️ **重要提示**：在第五步"配置环境变量"时，如果你已经按照推荐方式配置了 GitHub OAuth，可以直接登录。如果还没有配置，请先返回第五步完成 GitHub OAuth 配置。
-
-##### 登录入口
-
-管理员通过 **直接访问登录 URL** 进行身份验证（普通访客看不到登录按钮）：
-
-```
-https://你的域名/api/auth/github/login
-```
-
-例如：`https://zhcmqtt.top/api/auth/github/login`
-开发过程中使用`http://localhost:3000/api/dev/login-admin`即可进入管理员后台页面
-
-**登录流程：**
-
-1. 在浏览器地址栏输入上述登录 URL
-2. 自动跳转到 GitHub 授权页面
-3. 如果该浏览器已登录 GitHub 且之前授权过，会直接完成登录
-4. 如果未登录 GitHub，需要先登录 GitHub 账号
-5. 如果是首次授权，需要点击 **"Authorize"** 确认授权
-6. 授权成功后自动跳转回博客首页，此时你已登录为管理员
-
-💡 **提示**：登录状态依赖浏览器的 GitHub 登录状态，不绑定设备。你可以在任何设备上通过此 URL 登录管理后台。
-
-##### 管理员功能入口
-
-登录成功后，你可以访问以下管理页面：
-
-| 功能     | 访问地址                          | 说明                     |
-| -------- | --------------------------------- | ------------------------ |
-| 写文章   | `https://你的域名/write`          | 创建新的博客文章或文档   |
-| 文章管理 | `https://你的域名/admin/articles` | 编辑、删除、管理所有文章 |
-| 数据分析 | `https://你的域名/admin/analytics` | 查看访问统计和文章阅读数据 |
-| 数据库管理 | `https://你的域名/admin/database` | 数据导出、导入和备份设置 |
-
-💡 **管理员可以做什么**：
-
-- ✅ 创建新文章（博客或文档）
-- ✅ 编辑已有文章
-- ✅ 删除文章
-- ✅ 管理分类
-- ✅ 修改文章发布状态（草稿/已发布/归档）
-- ✅ 查看数据分析（访问量、文章阅读统计、趋势图表）
-- ✅ 数据库管理（导出、导入、自动备份配置）
-
-✅ **成功标志**：
-
-- 访客模式：可以浏览文章，但无法编辑
-- 管理员模式：右上角显示你的 GitHub 头像，导航栏出现"写文章"按钮，可以创建和编辑文章
-
----
-
-## 八（附）、新增功能说明
-
-### 数据分析仪表盘
-
-管理员登录后，可以通过导航栏进入数据分析页面（`/admin/analytics`），查看博客的访问数据：
-
-- **总览统计**：总浏览量、今日浏览量、独立访客数
-- **趋势图表**：每日访问量趋势（支持 1-365 天范围选择）
-- **文章排行**：按阅读量排序的热门文章 Top 20
-- **页面统计**：各页面的访问量分布
-
-数据分析基于 `pageViews` 表自动记录，访客浏览页面时会静默记录访问数据（IP、路径、时间），不影响用户体验。分析数据使用 1 分钟缓存，兼顾实时性和性能。
-
-### SEO 优化
-
-项目内置了完整的搜索引擎优化方案：
-
-- **XML Sitemap**：自动生成站点地图（`/sitemap.xml`），包含所有已发布文章
-- **Open Graph 标签**：文章分享到社交平台时自动展示标题、描述和封面图
-- **JSON-LD 结构化数据**：帮助搜索引擎更好地理解文章内容
-- **爬虫检测**：自动识别搜索引擎爬虫并返回预渲染内容
-- **Canonical URL**：避免重复内容问题
-
-### 文章目录导航
-
-文章详情页右侧自动生成目录导航（桌面端可见）：
-
-- 自动提取文章中的 h1、h2、h3 标题
-- 滚动时高亮当前阅读位置
-- 点击目录项平滑跳转到对应章节
-
----
-
-## 九、数据库自动备份和迁移
-
-本项目提供了完整的数据库备份和迁移功能，包括自动定时备份和管理员手动导入导出。
-
-### 9.1 自动备份功能
-
-系统支持自动定时备份数据库，备份文件保存在服务器的 `backups/` 目录中。
-
-#### 自动备份原理
-
-自动备份功能基于 **node-cron** 实现，在应用启动时根据配置的备份间隔自动执行：
-
-- **每周备份**：每周日凌晨 00:00 执行
-- **每月备份**：每月 1 日凌晨 00:00 执行
-- **每季度备份**：每季度第一天凌晨 00:00 执行
-
-#### 配置自动备份
-
-1. 以管理员身份登录博客
-2. 访问 `https://你的域名/admin/database`
-3. 在"自动备份"区域：
-   - 开启"启用自动备份"开关
-   - 选择备份间隔（每周/每月/每季度）
-   - 点击"保存设置"
-
-#### 备份文件说明
-
-- **存储位置**：`/opt/Person_Web/Person_Web-main/backups/`
-- **文件格式**：`auto-backup-YYYY-MM-DDTHH-mm-ss.json`
-- **文件内容**：包含所有用户、文章、分类数据的 JSON 文件
-
-### 9.2 手动导出数据
-
-管理员可以随时手动导出数据库数据：
-
-1. 访问 `https://你的域名/admin/database`
-2. 点击"导出数据"按钮
-3. 确认弹窗中显示的数据统计
-4. 点击"确认导出"下载 JSON 文件
-
-### 9.3 导入数据（数据迁移）
-
-当需要迁移数据或恢复备份时：
-
-1. 访问 `https://你的域名/admin/database`
-2. 点击"选择文件"上传 JSON 备份文件
-3. 预览导入数据的统计信息
-4. 确认后系统会：
-   - 自动创建当前数据的备份（防止数据丢失）
-   - 清空现有数据
-   - 导入新数据
-
-⚠️ **注意**：导入操作会覆盖现有数据，请确保已备份重要数据。
-
-### 9.4 命令行备份（传统方式）
-
-除了管理界面，你也可以使用命令行进行备份：
-
-**备份数据库**：
-
-```bash
-# 创建备份目录
-mkdir -p /opt/backups
-
-# 备份数据库
-docker exec person_web_mysql mysqldump -uroot -p$(grep MYSQL_ROOT_PASSWORD .env.production | cut -d'=' -f2) personal_blog | gzip > /opt/backups/blog-$(date +%Y%m%d).sql.gz
-```
-
-**恢复数据库**：
-
-```bash
-# 解压并恢复
-gunzip -c /opt/backups/blog-20260204.sql.gz | docker exec -i person_web_mysql mysql -uroot -p$(grep MYSQL_ROOT_PASSWORD .env.production | cut -d'=' -f2) personal_blog
-```
-
----
-
-## 十、项目升级
-
-当项目有新版本时，可以使用一键升级脚本快速更新，**数据库数据会完整保留**。
-
-### 10.1 一键升级（推荐）
-
-项目提供了一键升级脚本，自动完成所有升级步骤：
-
-```bash
-cd /opt/Person_Web/Person_Web-main
-sudo bash deploy/scripts/upgrade.sh
-```
-
-脚本会自动执行以下操作：
-
-1. ✅ **备份当前数据** - 自动备份数据库和配置文件
-2. ✅ **拉取最新代码** - 从 GitHub 获取最新版本
-3. ✅ **重新构建镜像** - 构建包含新代码的 Docker 镜像
-4. ✅ **重启应用** - 启动新版本应用
-5. ✅ **验证部署** - 检查应用是否正常运行
-
-### 10.2 手动升级步骤
-
-如果你想手动控制升级过程：
-
-**步骤 1：备份当前数据**
-
-```bash
-cd /opt/Person_Web/Person_Web-main
-
-# 备份数据库
-mkdir -p /opt/backups
-docker exec person_web_mysql mysqldump -uroot -p$(grep MYSQL_ROOT_PASSWORD .env.production | cut -d'=' -f2) personal_blog | gzip > /opt/backups/blog-before-upgrade-$(date +%Y%m%d).sql.gz
-
-# 备份环境配置文件
-cp .env.production /opt/backups/env-backup-$(date +%Y%m%d)
-```
-
-**步骤 2：拉取最新代码**
-
-```bash
-git pull origin main
-```
-
-**步骤 3：重新部署应用**
-
-```bash
-sudo bash deploy/scripts/deploy.sh
-```
-
-**步骤 4：验证升级**
-
-```bash
-docker compose ps
-docker compose logs --tail=20 app
-```
-
-### 10.3 数据安全说明
-
-> 💡 **为什么升级不会丢失数据？**
->
-> - 数据库数据存储在 Docker Volume `person_web_mysql_data` 中
-> - Volume 与应用容器完全分离，重建应用不影响数据
-> - 即使执行 `docker compose down`，数据也会保留（除非加 `-v` 参数）
-> - 升级脚本会自动备份，即使出现问题也可以恢复
-
----
-
-## 日常维护指南
-
-### 常用命令速查表
-
-| 操作            | 命令                                               |
-| --------------- | -------------------------------------------------- |
-| 查看容器状态    | `docker compose ps`                                |
-| 启动所有服务    | `docker compose up -d`                             |
-| 停止所有服务    | `docker compose down`                              |
-| 重启应用        | `docker compose restart app`                       |
-| 重启数据库      | `docker compose restart mysql`                     |
-| 查看应用日志    | `docker compose logs -f app`                       |
-| 查看数据库日志  | `docker compose logs -f mysql`                     |
-| 进入应用容器    | `docker exec -it person_web_app sh`                |
-| 进入数据库容器  | `docker exec -it person_web_mysql mysql -uroot -p` |
-| 重新部署        | `bash deploy/scripts/deploy.sh`                    |
-| 重载 Nginx      | `sudo systemctl reload nginx`                      |
-| 测试 Nginx 配置 | `sudo nginx -t`                                    |
-
-### 定期维护任务
-
-#### 每周任务
-
-1. **检查容器状态**
-
-   ```bash
-   docker compose ps
-   docker stats --no-stream
-   ```
-
-2. **查看磁盘使用情况**
-
-   ```bash
-   df -h
-   du -sh /opt/Person_Web/uploads
-   ```
-
-3. **备份数据库**
-
-   ```bash
-   mkdir -p /opt/backups
-   docker exec person_web_mysql mysqldump -uroot -p你的数据库密码 personal_blog | gzip > /opt/backups/blog-$(date +%Y%m%d).sql.gz
-   ```
-
-#### 每月任务
-
-1. **更新系统软件包**
-
-   ```bash
-   sudo apt update
-   sudo apt upgrade -y
-   ```
-
-2. **清理 Docker 资源**
-
-   ```bash
-   # 清理未使用的镜像、容器、网络
-   docker system prune -a
-   ```
-
-3. **检查 SSL 证书有效期**
-
-   ```bash
-   sudo certbot certificates
-   ```
-
-#### 每季度任务
-
-1. **完整备份**
-
-   ```bash
-   # 备份数据库
-   docker exec person_web_mysql mysqldump -uroot -p你的数据库密码 personal_blog | gzip > /opt/backups/full-backup-$(date +%Y%m%d)-db.sql.gz
-
-   # 备份上传文件
-   tar -czf /opt/backups/full-backup-$(date +%Y%m%d)-uploads.tar.gz -C /opt/Person_Web uploads/
-
-   # 备份配置文件
-   cp /opt/Person_Web/.env.production /opt/backups/env-backup-$(date +%Y%m%d)
-   ```
-
-2. **性能优化检查**
-
-   ```bash
-   # 查看容器资源使用
-   docker stats
-
-   # 查看数据库大小
-   docker exec person_web_mysql mysql -uroot -p你的数据库密码 -e "SELECT table_schema AS 'Database', ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'Size (MB)' FROM information_schema.tables GROUP BY table_schema;"
-   ```
-
-### 故障排查流程
-
-当博客出现问题时，按照以下流程排查：
-
-1. **检查容器状态**
-
-   ```bash
-   docker compose ps
-   ```
-
-2. **查看应用日志**
-
-   ```bash
-   docker compose logs --tail=50 app
-   ```
-
-3. **查看数据库日志**
-
-   ```bash
-   docker compose logs --tail=50 mysql
-   ```
-
-4. **检查系统资源**
-
-   ```bash
-   free -h  # 内存使用
-   df -h    # 磁盘使用
-   ```
-
-5. **重启服务**
-
-   ```bash
-   docker compose restart
-   ```
-
-6. **如果问题依然存在，查看详细日志**
-
-   ```bash
-   docker compose logs app > /tmp/app-logs.txt
-   docker compose logs mysql > /tmp/mysql-logs.txt
-   ```
-
----
-
-## 附录
-
-### 项目文件结构
-
-```
-Person_Web/
-├── client/                 # 前端代码
-│   ├── src/
-│   │   ├── pages/         # 页面组件
-│   │   │   ├── AdminAnalytics.tsx  # 数据分析仪表盘
-│   │   │   ├── AdminArticles.tsx   # 文章管理
-│   │   │   ├── AdminDatabase.tsx   # 数据库管理
-│   │   │   └── ArticleDetail.tsx   # 文章详情（含目录导航）
-│   │   ├── components/    # UI 组件
-│   │   │   ├── SEOHead.tsx         # SEO 元数据组件
-│   │   │   └── TableOfContents.tsx # 文章目录导航
-│   │   ├── _core/
-│   │   │   └── hooks/
-│   │   │       └── usePageView.ts  # 页面浏览追踪 Hook
-│   │   └── lib/           # 工具函数
-│   └── index.html
-├── server/                # 后端代码
-│   ├── _core/            # 核心功能
-│   │   ├── cache.ts      # 缓存层（性能优化）
-│   │   ├── seo.ts        # SEO 中间件（爬虫检测、结构化数据）
-│   │   └── sitemap.ts    # XML Sitemap 生成
-│   ├── routers.ts        # tRPC 路由（含数据分析 API）
-│   ├── db.ts             # 数据库操作
-│   └── index.ts          # 服务器入口
-├── drizzle/              # 数据库相关
-│   ├── schema.ts         # 表结构定义（含 pageViews、backupSettings）
-│   └── migrations/       # 迁移文件
-├── deploy/               # 部署相关
-│   ├── nginx/           # Nginx 配置
-│   └── scripts/         # 部署脚本
-├── uploads/              # 上传文件目录
-├── backups/              # 数据库备份目录
-├── .env.production       # 生产环境变量
-├── docker-compose.yml    # Docker Compose 配置
-├── Dockerfile            # Docker 镜像构建
-└── package.json          # 项目依赖
-```
-
-### 技术栈说明
-
-- **前端**: React 19 + TypeScript + Vite + TailwindCSS
-- **后端**: Express + tRPC + TypeScript
-- **数据库**: MySQL 8.0
-- **ORM**: Drizzle ORM
-- **数据可视化**: Recharts
-- **SEO**: React Helmet + JSON-LD + Open Graph + XML Sitemap
-- **容器化**: Docker + Docker Compose
-- **Web 服务器**: Nginx
-- **SSL 证书**: Let's Encrypt (Certbot)
-
-### 获取帮助
-
-如果遇到本文档未涵盖的问题：
-
-1. **查看日志**
-   - 应用日志：`docker compose logs app`
-   - 数据库日志：`docker compose logs mysql`
-   - Nginx 日志：`/var/log/nginx/error.log`
-
-2. **在线资源**
-   - Docker 官方文档：https://docs.docker.com/
-   - Nginx 官方文档：https://nginx.org/en/docs/
-   - MySQL 官方文档：https://dev.mysql.com/doc/
+本授权覆盖本仓库中的源代码、配置、脚本和文档。第三方依赖保留各自许可证，不因本仓库采用 MIT 而改变。
